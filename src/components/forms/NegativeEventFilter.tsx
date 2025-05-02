@@ -12,16 +12,19 @@ interface NegativeEventFilterProps {
 
 export function NegativeEventFilter({ value, onChange }: NegativeEventFilterProps) {
   return (
-    <ToggleGroup type="single" value={value} onValueChange={(v) => onChange(v as FilterState || 'all')}>
-      <ToggleGroupItem value="all" aria-label="Todos los formularios">
-        Todos
-      </ToggleGroupItem>
-      <ToggleGroupItem value="yes" aria-label="Con eventos negativos">
-        Con eventos negativos
-      </ToggleGroupItem>
-      <ToggleGroupItem value="no" aria-label="Sin eventos negativos">
-        Sin eventos negativos
-      </ToggleGroupItem>
-    </ToggleGroup>
+    <div className="flex items-center gap-2">
+      <span className="text-sm whitespace-nowrap hidden sm:inline">Eventos negativos:</span>
+      <ToggleGroup type="single" value={value} onValueChange={(v) => onChange(v as FilterState || 'all')} className="border rounded-md">
+        <ToggleGroupItem value="all" aria-label="Todos los formularios">
+          Todos
+        </ToggleGroupItem>
+        <ToggleGroupItem value="yes" aria-label="Con eventos negativos">
+          Con eventos
+        </ToggleGroupItem>
+        <ToggleGroupItem value="no" aria-label="Sin eventos negativos">
+          Sin eventos
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
   );
 }

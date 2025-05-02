@@ -59,7 +59,7 @@ export function AppSidebar() {
     <Sidebar className="border-r">
       <SidebarHeader className="py-6">
         <div className="px-4 flex flex-col justify-center items-center">
-          <h1 className="text-2xl font-bold text-white">Obra Insight</h1>
+          <h1 className="text-2xl font-bold text-white">Sepcon</h1>
           <p className="text-xs text-muted-foreground">Gestión de formularios</p>
         </div>
       </SidebarHeader>
