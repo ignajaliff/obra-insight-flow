@@ -9,6 +9,9 @@ import Dashboard from "./pages/Dashboard";
 import FormsList from "./pages/FormsList";
 import ImportData from "./pages/ImportData";
 import NotFound from "./pages/NotFound";
+import FormAdmin from "./pages/FormAdmin";
+import AvailableForms from "./pages/AvailableForms";
+import FormFillPage from "./pages/FormFillPage";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +25,9 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/formularios" element={<FormsList />} />
+            <Route path="/formularios/disponibles" element={<AvailableForms />} />
+            <Route path="/formularios/rellenar/:templateId" element={<FormFillPage />} />
+            <Route path="/formularios/admin" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<Dashboard />} /> {/* Placeholder */}
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
