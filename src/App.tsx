@@ -12,6 +12,8 @@ import NotFound from "./pages/NotFound";
 import FormAdmin from "./pages/FormAdmin";
 import AvailableForms from "./pages/AvailableForms";
 import FormFillPage from "./pages/FormFillPage";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Authentication Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/registro" element={<Register />} />
+
+          {/* Protected Routes */}
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/formularios" element={<FormsList />} />
