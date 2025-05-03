@@ -1,12 +1,12 @@
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, User } from "lucide-react";
+import { LogIn } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -106,17 +106,10 @@ const Login = () => {
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">
-              ¿No tienes una cuenta?{" "}
-              <Link to="/registro" className="text-primary hover:underline">
-                Regístrate aquí
-              </Link>
+              Demo: demo@sepcon.com / password
             </p>
           </CardFooter>
         </Card>
-        
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          <p>Demo: demo@sepcon.com / password</p>
-        </div>
       </div>
     </div>
   );

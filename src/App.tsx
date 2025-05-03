@@ -13,7 +13,7 @@ import FormAdmin from "./pages/FormAdmin";
 import AvailableForms from "./pages/AvailableForms";
 import FormFillPage from "./pages/FormFillPage";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import UsersManagement from "./pages/UsersManagement";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +26,6 @@ const App = () => (
         <Routes>
           {/* Authentication Routes */}
           <Route path="/login" element={<Login />} />
-          <Route path="/registro" element={<Register />} />
 
           {/* Protected Routes */}
           <Route element={<AppLayout />}>
@@ -36,7 +35,7 @@ const App = () => (
             <Route path="/formularios/rellenar/:templateId" element={<FormFillPage />} />
             <Route path="/formularios/admin" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
-            <Route path="/usuarios" element={<Dashboard />} /> {/* Placeholder */}
+            <Route path="/usuarios" element={<UsersManagement />} />
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
           </Route>
           <Route path="*" element={<NotFound />} />
