@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn } from "lucide-react";
+import { LogIn, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -24,10 +25,20 @@ const Login = () => {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // For demo purposes, always succeed with demo@sepcon.com/password
-      if (email === 'demo@sepcon.com' && password === 'password') {
+      // Approved credentials list
+      const validCredentials = [
+        { email: 'demo@sepcon.com', password: 'password', role: 'admin' },
+        { email: 'arturo@sepcon.com', password: 'azaNres29', role: 'admin' }
+      ];
+      
+      // Check if credentials match any valid user
+      const user = validCredentials.find(
+        user => user.email === email && user.password === password
+      );
+      
+      if (user) {
         // Set some data in localStorage to simulate a session
-        localStorage.setItem('user', JSON.stringify({ email, role: 'admin' }));
+        localStorage.setItem('user', JSON.stringify({ email, role: user.role }));
         
         toast({
           title: "Inicio de sesión exitoso",
@@ -51,6 +62,10 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -91,22 +106,42 @@ const Login = () => {
                     ¿Olvidaste tu contraseña?
                   </a>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button 
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={toggleShowPassword}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-center">
+          <CardFooter className="flex flex-col justify-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              Demo: demo@sepcon.com / password
+              Credenciales de demo: 
+            </p>
+            <p className="text-sm text-muted-foreground">
+              demo@sepcon.com / password
+            </p>
+            <p className="text-sm text-muted-foreground">
+              arturo@sepcon.com / azaNres29
             </p>
           </CardFooter>
         </Card>
