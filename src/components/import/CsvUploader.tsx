@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileText, Check, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { FormEntry } from '../forms/FormsTable';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface CsvUploaderProps {
   onImport: (data: FormEntry[]) => void;
@@ -15,6 +17,7 @@ export function CsvUploader({ onImport }: CsvUploaderProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -24,57 +27,102 @@ export function CsvUploader({ onImport }: CsvUploaderProps) {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file) return;
 
-    // For demo purposes, we'll simulate reading the CSV file and importing data
+    // Para demo, simulamos la lectura del archivo CSV e importamos datos
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate progress
-    const interval = setInterval(() => {
+    // Simulación de progreso
+    const progressInterval = setInterval(() => {
       setUploadProgress((prev) => {
         const next = prev + 10;
         if (next >= 100) {
-          clearInterval(interval);
-          
-          // Simulate successful import with sample data
-          setTimeout(() => {
-            setIsUploading(false);
-            setUploadStatus('success');
-            
-            const sampleData = generateSampleFormEntries();
-            onImport(sampleData);
-          }, 500);
-          
+          clearInterval(progressInterval);
           return 100;
         }
         return next;
       });
     }, 200);
-  };
 
-  // Generate sample form entries for demo
-  const generateSampleFormEntries = (): FormEntry[] => {
-    const formTypes = [
-      'Inspección de seguridad',
-      'Reporte diario',
-      'Control de calidad',
-      'Incidentes',
-      'Entrega de EPP',
-    ];
-    
-    return Array.from({ length: 10 }, (_, index) => ({
-      id: `form-${index + 1}`,
-      workerName: `Trabajador ${index + 1}`,
-      formType: formTypes[Math.floor(Math.random() * formTypes.length)],
-      date: new Date(
-        Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000
-      ).toLocaleDateString(),
-      hasNegativeEvent: Math.random() > 0.7,
-      driveLink: 'https://drive.google.com/file',
-      reviewStatus: Math.random() > 0.5 ? 'reviewed' : 'pending',
-    }));
+    try {
+      // Aquí simularemos el proceso de lectura de un archivo CSV y creación de datos
+      // En una implementación real, analizaríamos el contenido del archivo
+      
+      // Obtener usuarios y plantillas para crear envíos simulados
+      const { data: users } = await supabase.from('users').select('id, name');
+      const { data: templates } = await supabase.from('form_templates').select('id, name');
+      
+      if (!users?.length || !templates?.length) {
+        throw new Error('No users or templates found');
+      }
+      
+      // Generar envíos simulados
+      const formTypeNames = templates.map(t => t.name);
+      const sampleData: FormEntry[] = [];
+      
+      // Crear entre 5-10 registros aleatorios
+      const entriesCount = Math.floor(Math.random() * 6) + 5;
+      
+      for (let i = 0; i < entriesCount; i++) {
+        const randomUser = users[Math.floor(Math.random() * users.length)];
+        const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+        const hasNegativeEvent = Math.random() > 0.7;
+        const reviewStatus = Math.random() > 0.5 ? 'reviewed' : 'pending';
+        
+        // Insertar en la base de datos
+        const { data: submission } = await supabase
+          .from('form_submissions')
+          .insert({
+            template_id: randomTemplate.id,
+            user_id: randomUser.id,
+            has_negative_events: hasNegativeEvent,
+            review_status: reviewStatus,
+            drive_link: 'https://drive.google.com/file'
+          })
+          .select('id, submission_date')
+          .single();
+        
+        if (submission) {
+          // Agregar a la interfaz de usuario
+          sampleData.push({
+            id: submission.id,
+            workerName: randomUser.name,
+            formType: randomTemplate.name,
+            date: new Date(submission.submission_date).toLocaleDateString(),
+            hasNegativeEvent,
+            driveLink: 'https://drive.google.com/file',
+            reviewStatus: reviewStatus as 'reviewed' | 'pending',
+          });
+        }
+      }
+      
+      // Simular finalización exitosa
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadStatus('success');
+        onImport(sampleData);
+        
+        toast({
+          title: "Importación exitosa",
+          description: `Se importaron ${sampleData.length} registros correctamente.`,
+        });
+      }, 500);
+      
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      clearInterval(progressInterval);
+      setIsUploading(false);
+      setUploadStatus('error');
+      setErrorMessage('Ocurrió un error durante la importación.');
+      
+      toast({
+        variant: "destructive",
+        title: "Error en la importación",
+        description: "No se pudieron importar los datos correctamente.",
+      });
+    }
   };
 
   return (

@@ -9,7 +9,188 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      form_field_values: {
+        Row: {
+          created_at: string | null
+          field_id: string
+          id: string
+          submission_id: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_id: string
+          id?: string
+          submission_id: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_id?: string
+          id?: string
+          submission_id?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "form_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_field_values_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "form_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_fields: {
+        Row: {
+          created_at: string | null
+          field_order: number
+          field_type: string
+          id: string
+          is_negative_indicator: boolean | null
+          label: string
+          name: string
+          options: string[] | null
+          required: boolean | null
+          template_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          field_order: number
+          field_type: string
+          id?: string
+          is_negative_indicator?: boolean | null
+          label: string
+          name: string
+          options?: string[] | null
+          required?: boolean | null
+          template_id: string
+        }
+        Update: {
+          created_at?: string | null
+          field_order?: number
+          field_type?: string
+          id?: string
+          is_negative_indicator?: boolean | null
+          label?: string
+          name?: string
+          options?: string[] | null
+          required?: boolean | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "form_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_submissions: {
+        Row: {
+          drive_link: string | null
+          has_negative_events: boolean | null
+          id: string
+          review_status: string | null
+          submission_date: string | null
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          drive_link?: string | null
+          has_negative_events?: boolean | null
+          id?: string
+          review_status?: string | null
+          submission_date?: string | null
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          drive_link?: string | null
+          has_negative_events?: boolean | null
+          id?: string
+          review_status?: string | null
+          submission_date?: string | null
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          password: string
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          password: string
+          role: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          password?: string
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

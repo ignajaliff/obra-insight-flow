@@ -1,120 +1,145 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FormFill } from '@/components/forms/FormFill';
 import { FormTemplate } from '@/pages/FormAdmin';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-// En un proyecto real, estos datos vendrían de la base de datos
-const mockTemplates: FormTemplate[] = [
-  {
-    id: '1',
-    name: 'Checklist de Seguridad',
-    description: 'Formulario para verificar condiciones de seguridad en obra',
-    fields: [
-      {
-        id: 'field1',
-        name: 'area',
-        label: 'Área de trabajo',
-        type: 'text',
-        required: true,
-      },
-      {
-        id: 'field2',
-        name: 'equipoSeguridad',
-        label: '¿Todos los trabajadores usan equipo de seguridad?',
-        type: 'checkbox',
-        required: true,
-        isNegativeIndicator: true,
-      },
-      {
-        id: 'field3',
-        name: 'riesgosIdentificados',
-        label: 'Riesgos identificados',
-        type: 'textarea',
-        required: false,
-        isNegativeIndicator: true,
-      },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Informe Diario de Obra',
-    description: 'Registro diario de avances y actividades en obra',
-    fields: [
-      {
-        id: 'field1',
-        name: 'proyecto',
-        label: 'Proyecto',
-        type: 'text',
-        required: true,
-      },
-      {
-        id: 'field2',
-        name: 'fecha',
-        label: 'Fecha',
-        type: 'date',
-        required: true,
-      },
-      {
-        id: 'field3',
-        name: 'avance',
-        label: 'Porcentaje de avance',
-        type: 'number',
-        required: true,
-      },
-      {
-        id: 'field4',
-        name: 'problemas',
-        label: 'Problemas encontrados',
-        type: 'textarea',
-        required: false,
-        isNegativeIndicator: true,
-      },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-// Simulación de un usuario actual (en un proyecto real usaríamos autenticación)
-const currentUser = {
-  id: '1',
-  name: 'Juan Pérez',
-  role: 'supervisor',
-};
+import { supabase } from '@/integrations/supabase/client';
 
 const FormFillPage = () => {
   const { templateId } = useParams<{ templateId: string }>();
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  // Obtener el usuario actual del localStorage
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
   useEffect(() => {
-    // Simulación de carga de datos
-    setTimeout(() => {
-      const foundTemplate = mockTemplates.find(t => t.id === templateId);
-      setTemplate(foundTemplate || null);
-      setIsLoading(false);
-    }, 500);
-  }, [templateId]);
+    const fetchTemplate = async () => {
+      if (!templateId) return;
+      
+      setIsLoading(true);
+      try {
+        // Obtener la plantilla
+        const { data: templateData, error: templateError } = await supabase
+          .from('form_templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
+        
+        if (templateError) throw templateError;
+        
+        // Obtener los campos de la plantilla
+        const { data: fieldData, error: fieldError } = await supabase
+          .from('form_fields')
+          .select('*')
+          .eq('template_id', templateId)
+          .order('field_order', { ascending: true });
+        
+        if (fieldError) throw fieldError;
+        
+        // Convertir campos de BD a formato de la aplicación
+        const fields = fieldData.map(field => ({
+          id: field.id,
+          name: field.name,
+          label: field.label,
+          type: field.field_type,
+          required: field.required || false,
+          options: field.options,
+          isNegativeIndicator: field.is_negative_indicator || false,
+          field_order: field.field_order
+        }));
+        
+        setTemplate({
+          id: templateData.id,
+          name: templateData.name,
+          description: templateData.description || '',
+          fields,
+          created_at: templateData.created_at,
+          updated_at: templateData.updated_at
+        });
+      } catch (error) {
+        console.error('Error fetching template:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo cargar la plantilla del formulario",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTemplate();
+  }, [templateId, toast]);
 
-  const handleSubmitForm = (formData: any) => {
-    console.log('Form submitted:', formData);
-    
-    // En un proyecto real, aquí guardaríamos los datos en la base de datos
-    
-    toast({
-      title: "Formulario enviado",
-      description: "Tu formulario ha sido enviado correctamente.",
-    });
-    
-    // Redirigir a la lista de formularios o dashboard
-    // En un proyecto real, podrías usar useNavigate para redirigir
+  const handleSubmitForm = async (formData: any) => {
+    try {
+      // Verificar si hay usuario autenticado
+      if (!currentUser || !currentUser.id) {
+        toast({
+          variant: "destructive",
+          title: "Error de autenticación",
+          description: "Debes iniciar sesión para enviar formularios",
+        });
+        navigate('/login');
+        return;
+      }
+      
+      // 1. Crear el registro de envío de formulario
+      const { data: submission, error: submissionError } = await supabase
+        .from('form_submissions')
+        .insert({
+          template_id: template?.id,
+          user_id: currentUser.id,
+          has_negative_events: formData.hasNegativeEvents,
+          drive_link: formData.driveLink || null,
+          review_status: 'pending'
+        })
+        .select()
+        .single();
+      
+      if (submissionError) throw submissionError;
+      
+      // 2. Insertar los valores de los campos
+      const fieldValues = Object.entries(formData.values).map(([fieldName, value]) => {
+        const field = template?.fields.find(f => f.name === fieldName);
+        if (!field) return null;
+        
+        return {
+          submission_id: submission.id,
+          field_id: field.id,
+          value: value === null || value === undefined ? null : String(value)
+        };
+      }).filter(Boolean);
+      
+      if (fieldValues.length > 0) {
+        const { error: valuesError } = await supabase
+          .from('form_field_values')
+          .insert(fieldValues);
+        
+        if (valuesError) throw valuesError;
+      }
+      
+      toast({
+        title: "Formulario enviado",
+        description: "Tu formulario ha sido enviado correctamente.",
+      });
+      
+      // Redirigir a la lista de formularios
+      navigate('/formularios');
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Hubo un problema al enviar el formulario",
+      });
+    }
   };
 
   if (isLoading) {
@@ -146,7 +171,7 @@ const FormFillPage = () => {
     <div className="container max-w-md py-6">
       <FormFill
         template={template}
-        userName={currentUser.name}
+        userName={currentUser.name || "Usuario"}
         onSubmit={handleSubmitForm}
       />
     </div>

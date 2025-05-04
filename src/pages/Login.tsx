@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { LogIn, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,40 +21,40 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // This is a placeholder for actual authentication logic
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Primero, buscar el usuario en nuestra tabla users
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password) // En un entorno real, usaríamos hashes y auth nativa de Supabase
+        .single();
       
-      // Approved credentials list
-      const validCredentials = [
-        { email: 'demo@sepcon.com', password: 'password', role: 'admin' },
-        { email: 'arturo@sepcon.com', password: 'azaNres29', role: 'admin' }
-      ];
-      
-      // Check if credentials match any valid user
-      const user = validCredentials.find(
-        user => user.email === email && user.password === password
-      );
-      
-      if (user) {
-        // Set some data in localStorage to simulate a session
-        localStorage.setItem('user', JSON.stringify({ email, role: user.role }));
-        
-        toast({
-          title: "Inicio de sesión exitoso",
-          description: "Bienvenido a Sepcon",
-        });
-        
-        navigate('/');
-      } else {
+      if (userError || !userData) {
         toast({
           title: "Error de autenticación",
           description: "Email o contraseña incorrectos",
           variant: "destructive",
         });
+        return;
       }
+      
+      // Si el usuario existe, guardamos la información en localStorage
+      localStorage.setItem('user', JSON.stringify({ 
+        id: userData.id,
+        email: userData.email, 
+        role: userData.role,
+        name: userData.name
+      }));
+        
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "Bienvenido a Sepcon",
+      });
+        
+      navigate('/');
     } catch (error) {
+      console.error("Error en inicio de sesión:", error);
       toast({
         title: "Error",
         description: "Hubo un problema al iniciar sesión",

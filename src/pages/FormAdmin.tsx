@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -9,11 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle, Save, X, Edit, Trash2 } from 'lucide-react';
 import { FormTemplateEditor } from '@/components/forms/FormTemplateEditor';
 import { FormTemplateList } from '@/components/forms/FormTemplateList';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Tipos de formularios predefinidos
 export type FieldType = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'textarea';
@@ -26,6 +27,7 @@ export interface FormField {
   required: boolean;
   options?: string[]; // Para campos select
   isNegativeIndicator?: boolean; // Indica si este campo puede contener un valor negativo
+  field_order: number;
 }
 
 export interface FormTemplate {
@@ -33,97 +35,86 @@ export interface FormTemplate {
   name: string;
   description: string;
   fields: FormField[];
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// Ejemplos de formularios predefinidos
-const initialTemplates: FormTemplate[] = [
-  {
-    id: '1',
-    name: 'Checklist de Seguridad',
-    description: 'Formulario para verificar condiciones de seguridad en obra',
-    fields: [
-      {
-        id: 'field1',
-        name: 'area',
-        label: 'Área de trabajo',
-        type: 'text',
-        required: true,
-      },
-      {
-        id: 'field2',
-        name: 'equipoSeguridad',
-        label: '¿Todos los trabajadores usan equipo de seguridad?',
-        type: 'checkbox',
-        required: true,
-        isNegativeIndicator: true,
-      },
-      {
-        id: 'field3',
-        name: 'riesgosIdentificados',
-        label: 'Riesgos identificados',
-        type: 'textarea',
-        required: false,
-        isNegativeIndicator: true,
-      },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Informe Diario de Obra',
-    description: 'Registro diario de avances y actividades en obra',
-    fields: [
-      {
-        id: 'field1',
-        name: 'proyecto',
-        label: 'Proyecto',
-        type: 'text',
-        required: true,
-      },
-      {
-        id: 'field2',
-        name: 'fecha',
-        label: 'Fecha',
-        type: 'date',
-        required: true,
-      },
-      {
-        id: 'field3',
-        name: 'avance',
-        label: 'Porcentaje de avance',
-        type: 'number',
-        required: true,
-      },
-      {
-        id: 'field4',
-        name: 'problemas',
-        label: 'Problemas encontrados',
-        type: 'textarea',
-        required: false,
-        isNegativeIndicator: true,
-      },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
 const FormAdmin = () => {
-  const [templates, setTemplates] = useState<FormTemplate[]>(initialTemplates);
+  const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [activeTab, setActiveTab] = useState<string>('list');
   const [currentTemplate, setCurrentTemplate] = useState<FormTemplate | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Cargar plantillas de formularios desde Supabase
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setIsLoading(true);
+      try {
+        // Obtener todas las plantillas
+        const { data: templateData, error: templateError } = await supabase
+          .from('form_templates')
+          .select('*')
+          .order('updated_at', { ascending: false });
+        
+        if (templateError) throw templateError;
+        
+        // Para cada plantilla, obtener sus campos
+        const templatesWithFields = await Promise.all(templateData.map(async (template) => {
+          const { data: fieldData, error: fieldError } = await supabase
+            .from('form_fields')
+            .select('*')
+            .eq('template_id', template.id)
+            .order('field_order', { ascending: true });
+          
+          if (fieldError) throw fieldError;
+          
+          // Convertir campos de BD a formato de la aplicación
+          const fields = fieldData.map(field => ({
+            id: field.id,
+            name: field.name,
+            label: field.label,
+            type: field.field_type as FieldType,
+            required: field.required || false,
+            options: field.options,
+            isNegativeIndicator: field.is_negative_indicator || false,
+            field_order: field.field_order
+          }));
+          
+          return {
+            id: template.id,
+            name: template.name,
+            description: template.description || '',
+            fields,
+            created_at: template.created_at,
+            updated_at: template.updated_at
+          };
+        }));
+        
+        setTemplates(templatesWithFields);
+      } catch (error) {
+        console.error('Error loading templates:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudieron cargar las plantillas de formularios",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTemplates();
+  }, [toast]);
 
   const handleCreateNew = () => {
     const newTemplate: FormTemplate = {
-      id: `template-${Date.now()}`,
+      id: `template-${Date.now()}`, // ID temporal, se reemplazará al guardar
       name: 'Nuevo Formulario',
       description: 'Descripción del nuevo formulario',
       fields: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     setCurrentTemplate(newTemplate);
     setActiveTab('edit');
@@ -134,31 +125,164 @@ const FormAdmin = () => {
     setActiveTab('edit');
   };
 
-  const handleSave = (template: FormTemplate) => {
-    const updatedTemplate = {
-      ...template,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    if (templates.some((t) => t.id === template.id)) {
-      // Update existing template
-      setTemplates(
-        templates.map((t) => (t.id === template.id ? updatedTemplate : t))
-      );
-    } else {
-      // Add new template
-      setTemplates([...templates, updatedTemplate]);
+  const handleSave = async (template: FormTemplate) => {
+    try {
+      const now = new Date().toISOString();
+      const isExisting = templates.some((t) => t.id === template.id && !template.id.startsWith('template-'));
+      
+      // Actualizar o crear plantilla
+      let templateId = template.id;
+      
+      if (isExisting) {
+        // Actualizar plantilla existente
+        const { error: templateError } = await supabase
+          .from('form_templates')
+          .update({
+            name: template.name,
+            description: template.description,
+            updated_at: now
+          })
+          .eq('id', template.id);
+        
+        if (templateError) throw templateError;
+      } else {
+        // Crear nueva plantilla
+        const { data: newTemplate, error: templateError } = await supabase
+          .from('form_templates')
+          .insert({
+            name: template.name,
+            description: template.description,
+            created_at: now,
+            updated_at: now
+          })
+          .select()
+          .single();
+        
+        if (templateError) throw templateError;
+        templateId = newTemplate.id;
+      }
+      
+      // Si es una plantilla existente, eliminar campos antiguos
+      if (isExisting) {
+        const { error: deleteError } = await supabase
+          .from('form_fields')
+          .delete()
+          .eq('template_id', templateId);
+        
+        if (deleteError) throw deleteError;
+      }
+      
+      // Insertar campos nuevos
+      if (template.fields.length > 0) {
+        const fieldsToInsert = template.fields.map((field, index) => ({
+          template_id: templateId,
+          name: field.name,
+          label: field.label,
+          field_type: field.type,
+          required: field.required,
+          is_negative_indicator: field.isNegativeIndicator || false,
+          options: field.options || [],
+          field_order: index // Usar índice para ordenar campos
+        }));
+        
+        const { error: fieldsError } = await supabase
+          .from('form_fields')
+          .insert(fieldsToInsert);
+        
+        if (fieldsError) throw fieldsError;
+      }
+      
+      // Recargar plantillas
+      const { data: updatedTemplate, error: fetchError } = await supabase
+        .from('form_templates')
+        .select('*')
+        .eq('id', templateId)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      const { data: updatedFields, error: fetchFieldsError } = await supabase
+        .from('form_fields')
+        .select('*')
+        .eq('template_id', templateId)
+        .order('field_order', { ascending: true });
+        
+      if (fetchFieldsError) throw fetchFieldsError;
+      
+      const formattedFields = updatedFields.map(field => ({
+        id: field.id,
+        name: field.name,
+        label: field.label,
+        type: field.field_type as FieldType,
+        required: field.required || false,
+        options: field.options,
+        isNegativeIndicator: field.is_negative_indicator || false,
+        field_order: field.field_order
+      }));
+      
+      const completeTemplate = {
+        id: updatedTemplate.id,
+        name: updatedTemplate.name,
+        description: updatedTemplate.description || '',
+        fields: formattedFields,
+        created_at: updatedTemplate.created_at,
+        updated_at: updatedTemplate.updated_at
+      };
+      
+      // Actualizar estado
+      if (isExisting) {
+        setTemplates(templates.map(t => t.id === templateId ? completeTemplate : t));
+      } else {
+        setTemplates([completeTemplate, ...templates]);
+      }
+      
+      toast({
+        title: isExisting ? "Formulario actualizado" : "Formulario creado",
+        description: `El formulario "${template.name}" ha sido ${isExisting ? 'actualizado' : 'creado'} correctamente`,
+      });
+      
+      setActiveTab('list');
+      setCurrentTemplate(null);
+      
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo guardar la plantilla de formulario",
+      });
     }
-    
-    setActiveTab('list');
-    setCurrentTemplate(null);
   };
 
-  const handleDelete = (id: string) => {
-    setTemplates(templates.filter((t) => t.id !== id));
-    if (currentTemplate?.id === id) {
-      setCurrentTemplate(null);
-      setActiveTab('list');
+  const handleDelete = async (id: string) => {
+    try {
+      // Eliminar plantilla (las claves foráneas se encargarán de los campos)
+      const { error } = await supabase
+        .from('form_templates')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Actualizar estado
+      setTemplates(templates.filter((t) => t.id !== id));
+      
+      if (currentTemplate?.id === id) {
+        setCurrentTemplate(null);
+        setActiveTab('list');
+      }
+      
+      toast({
+        title: "Formulario eliminado",
+        description: "La plantilla de formulario ha sido eliminada correctamente",
+      });
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar la plantilla de formulario",
+      });
     }
   };
 
@@ -191,11 +315,17 @@ const FormAdmin = () => {
         </TabsList>
 
         <TabsContent value="list" className="mt-4">
-          <FormTemplateList
-            templates={templates}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <FormTemplateList
+              templates={templates}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="edit" className="mt-4">
