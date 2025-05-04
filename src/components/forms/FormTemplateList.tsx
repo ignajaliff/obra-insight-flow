@@ -37,7 +37,7 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
               {template.fields.length} campos
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              Actualizado: {new Date(template.updatedAt).toLocaleDateString()}
+              Actualizado: {new Date(template.updated_at).toLocaleDateString()}
             </p>
           </CardContent>
           <CardFooter className="flex justify-between gap-2">

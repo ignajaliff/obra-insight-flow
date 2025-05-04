@@ -32,6 +32,11 @@ export function FormTemplateEditor({ template, onSave, onCancel }: FormTemplateE
   const handleAddField = () => {
     if (!newFieldName.trim()) return;
 
+    // Calculate the next field_order value
+    const nextOrder = editableTemplate.fields.length > 0 
+      ? Math.max(...editableTemplate.fields.map(f => f.field_order)) + 1 
+      : 0;
+
     const newField: FormField = {
       id: `field-${Date.now()}`,
       name: newFieldName.toLowerCase().replace(/\s+/g, '_'),
@@ -40,6 +45,7 @@ export function FormTemplateEditor({ template, onSave, onCancel }: FormTemplateE
       required: false,
       options: newFieldType === 'select' ? ['Opción 1', 'Opción 2'] : undefined,
       isNegativeIndicator: false,
+      field_order: nextOrder, // Add the field_order property
     };
 
     setEditableTemplate({

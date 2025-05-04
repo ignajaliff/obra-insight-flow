@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormFill } from '@/components/forms/FormFill';
-import { FormTemplate } from '@/pages/FormAdmin';
+import { FormTemplate, FieldType } from '@/pages/FormAdmin';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +47,7 @@ const FormFillPage = () => {
           id: field.id,
           name: field.name,
           label: field.label,
-          type: field.field_type,
+          type: field.field_type as FieldType, // Cast to ensure it's a valid FieldType
           required: field.required || false,
           options: field.options,
           isNegativeIndicator: field.is_negative_indicator || false,

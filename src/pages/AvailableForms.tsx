@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -10,7 +9,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FormTemplate } from '@/pages/FormAdmin';
+import { FormTemplate, FieldType } from '@/pages/FormAdmin';
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +46,7 @@ const AvailableForms = () => {
             id: field.id,
             name: field.name,
             label: field.label,
-            type: field.field_type,
+            type: field.field_type as FieldType, // Cast to ensure it's a valid FieldType
             required: field.required || false,
             options: field.options,
             isNegativeIndicator: field.is_negative_indicator || false,
@@ -64,7 +63,7 @@ const AvailableForms = () => {
           };
         }));
         
-        setTemplates(templatesWithFields);
+        setTemplates(templatesWithFields as FormTemplate[]);
       } catch (error) {
         console.error('Error loading templates:', error);
         toast({

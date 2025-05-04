@@ -27,7 +27,7 @@ export interface FormField {
   required: boolean;
   options?: string[]; // Para campos select
   isNegativeIndicator?: boolean; // Indica si este campo puede contener un valor negativo
-  field_order: number;
+  field_order: number; // Hacer este campo obligatorio
 }
 
 export interface FormTemplate {
