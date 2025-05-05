@@ -9,12 +9,37 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      companies: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       form_responses: {
         Row: {
           created_at: string | null
           date: string
           document_link: string | null
           form_type: string
+          form_type_id: string | null
           id: string
           ID_documento: string | null
           status: string
@@ -25,6 +50,7 @@ export type Database = {
           date?: string
           document_link?: string | null
           form_type: string
+          form_type_id?: string | null
           id?: string
           ID_documento?: string | null
           status: string
@@ -35,12 +61,56 @@ export type Database = {
           date?: string
           document_link?: string | null
           form_type?: string
+          form_type_id?: string | null
           id?: string
           ID_documento?: string | null
           status?: string
           worker_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "form_responses_form_type_id_fkey"
+            columns: ["form_type_id"]
+            isOneToOne: false
+            referencedRelation: "form_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_types: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_types_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {

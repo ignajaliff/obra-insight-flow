@@ -1,16 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckSquare, AlertTriangle, BarChart2 } from 'lucide-react';
+import { FileText, CheckSquare, AlertTriangle, BarChart2, Building } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { BarChart } from '@/components/dashboard/BarChart';
 import { PieChart } from '@/components/dashboard/PieChart';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { NegativeEventFilter } from '@/components/forms/NegativeEventFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
+import { CompaniesSection } from '@/components/dashboard/CompaniesSection';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { FormResponse } from '@/types/forms';
+import { FormResponse, FormType, Company, CompanyWithFormTypes } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
 
 // Colores para los gráficos de pie
@@ -22,7 +23,9 @@ const Dashboard = () => {
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
+  const [companies, setCompanies] = useState<CompanyWithFormTypes[]>([]);
   const [loading, setLoading] = useState(true);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
   const [negativeFilter, setNegativeFilter] = useState<'all' | 'yes' | 'no'>('all');
   const { toast } = useToast();
   
@@ -59,7 +62,72 @@ const Dashboard = () => {
       }
     };
     
+    const fetchCompanies = async () => {
+      try {
+        setCompaniesLoading(true);
+        
+        // Obtenemos todas las empresas
+        const { data: companiesData, error: companiesError } = await supabase
+          .from('companies')
+          .select('*');
+        
+        if (companiesError) throw companiesError;
+        
+        // Obtenemos todos los tipos de formulario
+        const { data: formTypesData, error: formTypesError } = await supabase
+          .from('form_types')
+          .select('*');
+        
+        if (formTypesError) throw formTypesError;
+        
+        // Obtenemos el conteo de formularios por tipo
+        const { data: formCountData, error: formCountError } = await supabase
+          .from('form_responses')
+          .select('form_type, count')
+          .count();
+        
+        if (formCountError) throw formCountError;
+        
+        // Combinar datos para crear CompanyWithFormTypes[]
+        const enhancedCompanies: CompanyWithFormTypes[] = companiesData.map((company: Company) => {
+          // Filtrar tipos de formulario para esta empresa
+          const companyFormTypes = formTypesData.filter(
+            (formType: FormType) => formType.company_id === company.id
+          );
+          
+          // Contar formularios totales para la empresa
+          let formCount = 0;
+          companyFormTypes.forEach((formType) => {
+            // Buscar formularios que coincidan con este tipo
+            const typeCount = formResponses.filter(
+              form => form.form_type === formType.name
+            ).length;
+            formCount += typeCount;
+          });
+          
+          return {
+            ...company,
+            formTypes: companyFormTypes,
+            formCount
+          };
+        });
+        
+        setCompanies(enhancedCompanies);
+        
+      } catch (error) {
+        console.error('Error fetching companies data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudieron cargar los datos de empresas",
+        });
+      } finally {
+        setCompaniesLoading(false);
+      }
+    };
+    
     fetchFormResponses();
+    fetchCompanies();
   }, [toast]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
@@ -150,6 +218,9 @@ const Dashboard = () => {
           />
         </div>
       </div>
+      
+      {/* Sección de Empresas */}
+      <CompaniesSection companies={companies} isLoading={companiesLoading} />
       
       <div className="mb-4">
         <NegativeEventFilter 

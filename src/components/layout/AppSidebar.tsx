@@ -6,7 +6,8 @@ import {
   FileText, 
   Upload, 
   Users, 
-  Settings 
+  Settings,
+  Building
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,8 +27,13 @@ import {
 const navItems = [
   {
     title: "Dashboard",
-    path: "/",
+    path: "/dashboard",
     icon: BarChart2
+  },
+  {
+    title: "Empresas",
+    path: "/empresas",
+    icon: Building
   },
   {
     title: "Formularios",
