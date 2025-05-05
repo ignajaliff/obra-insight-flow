@@ -5,7 +5,8 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { BarChart } from '@/components/dashboard/BarChart';
 import { PieChart } from '@/components/dashboard/PieChart';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
-import { FormTypesFilter, FORM_TYPES } from '@/components/forms/FormTypesFilter';
+import { NegativeEventFilter } from '@/components/forms/NegativeEventFilter';
+import { FormsTable } from '@/components/forms/FormsTable';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,9 +19,11 @@ const colorsPie = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
 const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
   const [endDate, setEndDate] = useState<Date>(new Date());
-  const [selectedFormType, setSelectedFormType] = useState<string>(FORM_TYPES[0]);
+  const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
+  const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
   const [loading, setLoading] = useState(true);
+  const [negativeFilter, setNegativeFilter] = useState<'all' | 'yes' | 'no'>('all');
   const { toast } = useToast();
   
   useEffect(() => {
@@ -33,7 +36,17 @@ const Dashboard = () => {
         
         if (error) throw error;
         
-        setFormResponses(data || []);
+        // Asegurar que los datos cumplen con el tipo FormResponse
+        const typedData: FormResponse[] = data.map(item => ({
+          ...item,
+          status: item.status as 'Todo positivo' | 'Contiene item negativo'
+        }));
+        
+        setFormResponses(typedData);
+        
+        // Extraer todos los tipos de formularios únicos
+        const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
+        setFormTypes(['Todos', ...uniqueFormTypes]);
       } catch (error) {
         console.error('Error fetching form responses:', error);
         toast({
@@ -54,14 +67,23 @@ const Dashboard = () => {
     if (end) setEndDate(end);
   };
 
-  // Filtrar datos por tipo de formulario y rango de fecha
-  const filteredData = formResponses.filter(form => {
-    const formDate = new Date(form.date);
-    const isInDateRange = formDate >= startDate && formDate <= endDate;
-    const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
-    
-    return isInDateRange && matchesType;
-  });
+  // Filtrar datos por tipo de formulario, rango de fecha y estado
+  const getFilteredData = (formType: string) => {
+    return formResponses.filter(form => {
+      const formDate = new Date(form.date);
+      const isInDateRange = formDate >= startDate && formDate <= endDate;
+      const matchesType = formType === 'Todos' || form.form_type === formType;
+      
+      const matchesStatus = negativeFilter === 'all' || 
+        (negativeFilter === 'yes' && form.status === 'Contiene item negativo') ||
+        (negativeFilter === 'no' && form.status === 'Todo positivo');
+      
+      return isInDateRange && matchesType && matchesStatus;
+    });
+  };
+  
+  // Datos filtrados para el tipo de formulario seleccionado
+  const filteredData = getFilteredData(selectedFormType);
   
   // Calcular estadísticas para el tipo de formulario seleccionado
   const stats = {
@@ -71,7 +93,9 @@ const Dashboard = () => {
   };
 
   // Datos para el gráfico de barras (formularios por día)
-  const formsByDay = FORM_TYPES.reduce((acc, type) => {
+  const formsByDay = formTypes.reduce((acc, type) => {
+    if (type === 'Todos') return acc;
+    
     // Crear un Map para cada tipo de formulario con días como claves
     const dayMap = new Map();
     
@@ -127,16 +151,23 @@ const Dashboard = () => {
         </div>
       </div>
       
-      <Tabs defaultValue={FORM_TYPES[0]} onValueChange={setSelectedFormType}>
+      <div className="mb-4">
+        <NegativeEventFilter 
+          value={negativeFilter}
+          onChange={setNegativeFilter}
+        />
+      </div>
+      
+      <Tabs defaultValue={formTypes[0]} onValueChange={setSelectedFormType}>
         <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
-          {FORM_TYPES.map((type) => (
+          {formTypes.map((type) => (
             <TabsTrigger key={type} value={type} className="whitespace-nowrap">
               {type}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {FORM_TYPES.map((type) => (
+        {formTypes.map((type) => (
           <TabsContent key={type} value={type} className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <StatCard
@@ -159,20 +190,18 @@ const Dashboard = () => {
               />
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2">
-              <BarChart 
-                data={formsByDay[type] || []} 
-                title="Formularios por día" 
-                dataKey="formularios" 
-                xAxisKey="name"
-              />
-              <PieChart 
-                data={distribution} 
-                title="Distribución de estados" 
-                dataKey="value"
-                nameKey="name"
-                colors={colorsPie}
-              />
+            <PieChart 
+              data={distribution} 
+              title="Distribución de estados" 
+              dataKey="value"
+              nameKey="name"
+              colors={colorsPie}
+              className="w-full"
+            />
+            
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Lista de formularios</h2>
+              <FormsTable forms={filteredData} />
             </div>
           </TabsContent>
         ))}
