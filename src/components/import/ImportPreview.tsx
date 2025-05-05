@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { FormEntry, FormsTable } from '../forms/FormsTable';
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
+import { FormsTable } from '../forms/FormsTable';
+import { FormResponse } from '@/types/forms';
 
 interface ImportPreviewProps {
-  previewData: FormEntry[];
+  previewData: FormResponse[];
   onConfirm: () => void;
   onCancel: () => void;
 }

@@ -4,19 +4,18 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { FormTypesFilter, FORM_TYPES } from '@/components/forms/FormTypesFilter';
-import { NegativeEventFilter } from '@/components/forms/NegativeEventFilter';
-import { FormEntry, FormsTable } from '@/components/forms/FormsTable';
+import { FormsTable } from '@/components/forms/FormsTable';
 import { Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { FormResponse } from '@/types/forms';
 
 const FormsList = () => {
-  const [forms, setForms] = useState<FormEntry[]>([]);
-  const [filteredForms, setFilteredForms] = useState<FormEntry[]>([]);
+  const [forms, setForms] = useState<FormResponse[]>([]);
+  const [filteredForms, setFilteredForms] = useState<FormResponse[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [selectedFormTypes, setSelectedFormTypes] = useState<string[]>([]);
-  const [negativeEventFilter, setNegativeEventFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -26,35 +25,16 @@ const FormsList = () => {
     const fetchForms = async () => {
       setIsLoading(true);
       try {
-        // Obtener información de envíos de formularios
-        const { data: submissions, error: submissionsError } = await supabase
-          .from('form_submissions')
-          .select(`
-            id,
-            has_negative_events,
-            drive_link,
-            review_status,
-            submission_date,
-            users(name),
-            form_templates(name)
-          `)
-          .order('submission_date', { ascending: false });
+        // Obtener información de respuestas de formularios
+        const { data, error } = await supabase
+          .from('form_responses')
+          .select('*')
+          .order('date', { ascending: false });
         
-        if (submissionsError) throw submissionsError;
+        if (error) throw error;
         
-        // Formatear los datos para la tabla
-        const formattedForms: FormEntry[] = submissions.map((submission: any) => ({
-          id: submission.id,
-          workerName: submission.users?.name || 'Usuario desconocido',
-          formType: submission.form_templates?.name || 'Formulario desconocido',
-          date: new Date(submission.submission_date).toLocaleDateString(),
-          hasNegativeEvent: submission.has_negative_events || false,
-          driveLink: submission.drive_link || 'https://drive.google.com/file',
-          reviewStatus: submission.review_status as 'reviewed' | 'pending'
-        }));
-        
-        setForms(formattedForms);
-        setFilteredForms(formattedForms);
+        setForms(data);
+        setFilteredForms(data);
       } catch (error) {
         console.error('Error loading forms:', error);
         toast({
@@ -78,22 +58,15 @@ const FormsList = () => {
       // Filtrar por tipo de formulario
       if (selectedFormTypes.length > 0) {
         filtered = filtered.filter(form => 
-          selectedFormTypes.includes(form.formType)
+          selectedFormTypes.includes(form.form_type)
         );
-      }
-      
-      // Filtrar por eventos negativos
-      if (negativeEventFilter === 'yes') {
-        filtered = filtered.filter(form => form.hasNegativeEvent);
-      } else if (negativeEventFilter === 'no') {
-        filtered = filtered.filter(form => !form.hasNegativeEvent);
       }
       
       // Filtrar por búsqueda de texto
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(form => 
-          form.workerName.toLowerCase().includes(query)
+          form.worker_name.toLowerCase().includes(query)
         );
       }
       
@@ -109,7 +82,7 @@ const FormsList = () => {
     };
     
     applyFilters();
-  }, [forms, selectedFormTypes, negativeEventFilter, searchQuery, startDate, endDate]);
+  }, [forms, selectedFormTypes, searchQuery, startDate, endDate]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     setStartDate(start);
@@ -146,16 +119,6 @@ const FormsList = () => {
           <FormTypesFilter 
             selectedTypes={selectedFormTypes}
             onSelectionChange={setSelectedFormTypes}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="text-sm text-muted-foreground mr-2">
-            Eventos negativos:
-          </div>
-          <NegativeEventFilter 
-            value={negativeEventFilter}
-            onChange={setNegativeEventFilter}
           />
         </div>
       </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, CheckSquare, AlertTriangle, BarChart2 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { BarChart } from '@/components/dashboard/BarChart';
@@ -8,121 +8,9 @@ import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { FormTypesFilter, FORM_TYPES } from '@/components/forms/FormTypesFilter';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { NegativeEventFilter } from '@/components/forms/NegativeEventFilter';
-
-// Datos de muestra por tipo de formulario
-const formDataByType = {
-  'Inspección de seguridad': {
-    byDay: [
-      { name: 'Lunes', formularios: 10 },
-      { name: 'Martes', formularios: 15 },
-      { name: 'Miércoles', formularios: 12 },
-      { name: 'Jueves', formularios: 18 },
-      { name: 'Viernes', formularios: 14 },
-      { name: 'Sábado', formularios: 8 },
-      { name: 'Domingo', formularios: 5 },
-    ],
-    stats: {
-      total: 82,
-      eventos: 12,
-      revisados: 78,
-      pendientes: 4,
-    },
-    distribution: [
-      { name: 'Completos', value: 65 },
-      { name: 'Con observaciones', value: 12 },
-      { name: 'Incompletos', value: 5 },
-    ],
-  },
-  'Reporte diario': {
-    byDay: [
-      { name: 'Lunes', formularios: 20 },
-      { name: 'Martes', formularios: 22 },
-      { name: 'Miércoles', formularios: 18 },
-      { name: 'Jueves', formularios: 25 },
-      { name: 'Viernes', formularios: 23 },
-      { name: 'Sábado', formularios: 12 },
-      { name: 'Domingo', formularios: 5 },
-    ],
-    stats: {
-      total: 125,
-      eventos: 18,
-      revisados: 110,
-      pendientes: 15,
-    },
-    distribution: [
-      { name: 'Asistencia completa', value: 85 },
-      { name: 'Ausencias', value: 25 },
-      { name: 'Retrasos', value: 15 },
-    ],
-  },
-  'Control de calidad': {
-    byDay: [
-      { name: 'Lunes', formularios: 8 },
-      { name: 'Martes', formularios: 10 },
-      { name: 'Miércoles', formularios: 7 },
-      { name: 'Jueves', formularios: 12 },
-      { name: 'Viernes', formularios: 9 },
-      { name: 'Sábado', formularios: 5 },
-      { name: 'Domingo', formularios: 0 },
-    ],
-    stats: {
-      total: 51,
-      eventos: 8,
-      revisados: 45,
-      pendientes: 6,
-    },
-    distribution: [
-      { name: 'Aprobados', value: 40 },
-      { name: 'Rechazados', value: 8 },
-      { name: 'En revisión', value: 3 },
-    ],
-  },
-  'Incidentes': {
-    byDay: [
-      { name: 'Lunes', formularios: 2 },
-      { name: 'Martes', formularios: 1 },
-      { name: 'Miércoles', formularios: 3 },
-      { name: 'Jueves', formularios: 0 },
-      { name: 'Viernes', formularios: 2 },
-      { name: 'Sábado', formularios: 1 },
-      { name: 'Domingo', formularios: 0 },
-    ],
-    stats: {
-      total: 9,
-      eventos: 9,
-      revisados: 7,
-      pendientes: 2,
-    },
-    distribution: [
-      { name: 'Leves', value: 5 },
-      { name: 'Moderados', value: 3 },
-      { name: 'Graves', value: 1 },
-    ],
-  },
-  'Entrega de EPP': {
-    byDay: [
-      { name: 'Lunes', formularios: 15 },
-      { name: 'Martes', formularios: 5 },
-      { name: 'Miércoles', formularios: 8 },
-      { name: 'Jueves', formularios: 12 },
-      { name: 'Viernes', formularios: 10 },
-      { name: 'Sábado', formularios: 0 },
-      { name: 'Domingo', formularios: 0 },
-    ],
-    stats: {
-      total: 50,
-      eventos: 3,
-      revisados: 45,
-      pendientes: 5,
-    },
-    distribution: [
-      { name: 'Casco', value: 20 },
-      { name: 'Guantes', value: 15 },
-      { name: 'Otros', value: 15 },
-    ],
-  },
-};
+import { supabase } from '@/integrations/supabase/client';
+import { FormResponse } from '@/types/forms';
+import { useToast } from '@/hooks/use-toast';
 
 // Colores para los gráficos de pie
 const colorsPie = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
@@ -131,15 +19,98 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedFormType, setSelectedFormType] = useState<string>(FORM_TYPES[0]);
-  const [negativeEventFilter, setNegativeEventFilter] = useState<'all' | 'yes' | 'no'>('all');
+  const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchFormResponses = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('form_responses')
+          .select('*');
+        
+        if (error) throw error;
+        
+        setFormResponses(data || []);
+      } catch (error) {
+        console.error('Error fetching form responses:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudieron cargar los datos del dashboard",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchFormResponses();
+  }, [toast]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     if (start) setStartDate(start);
     if (end) setEndDate(end);
   };
 
-  const currentData = formDataByType[selectedFormType as keyof typeof formDataByType];
+  // Filtrar datos por tipo de formulario y rango de fecha
+  const filteredData = formResponses.filter(form => {
+    const formDate = new Date(form.date);
+    const isInDateRange = formDate >= startDate && formDate <= endDate;
+    const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
+    
+    return isInDateRange && matchesType;
+  });
   
+  // Calcular estadísticas para el tipo de formulario seleccionado
+  const stats = {
+    total: filteredData.length,
+    positivos: filteredData.filter(f => f.status === 'Todo positivo').length,
+    negativos: filteredData.filter(f => f.status === 'Contiene item negativo').length
+  };
+
+  // Datos para el gráfico de barras (formularios por día)
+  const formsByDay = FORM_TYPES.reduce((acc, type) => {
+    // Crear un Map para cada tipo de formulario con días como claves
+    const dayMap = new Map();
+    
+    // Rango de fechas
+    const days = [];
+    const tempDate = new Date(startDate);
+    while (tempDate <= endDate) {
+      const dateStr = tempDate.toISOString().split('T')[0];
+      dayMap.set(dateStr, 0);
+      days.push(dateStr);
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+    
+    // Contar formularios por día
+    formResponses
+      .filter(form => form.form_type === type)
+      .forEach(form => {
+        const dateStr = new Date(form.date).toISOString().split('T')[0];
+        if (dayMap.has(dateStr)) {
+          dayMap.set(dateStr, dayMap.get(dateStr) + 1);
+        }
+      });
+      
+    // Formatear datos para el gráfico
+    const chartData = Array.from(dayMap.entries()).map(([date, count]) => {
+      const displayDate = new Date(date).toLocaleDateString('es-ES', { weekday: 'short' });
+      return { name: displayDate, formularios: count };
+    });
+    
+    acc[type] = chartData;
+    return acc;
+  }, {} as Record<string, Array<{ name: string, formularios: number }>>);
+
+  // Datos para el gráfico de distribución
+  const distribution = [
+    { name: 'Todo positivo', value: stats.positivos },
+    { name: 'Contiene item negativo', value: stats.negativos },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between flex-wrap gap-4">
@@ -153,10 +124,6 @@ const Dashboard = () => {
             endDate={endDate}
             onDateChange={handleDateChange}
           />
-          <NegativeEventFilter 
-            value={negativeEventFilter}
-            onChange={setNegativeEventFilter}
-          />
         </div>
       </div>
       
@@ -169,59 +136,46 @@ const Dashboard = () => {
           ))}
         </TabsList>
 
-        {FORM_TYPES.map((type) => {
-          const typeData = formDataByType[type as keyof typeof formDataByType];
-          return (
-            <TabsContent key={type} value={type} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard
-                  title="Total Formularios"
-                  value={typeData.stats.total}
-                  description="Últimos 7 días"
-                  icon={<FileText />}
-                  trend={{ value: 12, positive: true }}
-                />
-                <StatCard
-                  title="Eventos Negativos"
-                  value={typeData.stats.eventos}
-                  description={`${Math.round(typeData.stats.eventos / typeData.stats.total * 100)}% del total`}
-                  icon={<AlertTriangle className="text-danger-500" />}
-                  trend={{ value: 2, positive: false }}
-                />
-                <StatCard
-                  title="Revisados"
-                  value={typeData.stats.revisados}
-                  description={`${Math.round(typeData.stats.revisados / typeData.stats.total * 100)}% del total`}
-                  icon={<CheckSquare className="text-green-500" />}
-                  trend={{ value: 8, positive: true }}
-                />
-                <StatCard
-                  title="Pendientes"
-                  value={typeData.stats.pendientes}
-                  description={`${Math.round(typeData.stats.pendientes / typeData.stats.total * 100)}% del total`}
-                  icon={<BarChart2 />}
-                  trend={{ value: 5, positive: false }}
-                />
-              </div>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <BarChart 
-                  data={typeData.byDay} 
-                  title="Formularios por día" 
-                  dataKey="formularios" 
-                  xAxisKey="name"
-                />
-                <PieChart 
-                  data={typeData.distribution} 
-                  title={`Distribución de ${type}`} 
-                  dataKey="value"
-                  nameKey="name"
-                  colors={colorsPie}
-                />
-              </div>
-            </TabsContent>
-          );
-        })}
+        {FORM_TYPES.map((type) => (
+          <TabsContent key={type} value={type} className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <StatCard
+                title="Total Formularios"
+                value={stats.total}
+                description="Último período"
+                icon={<FileText />}
+              />
+              <StatCard
+                title="Todo positivo"
+                value={stats.positivos}
+                description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`}
+                icon={<CheckSquare className="text-green-500" />}
+              />
+              <StatCard
+                title="Con items negativos"
+                value={stats.negativos}
+                description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`}
+                icon={<AlertTriangle className="text-danger-500" />}
+              />
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-2">
+              <BarChart 
+                data={formsByDay[type] || []} 
+                title="Formularios por día" 
+                dataKey="formularios" 
+                xAxisKey="name"
+              />
+              <PieChart 
+                data={distribution} 
+                title="Distribución de estados" 
+                dataKey="value"
+                nameKey="name"
+                colors={colorsPie}
+              />
+            </div>
+          </TabsContent>
+        ))}
       </Tabs>
 
       <Card className="p-4">

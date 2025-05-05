@@ -9,158 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      form_field_values: {
+      form_responses: {
         Row: {
           created_at: string | null
-          field_id: string
+          date: string
+          document_link: string | null
+          form_type: string
           id: string
-          submission_id: string
-          value: string | null
+          status: string
+          worker_name: string
         }
         Insert: {
           created_at?: string | null
-          field_id: string
+          date?: string
+          document_link?: string | null
+          form_type: string
           id?: string
-          submission_id: string
-          value?: string | null
+          status: string
+          worker_name: string
         }
         Update: {
           created_at?: string | null
-          field_id?: string
+          date?: string
+          document_link?: string | null
+          form_type?: string
           id?: string
-          submission_id?: string
-          value?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_field_values_field_id_fkey"
-            columns: ["field_id"]
-            isOneToOne: false
-            referencedRelation: "form_fields"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "form_field_values_submission_id_fkey"
-            columns: ["submission_id"]
-            isOneToOne: false
-            referencedRelation: "form_submissions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      form_fields: {
-        Row: {
-          created_at: string | null
-          field_order: number
-          field_type: string
-          id: string
-          is_negative_indicator: boolean | null
-          label: string
-          name: string
-          options: string[] | null
-          required: boolean | null
-          template_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          field_order: number
-          field_type: string
-          id?: string
-          is_negative_indicator?: boolean | null
-          label: string
-          name: string
-          options?: string[] | null
-          required?: boolean | null
-          template_id: string
-        }
-        Update: {
-          created_at?: string | null
-          field_order?: number
-          field_type?: string
-          id?: string
-          is_negative_indicator?: boolean | null
-          label?: string
-          name?: string
-          options?: string[] | null
-          required?: boolean | null
-          template_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_fields_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "form_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      form_submissions: {
-        Row: {
-          drive_link: string | null
-          has_negative_events: boolean | null
-          id: string
-          review_status: string | null
-          submission_date: string | null
-          template_id: string
-          user_id: string
-        }
-        Insert: {
-          drive_link?: string | null
-          has_negative_events?: boolean | null
-          id?: string
-          review_status?: string | null
-          submission_date?: string | null
-          template_id: string
-          user_id: string
-        }
-        Update: {
-          drive_link?: string | null
-          has_negative_events?: boolean | null
-          id?: string
-          review_status?: string | null
-          submission_date?: string | null
-          template_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_submissions_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "form_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "form_submissions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      form_templates: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
+          status?: string
+          worker_name?: string
         }
         Relationships: []
       }

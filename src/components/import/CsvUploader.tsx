@@ -3,12 +3,12 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Check, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { FormEntry } from '../forms/FormsTable';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { FormResponse } from '@/types/forms';
 
 interface CsvUploaderProps {
-  onImport: (data: FormEntry[]) => void;
+  onImport: (data: FormResponse[]) => void;
 }
 
 export function CsvUploader({ onImport }: CsvUploaderProps) {
@@ -47,54 +47,44 @@ export function CsvUploader({ onImport }: CsvUploaderProps) {
     }, 200);
 
     try {
-      // Aquí simularemos el proceso de lectura de un archivo CSV y creación de datos
-      // En una implementación real, analizaríamos el contenido del archivo
-      
-      // Obtener usuarios y plantillas para crear envíos simulados
-      const { data: users } = await supabase.from('users').select('id, name');
-      const { data: templates } = await supabase.from('form_templates').select('id, name');
-      
-      if (!users?.length || !templates?.length) {
-        throw new Error('No users or templates found');
-      }
+      // Aquí simularemos el proceso de lectura de un archivo CSV y creación de datos simulados
+      const formTypes = ['Inspección de seguridad', 'Reporte diario', 'Control de calidad', 'Incidentes', 'Entrega de EPP'];
+      const workerNames = ['Juan Pérez', 'María López', 'Carlos Rodríguez', 'Ana Martínez', 'Roberto Díaz', 'Luisa Fernández'];
+      const statuses = ['Todo positivo', 'Contiene item negativo'];
       
       // Generar envíos simulados
-      const formTypeNames = templates.map(t => t.name);
-      const sampleData: FormEntry[] = [];
+      const sampleData: FormResponse[] = [];
       
       // Crear entre 5-10 registros aleatorios
       const entriesCount = Math.floor(Math.random() * 6) + 5;
       
       for (let i = 0; i < entriesCount; i++) {
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-        const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
-        const hasNegativeEvent = Math.random() > 0.7;
-        const reviewStatus = Math.random() > 0.5 ? 'reviewed' : 'pending';
+        const randomWorkerName = workerNames[Math.floor(Math.random() * workerNames.length)];
+        const randomFormType = formTypes[Math.floor(Math.random() * formTypes.length)];
+        const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+        
+        // Fecha aleatoria en los últimos 30 días
+        const randomDate = new Date();
+        randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 30));
+        const formattedDate = randomDate.toISOString().split('T')[0];
         
         // Insertar en la base de datos
-        const { data: submission } = await supabase
-          .from('form_submissions')
+        const { data: newResponse, error } = await supabase
+          .from('form_responses')
           .insert({
-            template_id: randomTemplate.id,
-            user_id: randomUser.id,
-            has_negative_events: hasNegativeEvent,
-            review_status: reviewStatus,
-            drive_link: 'https://drive.google.com/file'
+            worker_name: randomWorkerName,
+            form_type: randomFormType,
+            date: formattedDate,
+            status: randomStatus as 'Todo positivo' | 'Contiene item negativo',
+            document_link: `https://drive.google.com/file/d/example${i+1}`
           })
-          .select('id, submission_date')
+          .select()
           .single();
         
-        if (submission) {
-          // Agregar a la interfaz de usuario
-          sampleData.push({
-            id: submission.id,
-            workerName: randomUser.name,
-            formType: randomTemplate.name,
-            date: new Date(submission.submission_date).toLocaleDateString(),
-            hasNegativeEvent,
-            driveLink: 'https://drive.google.com/file',
-            reviewStatus: reviewStatus as 'reviewed' | 'pending',
-          });
+        if (error) throw error;
+        
+        if (newResponse) {
+          sampleData.push(newResponse);
         }
       }
       

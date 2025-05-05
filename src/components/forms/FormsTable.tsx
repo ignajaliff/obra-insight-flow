@@ -11,19 +11,10 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Link, FileText } from 'lucide-react';
-
-export interface FormEntry {
-  id: string;
-  workerName: string;
-  formType: string;
-  date: string;
-  hasNegativeEvent: boolean;
-  driveLink: string;
-  reviewStatus: 'reviewed' | 'pending';
-}
+import { FormResponse } from '@/types/forms';
 
 interface FormsTableProps {
-  forms: FormEntry[];
+  forms: FormResponse[];
 }
 
 export function FormsTable({ forms }: FormsTableProps) {
@@ -35,7 +26,6 @@ export function FormsTable({ forms }: FormsTableProps) {
             <TableHead>Obrero</TableHead>
             <TableHead>Tipo de formulario</TableHead>
             <TableHead>Fecha</TableHead>
-            <TableHead>Evento Negativo</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Documento</TableHead>
           </TableRow>
@@ -43,31 +33,24 @@ export function FormsTable({ forms }: FormsTableProps) {
         <TableBody>
           {forms.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
+              <TableCell colSpan={5} className="h-24 text-center">
                 No se encontraron resultados.
               </TableCell>
             </TableRow>
           ) : (
             forms.map((form) => (
               <TableRow key={form.id}>
-                <TableCell className="font-medium">{form.workerName}</TableCell>
-                <TableCell>{form.formType}</TableCell>
-                <TableCell>{form.date}</TableCell>
+                <TableCell className="font-medium">{form.worker_name}</TableCell>
+                <TableCell>{form.form_type}</TableCell>
+                <TableCell>{new Date(form.date).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  {form.hasNegativeEvent ? (
-                    <Badge variant="destructive">Sí</Badge>
-                  ) : (
-                    <Badge variant="outline">No</Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={form.reviewStatus === 'reviewed' ? 'secondary' : 'outline'}>
-                    {form.reviewStatus === 'reviewed' ? 'Revisado' : 'Pendiente'}
+                  <Badge variant={form.status === 'Todo positivo' ? 'outline' : 'destructive'}>
+                    {form.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <a
-                    href={form.driveLink}
+                    href={form.document_link}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-brand-700 hover:text-brand-800"
