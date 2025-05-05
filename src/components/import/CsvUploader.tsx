@@ -50,7 +50,7 @@ export function CsvUploader({ onImport }: CsvUploaderProps) {
       // Aquí simularemos el proceso de lectura de un archivo CSV y creación de datos simulados
       const formTypes = ['Inspección de seguridad', 'Reporte diario', 'Control de calidad', 'Incidentes', 'Entrega de EPP'];
       const workerNames = ['Juan Pérez', 'María López', 'Carlos Rodríguez', 'Ana Martínez', 'Roberto Díaz', 'Luisa Fernández'];
-      const statuses = ['Todo positivo', 'Contiene item negativo'];
+      const statuses = ['Todo positivo', 'Contiene item negativo'] as const;
       
       // Generar envíos simulados
       const sampleData: FormResponse[] = [];
@@ -75,7 +75,7 @@ export function CsvUploader({ onImport }: CsvUploaderProps) {
             worker_name: randomWorkerName,
             form_type: randomFormType,
             date: formattedDate,
-            status: randomStatus as 'Todo positivo' | 'Contiene item negativo',
+            status: randomStatus,
             document_link: `https://drive.google.com/file/d/example${i+1}`
           })
           .select()
@@ -84,7 +84,7 @@ export function CsvUploader({ onImport }: CsvUploaderProps) {
         if (error) throw error;
         
         if (newResponse) {
-          sampleData.push(newResponse);
+          sampleData.push(newResponse as FormResponse);
         }
       }
       

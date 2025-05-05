@@ -2,21 +2,21 @@
 import React, { useState } from 'react';
 import { CsvUploader } from '@/components/import/CsvUploader';
 import { ImportPreview } from '@/components/import/ImportPreview';
-import { FormEntry } from '@/components/forms/FormsTable';
-import { useToast } from '@/components/ui/use-toast';
+import { FormResponse } from '@/types/forms';
+import { useToast } from '@/hooks/use-toast';
 
 const ImportData = () => {
-  const [previewData, setPreviewData] = useState<FormEntry[]>([]);
+  const [previewData, setPreviewData] = useState<FormResponse[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
-  const handleImport = (data: FormEntry[]) => {
+  const handleImport = (data: FormResponse[]) => {
     setPreviewData(data);
     setShowPreview(true);
   };
 
   const handleConfirmImport = () => {
-    // In a real app, we'd save the data to a database here
+    // En una app real, aquí guardaríamos los datos en la base de datos
     toast({
       title: "Importación exitosa",
       description: `Se importaron ${previewData.length} registros correctamente.`,
@@ -87,7 +87,7 @@ const ImportData = () => {
           <li>nombre_obrero: Nombre completo del obrero</li>
           <li>tipo_formulario: Tipo de formulario</li>
           <li>fecha: Formato DD/MM/YYYY</li>
-          <li>evento_negativo: Valores "sí" o "no"</li>
+          <li>estado: Valores "Todo positivo" o "Contiene item negativo"</li>
           <li>enlace_drive: URL completa al documento en Google Drive</li>
         </ul>
       </div>
