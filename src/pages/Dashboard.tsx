@@ -54,16 +54,20 @@ const Dashboard = () => {
         
         if (formTypesError) throw formTypesError;
         
-        // Obtener respuestas de formulario
+        // Obtener respuestas de formulario con información de la empresa
         const { data: responsesData, error: responsesError } = await supabase
           .from('form_responses')
-          .select('*');
+          .select(`
+            *,
+            companies (name)
+          `);
         
         if (responsesError) throw responsesError;
         
-        // Asegurar que los datos cumplen con el tipo FormResponse
+        // Asegurar que los datos cumplen con el tipo FormResponse y añadir nombre de empresa
         const typedData: FormResponse[] = responsesData.map(item => ({
           ...item,
+          company_name: item.companies ? item.companies.name : null,
           status: item.status as 'Todo positivo' | 'Contiene item negativo'
         }));
         

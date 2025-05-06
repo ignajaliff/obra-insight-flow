@@ -32,3 +32,24 @@ export interface CompanyWithFormTypes extends Company {
   formTypes: FormType[];
   formCount: number;
 }
+
+export interface FormTemplate {
+  id: string;
+  name: string;
+  description: string;
+  company_id?: string;
+  fields: FormField[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FormField {
+  id: string;
+  name: string;
+  label: string;
+  type: 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'textarea';
+  required: boolean;
+  options?: string[];
+  isNegativeIndicator?: boolean;
+  field_order: number;
+}

@@ -15,29 +15,10 @@ import { FormTemplateEditor } from '@/components/forms/FormTemplateEditor';
 import { FormTemplateList } from '@/components/forms/FormTemplateList';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { FormTemplate, FormField } from '@/types/forms';
 
 // Tipos de formularios predefinidos
 export type FieldType = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'textarea';
-
-export interface FormField {
-  id: string;
-  name: string;
-  label: string;
-  type: FieldType;
-  required: boolean;
-  options?: string[]; // Para campos select
-  isNegativeIndicator?: boolean; // Indica si este campo puede contener un valor negativo
-  field_order: number; // Hacer este campo obligatorio
-}
-
-export interface FormTemplate {
-  id: string;
-  name: string;
-  description: string;
-  fields: FormField[];
-  created_at: string;
-  updated_at: string;
-}
 
 const FormAdmin = () => {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
@@ -85,6 +66,7 @@ const FormAdmin = () => {
             id: template.id,
             name: template.name,
             description: template.description || '',
+            company_id: template.company_id,
             fields,
             created_at: template.created_at,
             updated_at: template.updated_at
@@ -224,6 +206,7 @@ const FormAdmin = () => {
         id: updatedTemplate.id,
         name: updatedTemplate.name,
         description: updatedTemplate.description || '',
+        company_id: updatedTemplate.company_id,
         fields: formattedFields,
         created_at: updatedTemplate.created_at,
         updated_at: updatedTemplate.updated_at

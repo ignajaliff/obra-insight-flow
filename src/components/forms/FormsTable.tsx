@@ -10,14 +10,15 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Link, FileText } from 'lucide-react';
+import { Link, FileText, Building } from 'lucide-react';
 import { FormResponse } from '@/types/forms';
 
 interface FormsTableProps {
   forms: FormResponse[];
+  showCompany?: boolean;
 }
 
-export function FormsTable({ forms }: FormsTableProps) {
+export function FormsTable({ forms, showCompany = true }: FormsTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -25,6 +26,7 @@ export function FormsTable({ forms }: FormsTableProps) {
           <TableRow>
             <TableHead>Obrero</TableHead>
             <TableHead>Tipo de formulario</TableHead>
+            {showCompany && <TableHead>Empresa</TableHead>}
             <TableHead>Fecha</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Documento</TableHead>
@@ -33,7 +35,7 @@ export function FormsTable({ forms }: FormsTableProps) {
         <TableBody>
           {forms.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
+              <TableCell colSpan={showCompany ? 6 : 5} className="h-24 text-center">
                 No se encontraron resultados.
               </TableCell>
             </TableRow>
@@ -42,6 +44,11 @@ export function FormsTable({ forms }: FormsTableProps) {
               <TableRow key={form.id}>
                 <TableCell className="font-medium">{form.worker_name}</TableCell>
                 <TableCell>{form.form_type}</TableCell>
+                {showCompany && (
+                  <TableCell>
+                    {form.company_name || <span className="text-muted-foreground italic">No asignada</span>}
+                  </TableCell>
+                )}
                 <TableCell>{new Date(form.date).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <Badge variant={form.status === 'Todo positivo' ? 'outline' : 'destructive'}>

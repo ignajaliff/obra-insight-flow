@@ -33,6 +33,56 @@ export type Database = {
         }
         Relationships: []
       }
+      form_fields: {
+        Row: {
+          created_at: string | null
+          field_order: number | null
+          field_type: string
+          id: string
+          is_negative_indicator: boolean | null
+          label: string
+          name: string
+          options: Json | null
+          required: boolean | null
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_order?: number | null
+          field_type: string
+          id?: string
+          is_negative_indicator?: boolean | null
+          label: string
+          name: string
+          options?: Json | null
+          required?: boolean | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_order?: number | null
+          field_type?: string
+          id?: string
+          is_negative_indicator?: boolean | null
+          label?: string
+          name?: string
+          options?: Json | null
+          required?: boolean | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "form_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_responses: {
         Row: {
           company_id: string | null
@@ -83,6 +133,41 @@ export type Database = {
             columns: ["form_type_id"]
             isOneToOne: false
             referencedRelation: "form_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_templates: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
