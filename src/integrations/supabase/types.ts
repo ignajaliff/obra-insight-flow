@@ -35,6 +35,7 @@ export type Database = {
       }
       form_responses: {
         Row: {
+          company_id: string | null
           created_at: string | null
           date: string
           document_link: string | null
@@ -46,6 +47,7 @@ export type Database = {
           worker_name: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           date?: string
           document_link?: string | null
@@ -57,6 +59,7 @@ export type Database = {
           worker_name: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           date?: string
           document_link?: string | null
@@ -68,6 +71,13 @@ export type Database = {
           worker_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "form_responses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "form_responses_form_type_id_fkey"
             columns: ["form_type_id"]

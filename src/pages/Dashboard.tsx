@@ -8,6 +8,7 @@ import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { NegativeEventFilter } from '@/components/forms/NegativeEventFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
 import { CompaniesSection } from '@/components/dashboard/CompaniesSection';
+import { CompanySelector } from '@/components/forms/CompanySelector';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,26 +22,47 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
-  const [companies, setCompanies] = useState<CompanyWithFormTypes[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companiesWithStats, setCompaniesWithStats] = useState<CompanyWithFormTypes[]>([]);
   const [loading, setLoading] = useState(true);
   const [companiesLoading, setCompaniesLoading] = useState(true);
   const [negativeFilter, setNegativeFilter] = useState<'all' | 'yes' | 'no'>('all');
   const { toast } = useToast();
   
+  // Cargar formularios y empresas
   useEffect(() => {
-    const fetchFormResponses = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        setCompaniesLoading(true);
+        
+        // Obtener empresas
+        const { data: companiesData, error: companiesError } = await supabase
+          .from('companies')
+          .select('*');
+        
+        if (companiesError) throw companiesError;
+        setCompanies(companiesData);
+        
+        // Obtener tipos de formulario
+        const { data: formTypesData, error: formTypesError } = await supabase
+          .from('form_types')
+          .select('*');
+        
+        if (formTypesError) throw formTypesError;
+        
+        // Obtener respuestas de formulario
+        const { data: responsesData, error: responsesError } = await supabase
           .from('form_responses')
           .select('*');
         
-        if (error) throw error;
+        if (responsesError) throw responsesError;
         
         // Asegurar que los datos cumplen con el tipo FormResponse
-        const typedData: FormResponse[] = data.map(item => ({
+        const typedData: FormResponse[] = responsesData.map(item => ({
           ...item,
           status: item.status as 'Todo positivo' | 'Contiene item negativo'
         }));
@@ -50,60 +72,18 @@ const Dashboard = () => {
         // Extraer todos los tipos de formularios únicos
         const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
         setFormTypes(['Todos', ...uniqueFormTypes]);
-      } catch (error) {
-        console.error('Error fetching form responses:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudieron cargar los datos del dashboard",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    const fetchCompanies = async () => {
-      try {
-        setCompaniesLoading(true);
         
-        // Obtenemos todas las empresas
-        const { data: companiesData, error: companiesError } = await supabase
-          .from('companies')
-          .select('*');
-        
-        if (companiesError) throw companiesError;
-        
-        // Obtenemos todos los tipos de formulario
-        const { data: formTypesData, error: formTypesError } = await supabase
-          .from('form_types')
-          .select('*');
-        
-        if (formTypesError) throw formTypesError;
-        
-        // Obtenemos el conteo de formularios por tipo
-        const { data: formCountData, error: formCountError } = await supabase
-          .from('form_responses')
-          .select('form_type, count')
-          .count();
-        
-        if (formCountError) throw formCountError;
-        
-        // Combinar datos para crear CompanyWithFormTypes[]
-        const enhancedCompanies: CompanyWithFormTypes[] = companiesData.map((company: Company) => {
+        // Preparar datos de empresas con estadísticas
+        const enhancedCompanies = companiesData.map((company: Company) => {
           // Filtrar tipos de formulario para esta empresa
           const companyFormTypes = formTypesData.filter(
             (formType: FormType) => formType.company_id === company.id
           );
           
-          // Contar formularios totales para la empresa
-          let formCount = 0;
-          companyFormTypes.forEach((formType) => {
-            // Buscar formularios que coincidan con este tipo
-            const typeCount = formResponses.filter(
-              form => form.form_type === formType.name
-            ).length;
-            formCount += typeCount;
-          });
+          // Contar formularios de esta empresa
+          const formCount = typedData.filter(
+            form => form.company_id === company.id
+          ).length;
           
           return {
             ...company,
@@ -112,22 +92,22 @@ const Dashboard = () => {
           };
         });
         
-        setCompanies(enhancedCompanies);
+        setCompaniesWithStats(enhancedCompanies);
         
       } catch (error) {
-        console.error('Error fetching companies data:', error);
+        console.error('Error fetching data:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "No se pudieron cargar los datos de empresas",
+          description: "No se pudieron cargar los datos",
         });
       } finally {
+        setLoading(false);
         setCompaniesLoading(false);
       }
     };
     
-    fetchFormResponses();
-    fetchCompanies();
+    fetchData();
   }, [toast]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
@@ -135,73 +115,51 @@ const Dashboard = () => {
     if (end) setEndDate(end);
   };
 
-  // Filtrar datos por tipo de formulario, rango de fecha y estado
-  const getFilteredData = (formType: string) => {
+  const handleCompanySelect = (companyId: string | null) => {
+    setSelectedCompanyId(companyId);
+    // Resetear la selección de tipo de formulario
+    setSelectedFormType('Todos');
+  };
+
+  // Filtrar datos por empresa, tipo de formulario, rango de fecha y estado
+  const getFilteredData = () => {
     return formResponses.filter(form => {
       const formDate = new Date(form.date);
       const isInDateRange = formDate >= startDate && formDate <= endDate;
-      const matchesType = formType === 'Todos' || form.form_type === formType;
+      const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
+      const matchesCompany = selectedCompanyId === null || form.company_id === selectedCompanyId;
       
       const matchesStatus = negativeFilter === 'all' || 
         (negativeFilter === 'yes' && form.status === 'Contiene item negativo') ||
         (negativeFilter === 'no' && form.status === 'Todo positivo');
       
-      return isInDateRange && matchesType && matchesStatus;
+      return isInDateRange && matchesType && matchesCompany && matchesStatus;
     });
   };
   
-  // Datos filtrados para el tipo de formulario seleccionado
-  const filteredData = getFilteredData(selectedFormType);
+  // Obtener formularios filtrados
+  const filteredData = getFilteredData();
   
-  // Calcular estadísticas para el tipo de formulario seleccionado
+  // Calcular estadísticas para los formularios filtrados
   const stats = {
     total: filteredData.length,
     positivos: filteredData.filter(f => f.status === 'Todo positivo').length,
     negativos: filteredData.filter(f => f.status === 'Contiene item negativo').length
   };
 
-  // Datos para el gráfico de barras (formularios por día)
-  const formsByDay = formTypes.reduce((acc, type) => {
-    if (type === 'Todos') return acc;
-    
-    // Crear un Map para cada tipo de formulario con días como claves
-    const dayMap = new Map();
-    
-    // Rango de fechas
-    const days = [];
-    const tempDate = new Date(startDate);
-    while (tempDate <= endDate) {
-      const dateStr = tempDate.toISOString().split('T')[0];
-      dayMap.set(dateStr, 0);
-      days.push(dateStr);
-      tempDate.setDate(tempDate.getDate() + 1);
+  // Obtener tipos de formulario relevantes según la empresa seleccionada
+  const getRelevantFormTypes = () => {
+    if (selectedCompanyId) {
+      // Si hay una empresa seleccionada, mostrar solo sus tipos de formulario
+      const companyFormTypes = companiesWithStats.find(c => c.id === selectedCompanyId)?.formTypes || [];
+      return ['Todos', ...companyFormTypes.map(ft => ft.name)];
     }
-    
-    // Contar formularios por día
-    formResponses
-      .filter(form => form.form_type === type)
-      .forEach(form => {
-        const dateStr = new Date(form.date).toISOString().split('T')[0];
-        if (dayMap.has(dateStr)) {
-          dayMap.set(dateStr, dayMap.get(dateStr) + 1);
-        }
-      });
-      
-    // Formatear datos para el gráfico
-    const chartData = Array.from(dayMap.entries()).map(([date, count]) => {
-      const displayDate = new Date(date).toLocaleDateString('es-ES', { weekday: 'short' });
-      return { name: displayDate, formularios: count };
-    });
-    
-    acc[type] = chartData;
-    return acc;
-  }, {} as Record<string, Array<{ name: string, formularios: number }>>);
+    // Si no hay empresa seleccionada, mostrar todos los tipos de formulario
+    return formTypes;
+  };
 
-  // Datos para el gráfico de distribución
-  const distribution = [
-    { name: 'Todo positivo', value: stats.positivos },
-    { name: 'Contiene item negativo', value: stats.negativos },
-  ];
+  // Lista de tipos de formulario relevantes
+  const relevantFormTypes = getRelevantFormTypes();
 
   return (
     <div className="space-y-6">
@@ -220,26 +178,35 @@ const Dashboard = () => {
       </div>
       
       {/* Sección de Empresas */}
-      <CompaniesSection companies={companies} isLoading={companiesLoading} />
+      <CompaniesSection companies={companiesWithStats} isLoading={companiesLoading} />
       
-      <div className="mb-4">
-        <NegativeEventFilter 
-          value={negativeFilter}
-          onChange={setNegativeFilter}
-        />
-      </div>
-      
-      <Tabs defaultValue={formTypes[0]} onValueChange={setSelectedFormType}>
-        <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
-          {formTypes.map((type) => (
-            <TabsTrigger key={type} value={type} className="whitespace-nowrap">
-              {type}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between gap-4">
+          <h2 className="text-xl font-bold">Formularios por empresa</h2>
+          <CompanySelector 
+            companies={companies}
+            selectedCompanyId={selectedCompanyId}
+            onSelect={handleCompanySelect}
+          />
+        </div>
+        
+        <div className="mb-4">
+          <NegativeEventFilter 
+            value={negativeFilter}
+            onChange={setNegativeFilter}
+          />
+        </div>
+        
+        <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>
+          <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
+            {relevantFormTypes.map((type) => (
+              <TabsTrigger key={type} value={type} className="whitespace-nowrap">
+                {type}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {formTypes.map((type) => (
-          <TabsContent key={type} value={type} className="space-y-6">
+          <TabsContent value={selectedFormType} className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <StatCard
                 title="Total Formularios"
@@ -262,7 +229,10 @@ const Dashboard = () => {
             </div>
             
             <PieChart 
-              data={distribution} 
+              data={[
+                { name: 'Todo positivo', value: stats.positivos },
+                { name: 'Contiene item negativo', value: stats.negativos }
+              ]} 
               title="Distribución de estados" 
               dataKey="value"
               nameKey="name"
@@ -275,8 +245,8 @@ const Dashboard = () => {
               <FormsTable forms={filteredData} />
             </div>
           </TabsContent>
-        ))}
-      </Tabs>
+        </Tabs>
+      </div>
 
       <Card className="p-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

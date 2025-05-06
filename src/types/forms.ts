@@ -4,6 +4,7 @@ export interface FormResponse {
   worker_name: string;
   form_type: string;
   form_type_id?: string;
+  company_id?: string;
   date: string;
   status: 'Todo positivo' | 'Contiene item negativo';
   document_link?: string;
