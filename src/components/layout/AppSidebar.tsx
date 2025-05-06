@@ -7,7 +7,9 @@ import {
   Upload, 
   Users, 
   Settings,
-  Building
+  Building,
+  List,
+  PlusSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,14 +33,26 @@ const navItems = [
     icon: BarChart2
   },
   {
-    title: "Empresas",
-    path: "/empresas",
-    icon: Building
-  },
-  {
     title: "Formularios",
     path: "/formularios",
-    icon: FileText
+    icon: FileText,
+    children: [
+      {
+        title: "Lista de formularios",
+        path: "/formularios",
+        icon: List
+      },
+      {
+        title: "Mis formularios",
+        path: "/formularios/mis-formularios",
+        icon: FileText
+      },
+      {
+        title: "Crear formulario",
+        path: "/formularios/crear",
+        icon: PlusSquare
+      }
+    ]
   },
   {
     title: "Importar datos",
@@ -75,18 +89,47 @@ export function AppSidebar() {
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link 
-                      to={item.path}
-                      className={cn(
-                        "w-full flex items-center gap-3",
-                        currentPath === item.path && "bg-sidebar-accent text-primary"
-                      )}
-                    >
-                      <item.icon size={20} />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                  {!item.children ? (
+                    <SidebarMenuButton asChild>
+                      <Link 
+                        to={item.path}
+                        className={cn(
+                          "w-full flex items-center gap-3",
+                          currentPath === item.path && "bg-sidebar-accent text-primary"
+                        )}
+                      >
+                        <item.icon size={20} />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  ) : (
+                    <>
+                      <SidebarGroupLabel className="flex items-center gap-3">
+                        <item.icon size={20} />
+                        <span>{item.title}</span>
+                      </SidebarGroupLabel>
+                      <SidebarGroupContent className="ml-6 mt-2">
+                        {item.children.map((child) => (
+                          <SidebarMenuItem key={child.title}>
+                            <SidebarMenuButton asChild>
+                              <Link
+                                to={child.path}
+                                className={cn(
+                                  "w-full flex items-center gap-3",
+                                  (currentPath === child.path ||
+                                    (currentPath.startsWith(child.path) && child.path !== '/formularios')) && 
+                                    "bg-sidebar-accent text-primary"
+                                )}
+                              >
+                                <child.icon size={16} />
+                                <span>{child.title}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarGroupContent>
+                    </>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

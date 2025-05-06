@@ -1,3 +1,4 @@
+
 export interface FormResponse {
   id: string;
   worker_name: string;
@@ -10,9 +11,6 @@ export interface FormResponse {
   created_at?: string;
 }
 
-// Definiciones eliminadas ya que las tablas fueron eliminadas
-// FormType, Company, CompanyWithFormTypes
-
 export interface FormTemplate {
   id: string;
   name: string;
@@ -20,15 +18,24 @@ export interface FormTemplate {
   fields: FormField[];
   created_at: string;
   updated_at: string;
+  public_url?: string;
 }
 
 export interface FormField {
   id: string;
   name: string;
   label: string;
-  type: 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'textarea';
+  type: 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'textarea' | 'signature';
   required: boolean;
   options?: string[];
   isNegativeIndicator?: boolean;
   field_order: number;
+}
+
+export interface FormSubmission {
+  id?: string;
+  templateId: string;
+  values: Record<string, any>;
+  created_at?: string;
+  empresa?: string;
 }

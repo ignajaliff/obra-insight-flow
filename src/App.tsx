@@ -15,6 +15,9 @@ import FormFillPage from "./pages/FormFillPage";
 import Login from "./pages/Login";
 import UsersManagement from "./pages/UsersManagement";
 import Index from "./pages/Index";
+import MyForms from "./pages/MyForms";
+import CreateForm from "./pages/CreateForm";
+import FillForm from "./pages/FillForm";
 
 const queryClient = new QueryClient();
 
@@ -27,12 +30,17 @@ const App = () => (
         <Routes>
           {/* Authentication Routes */}
           <Route path="/login" element={<Login />} />
+          
+          {/* Public Form Route */}
+          <Route path="/formularios/rellenar/:templateId" element={<FillForm />} />
 
           {/* Protected Routes */}
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/formularios" element={<FormsList />} />
+            <Route path="/formularios/mis-formularios" element={<MyForms />} />
+            <Route path="/formularios/crear" element={<CreateForm />} />
             <Route path="/formularios/disponibles" element={<AvailableForms />} />
             <Route path="/formularios/rellenar/:templateId" element={<FormFillPage />} />
             <Route path="/formularios/admin" element={<FormAdmin />} />
