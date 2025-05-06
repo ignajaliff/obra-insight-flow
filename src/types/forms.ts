@@ -38,6 +38,8 @@ export interface FormSubmission {
   values: Record<string, any>;
   created_at?: string;
   empresa?: string;
+  submitter_name?: string; 
+  template_name?: string;
 }
 
 // Add these new interfaces to fix the type errors

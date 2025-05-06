@@ -14,7 +14,7 @@ export default function FillForm() {
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    // In a real app, this would fetch from Supabase
+    // Load the template from localStorage
     const loadTemplate = () => {
       try {
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
@@ -63,7 +63,10 @@ export default function FillForm() {
       </div>
       
       {template && (
-        <FormViewer template={template} />
+        <FormViewer 
+          template={template} 
+          webhookUrl="https://primary-2yza-production.up.railway.app/webhook-test/jotform-webhook" 
+        />
       )}
     </div>
   );

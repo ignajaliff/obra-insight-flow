@@ -2,9 +2,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Edit, Trash2, FileText, Eye } from 'lucide-react';
+import { Edit, Trash2, FileText, Eye, Link as LinkIcon } from 'lucide-react';
 import { FormTemplate } from '@/types/forms';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface FormTemplateListProps {
   templates: FormTemplate[];
@@ -13,6 +14,18 @@ interface FormTemplateListProps {
 }
 
 export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateListProps) {
+  const { toast } = useToast();
+  
+  const copyFormLink = (template: FormTemplate) => {
+    const url = `${window.location.origin}/formularios/rellenar/${template.id}`;
+    navigator.clipboard.writeText(url);
+    
+    toast({
+      title: "Enlace copiado",
+      description: "El enlace del formulario ha sido copiado al portapapeles."
+    });
+  };
+  
   if (templates.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center border rounded-md bg-muted/5">
@@ -41,15 +54,22 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
               Actualizado: {new Date(template.updated_at).toLocaleDateString()}
             </p>
           </CardContent>
-          <CardFooter className="flex justify-between gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link to={`/formularios/ver/${template.id}`}>
-                <Eye size={16} className="mr-2" />
-                Ver
-              </Link>
-            </Button>
+          <CardFooter className="flex flex-col gap-2">
+            <div className="flex justify-between w-full">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/formularios/ver/${template.id}`}>
+                  <Eye size={16} className="mr-2" />
+                  Ver
+                </Link>
+              </Button>
+              
+              <Button variant="outline" size="sm" onClick={() => copyFormLink(template)}>
+                <LinkIcon size={16} className="mr-2" />
+                Copiar enlace
+              </Button>
+            </div>
             
-            <div className="flex gap-2">
+            <div className="flex justify-between w-full mt-2">
               <Button variant="outline" size="sm" onClick={() => onEdit(template)}>
                 <Edit size={16} className="mr-2" />
                 Editar
