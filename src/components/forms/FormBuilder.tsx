@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { FormField, FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -11,9 +10,11 @@ import { Plus, Trash2, Calendar, Text, List, Pen, GripVertical } from 'lucide-re
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 export function FormBuilder() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [template, setTemplate] = useState<FormTemplate>({
     id: uuidv4(),
     name: '',
@@ -138,15 +139,8 @@ export function FormBuilder() {
         description: "Tu formulario ha sido guardado correctamente."
       });
       
-      // Reset form
-      setTemplate({
-        id: uuidv4(),
-        name: '',
-        description: '',
-        fields: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      // Navigate to the form view page
+      navigate(`/formularios/ver/${template.id}`);
     } catch (error) {
       console.error("Error saving template:", error);
       toast({
