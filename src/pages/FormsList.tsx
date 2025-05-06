@@ -3,13 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
-import { FormTypesFilter, FORM_TYPES } from '@/components/forms/FormTypesFilter';
+import { FormTypesFilter } from '@/components/forms/FormTypesFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
 import { CompanySelector } from '@/components/forms/CompanySelector';
-import { Search, Building } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FormResponse, Company } from '@/types/forms';
+import { FormResponse } from '@/types/forms';
 
 const FormsList = () => {
   const [forms, setForms] = useState<FormResponse[]>([]);
@@ -19,33 +19,9 @@ const FormsList = () => {
   const [selectedFormTypes, setSelectedFormTypes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<string[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const { toast } = useToast();
-
-  // Cargar empresas desde Supabase
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('companies')
-          .select('*')
-          .order('name');
-          
-        if (error) throw error;
-        setCompanies(data || []);
-      } catch (error) {
-        console.error('Error loading companies:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudieron cargar las empresas",
-        });
-      }
-    };
-    
-    fetchCompanies();
-  }, [toast]);
 
   // Cargar formularios desde Supabase
   useEffect(() => {
@@ -55,22 +31,28 @@ const FormsList = () => {
         // Obtener información de respuestas de formularios
         const { data, error } = await supabase
           .from('form_responses')
-          .select(`
-            *,
-            companies (name)
-          `)
+          .select('*')
           .order('date', { ascending: false });
         
         if (error) throw error;
         
-        // Transformar los datos para incluir el nombre de la empresa
-        const formsWithCompanyNames = data.map(form => ({
+        // Transformar los datos si es necesario
+        const formResponses = data.map(form => ({
           ...form,
-          company_name: form.companies ? form.companies.name : null
-        }));
+          // Asegurar que status sea uno de los valores permitidos
+          status: form.status as 'Todo positivo' | 'Contiene item negativo'
+        })) as FormResponse[];
         
-        setForms(formsWithCompanyNames);
-        setFilteredForms(formsWithCompanyNames);
+        setForms(formResponses);
+        setFilteredForms(formResponses);
+        
+        // Extraer empresas únicas para el selector
+        const uniqueCompanies = Array.from(new Set(
+          formResponses
+            .map(form => form.empresa)
+            .filter(Boolean) as string[]
+        ));
+        setCompanies(uniqueCompanies);
       } catch (error) {
         console.error('Error loading forms:', error);
         toast({
@@ -99,9 +81,9 @@ const FormsList = () => {
       }
       
       // Filtrar por empresa
-      if (selectedCompanyId) {
+      if (selectedCompany) {
         filtered = filtered.filter(form => 
-          form.company_id === selectedCompanyId
+          form.empresa === selectedCompany
         );
       }
       
@@ -125,15 +107,15 @@ const FormsList = () => {
     };
     
     applyFilters();
-  }, [forms, selectedFormTypes, searchQuery, startDate, endDate, selectedCompanyId]);
+  }, [forms, selectedFormTypes, searchQuery, startDate, endDate, selectedCompany]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     setStartDate(start);
     setEndDate(end);
   };
   
-  const handleCompanySelect = (companyId: string | null) => {
-    setSelectedCompanyId(companyId);
+  const handleCompanySelect = (company: string | null) => {
+    setSelectedCompany(company);
   };
 
   return (
@@ -169,7 +151,7 @@ const FormsList = () => {
           />
           <CompanySelector
             companies={companies}
-            selectedCompanyId={selectedCompanyId}
+            selectedCompany={selectedCompany}
             onSelect={handleCompanySelect}
           />
         </div>

@@ -9,86 +9,12 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      companies: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      form_fields: {
-        Row: {
-          created_at: string | null
-          field_order: number | null
-          field_type: string
-          id: string
-          is_negative_indicator: boolean | null
-          label: string
-          name: string
-          options: Json | null
-          required: boolean | null
-          template_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          field_order?: number | null
-          field_type: string
-          id?: string
-          is_negative_indicator?: boolean | null
-          label: string
-          name: string
-          options?: Json | null
-          required?: boolean | null
-          template_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          field_order?: number | null
-          field_type?: string
-          id?: string
-          is_negative_indicator?: boolean | null
-          label?: string
-          name?: string
-          options?: Json | null
-          required?: boolean | null
-          template_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_fields_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "form_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       form_responses: {
         Row: {
-          company_id: string | null
           created_at: string | null
           date: string
           document_link: string | null
+          empresa: string | null
           form_type: string
           form_type_id: string | null
           id: string
@@ -97,10 +23,10 @@ export type Database = {
           worker_name: string
         }
         Insert: {
-          company_id?: string | null
           created_at?: string | null
           date?: string
           document_link?: string | null
+          empresa?: string | null
           form_type: string
           form_type_id?: string | null
           id?: string
@@ -109,10 +35,10 @@ export type Database = {
           worker_name: string
         }
         Update: {
-          company_id?: string | null
           created_at?: string | null
           date?: string
           document_link?: string | null
+          empresa?: string | null
           form_type?: string
           form_type_id?: string | null
           id?: string
@@ -120,92 +46,7 @@ export type Database = {
           status?: string
           worker_name?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "form_responses_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "form_responses_form_type_id_fkey"
-            columns: ["form_type_id"]
-            isOneToOne: false
-            referencedRelation: "form_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      form_templates: {
-        Row: {
-          company_id: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          company_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          company_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_templates_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      form_types: {
-        Row: {
-          company_id: string
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          company_id: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          company_id?: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_types_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       users: {
         Row: {

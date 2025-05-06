@@ -1,18 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckSquare, AlertTriangle, BarChart2, Building } from 'lucide-react';
+import { FileText, CheckSquare, AlertTriangle, BarChart2 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { BarChart } from '@/components/dashboard/BarChart';
 import { PieChart } from '@/components/dashboard/PieChart';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { NegativeEventFilter } from '@/components/forms/NegativeEventFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
-import { CompaniesSection } from '@/components/dashboard/CompaniesSection';
 import { CompanySelector } from '@/components/forms/CompanySelector';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { FormResponse, FormType, Company, CompanyWithFormTypes } from '@/types/forms';
+import { FormResponse } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
 
 // Colores para los gráficos de pie
@@ -22,52 +21,30 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [companiesWithStats, setCompaniesWithStats] = useState<CompanyWithFormTypes[]>([]);
+  const [companies, setCompanies] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
   const [negativeFilter, setNegativeFilter] = useState<'all' | 'yes' | 'no'>('all');
   const { toast } = useToast();
   
-  // Cargar formularios y empresas
+  // Cargar formularios
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setCompaniesLoading(true);
         
-        // Obtener empresas
-        const { data: companiesData, error: companiesError } = await supabase
-          .from('companies')
-          .select('*');
-        
-        if (companiesError) throw companiesError;
-        setCompanies(companiesData);
-        
-        // Obtener tipos de formulario
-        const { data: formTypesData, error: formTypesError } = await supabase
-          .from('form_types')
-          .select('*');
-        
-        if (formTypesError) throw formTypesError;
-        
-        // Obtener respuestas de formulario con información de la empresa
+        // Obtener respuestas de formulario
         const { data: responsesData, error: responsesError } = await supabase
           .from('form_responses')
-          .select(`
-            *,
-            companies (name)
-          `);
+          .select('*');
         
         if (responsesError) throw responsesError;
         
-        // Asegurar que los datos cumplen con el tipo FormResponse y añadir nombre de empresa
+        // Asegurar que los datos cumplen con el tipo FormResponse
         const typedData: FormResponse[] = responsesData.map(item => ({
           ...item,
-          company_name: item.companies ? item.companies.name : null,
           status: item.status as 'Todo positivo' | 'Contiene item negativo'
         }));
         
@@ -77,26 +54,13 @@ const Dashboard = () => {
         const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
         setFormTypes(['Todos', ...uniqueFormTypes]);
         
-        // Preparar datos de empresas con estadísticas
-        const enhancedCompanies = companiesData.map((company: Company) => {
-          // Filtrar tipos de formulario para esta empresa
-          const companyFormTypes = formTypesData.filter(
-            (formType: FormType) => formType.company_id === company.id
-          );
-          
-          // Contar formularios de esta empresa
-          const formCount = typedData.filter(
-            form => form.company_id === company.id
-          ).length;
-          
-          return {
-            ...company,
-            formTypes: companyFormTypes,
-            formCount
-          };
-        });
-        
-        setCompaniesWithStats(enhancedCompanies);
+        // Extraer todas las empresas únicas
+        const uniqueCompanies = Array.from(new Set(
+          typedData
+            .map(form => form.empresa)
+            .filter(Boolean) as string[]
+        ));
+        setCompanies(uniqueCompanies);
         
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -107,7 +71,6 @@ const Dashboard = () => {
         });
       } finally {
         setLoading(false);
-        setCompaniesLoading(false);
       }
     };
     
@@ -119,8 +82,8 @@ const Dashboard = () => {
     if (end) setEndDate(end);
   };
 
-  const handleCompanySelect = (companyId: string | null) => {
-    setSelectedCompanyId(companyId);
+  const handleCompanySelect = (company: string | null) => {
+    setSelectedCompany(company);
     // Resetear la selección de tipo de formulario
     setSelectedFormType('Todos');
   };
@@ -131,7 +94,7 @@ const Dashboard = () => {
       const formDate = new Date(form.date);
       const isInDateRange = formDate >= startDate && formDate <= endDate;
       const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
-      const matchesCompany = selectedCompanyId === null || form.company_id === selectedCompanyId;
+      const matchesCompany = selectedCompany === null || form.empresa === selectedCompany;
       
       const matchesStatus = negativeFilter === 'all' || 
         (negativeFilter === 'yes' && form.status === 'Contiene item negativo') ||
@@ -153,10 +116,14 @@ const Dashboard = () => {
 
   // Obtener tipos de formulario relevantes según la empresa seleccionada
   const getRelevantFormTypes = () => {
-    if (selectedCompanyId) {
+    if (selectedCompany) {
       // Si hay una empresa seleccionada, mostrar solo sus tipos de formulario
-      const companyFormTypes = companiesWithStats.find(c => c.id === selectedCompanyId)?.formTypes || [];
-      return ['Todos', ...companyFormTypes.map(ft => ft.name)];
+      const companyFormTypes = formResponses
+        .filter(form => form.empresa === selectedCompany)
+        .map(form => form.form_type);
+      
+      const uniqueTypes = Array.from(new Set(companyFormTypes));
+      return ['Todos', ...uniqueTypes];
     }
     // Si no hay empresa seleccionada, mostrar todos los tipos de formulario
     return formTypes;
@@ -181,15 +148,12 @@ const Dashboard = () => {
         </div>
       </div>
       
-      {/* Sección de Empresas */}
-      <CompaniesSection companies={companiesWithStats} isLoading={companiesLoading} />
-      
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <h2 className="text-xl font-bold">Formularios por empresa</h2>
           <CompanySelector 
             companies={companies}
-            selectedCompanyId={selectedCompanyId}
+            selectedCompany={selectedCompany}
             onSelect={handleCompanySelect}
           />
         </div>

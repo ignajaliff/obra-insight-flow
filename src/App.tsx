@@ -38,7 +38,6 @@ const App = () => (
             <Route path="/formularios/admin" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<UsersManagement />} />
-            <Route path="/empresas" element={<AvailableForms />} />
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
           </Route>
           <Route path="*" element={<NotFound />} />

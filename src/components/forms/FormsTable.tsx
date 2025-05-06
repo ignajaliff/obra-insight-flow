@@ -10,7 +10,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Link, FileText, Building } from 'lucide-react';
+import { Link, FileText } from 'lucide-react';
 import { FormResponse } from '@/types/forms';
 
 interface FormsTableProps {
@@ -46,7 +46,7 @@ export function FormsTable({ forms, showCompany = true }: FormsTableProps) {
                 <TableCell>{form.form_type}</TableCell>
                 {showCompany && (
                   <TableCell>
-                    {form.company_name || <span className="text-muted-foreground italic">No asignada</span>}
+                    {form.empresa || <span className="text-muted-foreground italic">No asignada</span>}
                   </TableCell>
                 )}
                 <TableCell>{new Date(form.date).toLocaleDateString()}</TableCell>
