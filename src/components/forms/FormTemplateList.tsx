@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Edit, Trash2, FileText } from 'lucide-react';
-import { FormTemplate } from '@/pages/FormAdmin';
+import { FormTemplate } from '@/types/forms';
 
 interface FormTemplateListProps {
   templates: FormTemplate[];

@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { FormTemplate, FormField } from '@/types/forms';
+import { FormTemplate, FormField, FieldType } from '@/types/forms';
 import { FormTemplateList } from '@/components/forms/FormTemplateList';
 import { FormTemplateEditor } from '@/components/forms/FormTemplateEditor';
 import { Button } from '@/components/ui/button';
@@ -171,7 +170,7 @@ const FormAdmin = () => {
               <h2 className="text-xl font-semibold mb-4">Plantillas disponibles</h2>
               <FormTemplateList
                 templates={templates}
-                onSelect={handleEditTemplate}
+                onEdit={handleEditTemplate}
                 onDelete={handleDeleteTemplate}
               />
             </CardContent>

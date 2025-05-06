@@ -39,3 +39,26 @@ export interface FormSubmission {
   created_at?: string;
   empresa?: string;
 }
+
+// Add these new interfaces to fix the type errors
+export interface Company {
+  id: string;
+  name: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+  formCount?: number;
+}
+
+export interface FormType {
+  id: string;
+  name: string;
+  description?: string;
+  company_id: string;
+}
+
+export interface CompanyWithFormTypes extends Company {
+  formTypes: FormType[];
+}
+
+export type FieldType = 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'textarea' | 'signature';

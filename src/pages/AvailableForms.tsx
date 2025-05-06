@@ -13,64 +13,80 @@ import { Button } from '@/components/ui/button';
 import { FileText, Building } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FormType, Company } from '@/types/forms';
+import { FormResponse } from '@/types/forms';
 
-interface CompanyWithFormTypes extends Company {
-  formTypes: FormType[];
+interface GroupedFormResponses {
+  empresa: string;
+  formTypes: Array<{
+    id: string;
+    name: string;
+    description?: string;
+  }>;
 }
 
 const AvailableForms = () => {
-  const [companies, setCompanies] = useState<CompanyWithFormTypes[]>([]);
+  const [companies, setCompanies] = useState<GroupedFormResponses[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchCompaniesAndFormTypes = async () => {
+    const fetchFormResponses = async () => {
       setIsLoading(true);
       try {
-        // Obtener todas las empresas
-        const { data: companiesData, error: companiesError } = await supabase
-          .from('companies')
+        // Obtener todos los formularios
+        const { data: formResponses, error: formResponsesError } = await supabase
+          .from('form_responses')
           .select('*')
-          .order('name');
+          .order('created_at', { ascending: false });
         
-        if (companiesError) throw companiesError;
+        if (formResponsesError) throw formResponsesError;
         
-        // Obtener todos los tipos de formulario
-        const { data: formTypesData, error: formTypesError } = await supabase
-          .from('form_types')
-          .select('*')
-          .order('name');
+        // Agrupar por empresa
+        const empresasMap = new Map<string, GroupedFormResponses>();
         
-        if (formTypesError) throw formTypesError;
-        
-        // Combinar datos para crear CompanyWithFormTypes[]
-        const enhancedCompanies: CompanyWithFormTypes[] = companiesData.map((company: Company) => {
-          // Filtrar tipos de formulario para esta empresa
-          const companyFormTypes = formTypesData.filter(
-            (formType: FormType) => formType.company_id === company.id
-          );
+        formResponses.forEach((response: any) => {
+          // Si la empresa no existe en el mapa, crearla
+          if (!response.empresa) return;
           
-          return {
-            ...company,
-            formTypes: companyFormTypes
-          };
+          if (!empresasMap.has(response.empresa)) {
+            empresasMap.set(response.empresa, {
+              empresa: response.empresa,
+              formTypes: []
+            });
+          }
+          
+          // Verificar si el tipo de formulario ya está agregado
+          const company = empresasMap.get(response.empresa);
+          if (company) {
+            const existingFormType = company.formTypes.find(
+              formType => formType.name === response.form_type
+            );
+            
+            if (!existingFormType) {
+              company.formTypes.push({
+                id: response.form_type_id || response.id,
+                name: response.form_type,
+                description: `Formulario de ${response.form_type}`
+              });
+            }
+          }
         });
         
-        setCompanies(enhancedCompanies);
+        // Convertir el mapa en un array para el estado
+        setCompanies(Array.from(empresasMap.values()));
       } catch (error) {
-        console.error('Error loading companies and form types:', error);
+        console.error('Error loading form responses:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "No se pudieron cargar las empresas y tipos de formularios",
+          description: "No se pudieron cargar los formularios disponibles",
         });
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchCompaniesAndFormTypes();
+    fetchFormResponses();
   }, [toast]);
 
   return (
@@ -92,10 +108,10 @@ const AvailableForms = () => {
         <div className="space-y-8">
           {companies.length > 0 ? (
             companies.map((company) => (
-              <div key={company.id} className="space-y-4">
+              <div key={company.empresa} className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
                   <Building className="text-primary" size={20} />
-                  <h2 className="text-xl font-semibold">{company.name}</h2>
+                  <h2 className="text-xl font-semibold">{company.empresa}</h2>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -110,7 +126,7 @@ const AvailableForms = () => {
                         </CardHeader>
                         <CardContent className="flex-grow">
                           <p className="text-sm text-muted-foreground">
-                            Empresa: {company.name}
+                            Empresa: {company.empresa}
                           </p>
                         </CardContent>
                         <CardFooter>
