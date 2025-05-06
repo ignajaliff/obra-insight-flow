@@ -103,11 +103,6 @@ export function FormSubmissionForm({
       setSubmissionData(submission);
       setSubmissionComplete(true);
       
-      toast({
-        title: "Enviado correctamente",
-        description: "Tu formulario ha sido enviado con éxito.",
-      });
-      
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({

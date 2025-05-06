@@ -6,7 +6,7 @@ import { FormSubmissionForm } from './FormSubmissionForm';
 import { FormSubmissionComplete } from './FormSubmissionComplete';
 
 interface FormViewerProps {
-  template?: FormTemplate;
+  template: FormTemplate;
   readOnly?: boolean;
   webhookUrl?: string;
 }
@@ -20,15 +20,12 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
   }
   
   if (submissionComplete && submissionData) {
-    return <FormSubmissionComplete 
-      template={template} 
-      submissionData={submissionData} 
-    />;
+    return <FormSubmissionComplete template={template} submissionData={submissionData} />;
   }
   
   return (
     <Card>
-      <FormSubmissionForm 
+      <FormSubmissionForm
         template={template}
         readOnly={readOnly}
         webhookUrl={webhookUrl}

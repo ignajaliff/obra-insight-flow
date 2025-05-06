@@ -1,10 +1,7 @@
 
 import React from 'react';
 import { FormTemplate, FormSubmission } from '@/types/forms';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Download } from 'lucide-react';
-import html2pdf from 'html2pdf.js';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 interface FormSubmissionCompleteProps {
   template: FormTemplate;
@@ -12,32 +9,16 @@ interface FormSubmissionCompleteProps {
 }
 
 export function FormSubmissionComplete({ template, submissionData }: FormSubmissionCompleteProps) {
-  const downloadAsPDF = () => {
-    const element = document.getElementById('form-pdf-content');
-    if (!element) return;
-    
-    const opt = {
-      margin: 10,
-      filename: `${template.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    
-    html2pdf().set(opt).from(element).save();
-  };
-  
   return (
-    <Card>
+    <Card className="text-center">
       <CardHeader>
-        <CardTitle>¡Formulario enviado correctamente!</CardTitle>
+        <CardTitle>¡Gracias por enviar el formulario!</CardTitle>
         <CardDescription>
-          Gracias por completar el formulario "{template.name}". 
-          Tu respuesta ha sido registrada.
+          Tu respuesta ha sido registrada correctamente.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div id="form-pdf-content" className="bg-white p-4 rounded-md">
+        <div id="form-pdf-content" className="hidden">
           <h2 className="text-xl font-bold mb-4">{template.name}</h2>
           <div className="mb-4">
             <p><strong>Nombre:</strong> {submissionData.submitter_name}</p>
@@ -71,12 +52,6 @@ export function FormSubmissionComplete({ template, submissionData }: FormSubmiss
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end">
-        <Button onClick={downloadAsPDF} className="flex items-center">
-          <Download className="mr-2 h-4 w-4" />
-          Descargar PDF
-        </Button>
-      </CardFooter>
     </Card>
   );
 }
