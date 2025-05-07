@@ -82,7 +82,7 @@ export function AppSidebar() {
           <img 
             src="/lovable-uploads/e1717e3f-3d42-4acf-be38-5c58da1bd4d9.png" 
             alt="Sepcon Logo" 
-            className="h-12 w-auto mb-1"
+            className="h-16 w-auto mb-1" 
           />
         </div>
       </SidebarHeader>
