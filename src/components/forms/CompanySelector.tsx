@@ -12,7 +12,10 @@ interface CompanySelectorProps {
   onSelect: (company: string | null) => void;
 }
 
-export function CompanySelector({ companies, selectedCompany, onSelect }: CompanySelectorProps) {
+export function CompanySelector({ companies = [], selectedCompany, onSelect }: CompanySelectorProps) {
+  // Ensure companies is always an array, even if undefined is passed
+  const safeCompanies = Array.isArray(companies) ? companies : [];
+  
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -41,7 +44,7 @@ export function CompanySelector({ companies, selectedCompany, onSelect }: Compan
               Todas las empresas
             </CommandItem>
             
-            {companies.map((company) => (
+            {safeCompanies.map((company) => (
               <CommandItem 
                 key={company}
                 value={company}

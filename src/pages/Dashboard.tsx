@@ -42,10 +42,10 @@ const Dashboard = () => {
         if (responsesError) throw responsesError;
         
         // Asegurar que los datos cumplen con el tipo FormResponse
-        const typedData: FormResponse[] = responsesData.map(item => ({
+        const typedData: FormResponse[] = responsesData ? responsesData.map(item => ({
           ...item,
           status: item.status as 'Todo positivo' | 'Contiene item negativo'
-        }));
+        })) : [];
         
         setFormResponses(typedData);
         
@@ -56,9 +56,11 @@ const Dashboard = () => {
         // Extraer todas las empresas únicas
         const uniqueCompanies = Array.from(new Set(
           typedData
+            .filter(form => form.empresa) // Filter out undefined empresas
             .map(form => form.empresa)
             .filter(Boolean) as string[]
         ));
+        
         setCompanies(uniqueCompanies);
         
       } catch (error) {
@@ -194,7 +196,6 @@ const Dashboard = () => {
                 icon={<AlertTriangle className="text-danger-500" />}
               />
             </div>
-            
             
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Lista de formularios</h2>
