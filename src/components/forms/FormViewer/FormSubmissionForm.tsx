@@ -28,7 +28,7 @@ export function FormSubmissionForm({
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitterName, setSubmitterName] = useState('');
-  const [empresa, setEmpresa] = useState('');
+  const [proyecto, setProyecto] = useState('');
   
   const handleChange = (field: FormField, value: any) => {
     setFormValues(prev => ({
@@ -72,7 +72,7 @@ export function FormSubmissionForm({
         templateId: template.id,
         values: formValues,
         created_at: new Date().toISOString(),
-        empresa: empresa || undefined,
+        proyecto: proyecto || undefined,
         submitter_name: submitterName,
         template_name: template.name
       };
@@ -140,12 +140,12 @@ export function FormSubmissionForm({
             </div>
             
             <div>
-              <Label htmlFor="empresa">Empresa (opcional)</Label>
+              <Label htmlFor="proyecto">Proyecto (opcional)</Label>
               <Input
-                id="empresa"
-                value={empresa}
-                onChange={(e) => setEmpresa(e.target.value)}
-                placeholder="Nombre de la empresa"
+                id="proyecto"
+                value={proyecto}
+                onChange={(e) => setProyecto(e.target.value)}
+                placeholder="Nombre del proyecto"
                 disabled={readOnly}
               />
             </div>

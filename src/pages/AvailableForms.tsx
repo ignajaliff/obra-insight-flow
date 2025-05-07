@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FormResponse } from '@/types/forms';
 
 interface GroupedFormResponses {
-  empresa: string;
+  proyecto: string;
   formTypes: Array<{
     id: string;
     name: string;
@@ -25,7 +25,7 @@ interface GroupedFormResponses {
 }
 
 const AvailableForms = () => {
-  const [companies, setCompanies] = useState<GroupedFormResponses[]>([]);
+  const [projects, setProjects] = useState<GroupedFormResponses[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -41,29 +41,29 @@ const AvailableForms = () => {
         
         if (formResponsesError) throw formResponsesError;
         
-        // Agrupar por empresa
-        const empresasMap = new Map<string, GroupedFormResponses>();
+        // Agrupar por proyecto
+        const projectsMap = new Map<string, GroupedFormResponses>();
         
         formResponses.forEach((response: any) => {
-          // Si la empresa no existe en el mapa, crearla
-          if (!response.empresa) return;
+          // Si el proyecto no existe en el mapa, crearlo
+          if (!response.proyecto) return;
           
-          if (!empresasMap.has(response.empresa)) {
-            empresasMap.set(response.empresa, {
-              empresa: response.empresa,
+          if (!projectsMap.has(response.proyecto)) {
+            projectsMap.set(response.proyecto, {
+              proyecto: response.proyecto,
               formTypes: []
             });
           }
           
           // Verificar si el tipo de formulario ya está agregado
-          const company = empresasMap.get(response.empresa);
-          if (company) {
-            const existingFormType = company.formTypes.find(
+          const project = projectsMap.get(response.proyecto);
+          if (project) {
+            const existingFormType = project.formTypes.find(
               formType => formType.name === response.form_type
             );
             
             if (!existingFormType) {
-              company.formTypes.push({
+              project.formTypes.push({
                 id: response.form_type_id || response.id,
                 name: response.form_type,
                 description: `Formulario de ${response.form_type}`
@@ -73,7 +73,7 @@ const AvailableForms = () => {
         });
         
         // Convertir el mapa en un array para el estado
-        setCompanies(Array.from(empresasMap.values()));
+        setProjects(Array.from(projectsMap.values()));
       } catch (error) {
         console.error('Error loading form responses:', error);
         toast({
@@ -106,17 +106,17 @@ const AvailableForms = () => {
         </div>
       ) : (
         <div className="space-y-8">
-          {companies.length > 0 ? (
-            companies.map((company) => (
-              <div key={company.empresa} className="space-y-4">
+          {projects.length > 0 ? (
+            projects.map((project) => (
+              <div key={project.proyecto} className="space-y-4">
                 <div className="flex items-center gap-2 border-b pb-2">
                   <Building className="text-primary" size={20} />
-                  <h2 className="text-xl font-semibold">{company.empresa}</h2>
+                  <h2 className="text-xl font-semibold">{project.proyecto}</h2>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {company.formTypes.length > 0 ? (
-                    company.formTypes.map((formType) => (
+                  {project.formTypes.length > 0 ? (
+                    project.formTypes.map((formType) => (
                       <Card key={formType.id} className="flex flex-col">
                         <CardHeader>
                           <CardTitle>{formType.name}</CardTitle>
@@ -126,7 +126,7 @@ const AvailableForms = () => {
                         </CardHeader>
                         <CardContent className="flex-grow">
                           <p className="text-sm text-muted-foreground">
-                            Empresa: {company.empresa}
+                            Proyecto: {project.proyecto}
                           </p>
                         </CardContent>
                         <CardFooter>
@@ -142,7 +142,7 @@ const AvailableForms = () => {
                   ) : (
                     <div className="col-span-full text-center p-6">
                       <p className="text-muted-foreground">
-                        No hay formularios disponibles para esta empresa.
+                        No hay formularios disponibles para este proyecto.
                       </p>
                     </div>
                   )}
@@ -152,9 +152,9 @@ const AvailableForms = () => {
           ) : (
             <div className="col-span-full text-center p-12">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-              <h3 className="text-xl font-medium mb-1">No hay empresas disponibles</h3>
+              <h3 className="text-xl font-medium mb-1">No hay proyectos disponibles</h3>
               <p className="text-muted-foreground">
-                No se encontraron empresas o formularios para completar.
+                No se encontraron proyectos o formularios para completar.
               </p>
             </div>
           )}

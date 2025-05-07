@@ -14,11 +14,11 @@ export type Database = {
           created_at: string | null
           date: string
           document_link: string | null
-          empresa: string | null
           form_type: string
           form_type_id: string | null
           id: string
           ID_documento: string | null
+          proyecto: string | null
           status: string
           worker_name: string
         }
@@ -26,11 +26,11 @@ export type Database = {
           created_at?: string | null
           date?: string
           document_link?: string | null
-          empresa?: string | null
           form_type: string
           form_type_id?: string | null
           id?: string
           ID_documento?: string | null
+          proyecto?: string | null
           status: string
           worker_name: string
         }
@@ -38,11 +38,11 @@ export type Database = {
           created_at?: string | null
           date?: string
           document_link?: string | null
-          empresa?: string | null
           form_type?: string
           form_type_id?: string | null
           id?: string
           ID_documento?: string | null
+          proyecto?: string | null
           status?: string
           worker_name?: string
         }

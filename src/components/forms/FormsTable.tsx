@@ -15,10 +15,10 @@ import { FormResponse } from '@/types/forms';
 
 interface FormsTableProps {
   forms: FormResponse[];
-  showCompany?: boolean;
+  showProject?: boolean;
 }
 
-export function FormsTable({ forms, showCompany = true }: FormsTableProps) {
+export function FormsTable({ forms, showProject = true }: FormsTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -26,7 +26,7 @@ export function FormsTable({ forms, showCompany = true }: FormsTableProps) {
           <TableRow>
             <TableHead>Obrero</TableHead>
             <TableHead>Tipo de formulario</TableHead>
-            {showCompany && <TableHead>Empresa</TableHead>}
+            {showProject && <TableHead>Proyecto</TableHead>}
             <TableHead>Fecha</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Documento</TableHead>
@@ -35,7 +35,7 @@ export function FormsTable({ forms, showCompany = true }: FormsTableProps) {
         <TableBody>
           {forms.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showCompany ? 6 : 5} className="h-24 text-center">
+              <TableCell colSpan={showProject ? 6 : 5} className="h-24 text-center">
                 No se encontraron resultados.
               </TableCell>
             </TableRow>
@@ -44,9 +44,9 @@ export function FormsTable({ forms, showCompany = true }: FormsTableProps) {
               <TableRow key={form.id}>
                 <TableCell className="font-medium">{form.worker_name}</TableCell>
                 <TableCell>{form.form_type}</TableCell>
-                {showCompany && (
+                {showProject && (
                   <TableCell>
-                    {form.empresa || <span className="text-muted-foreground italic">No asignada</span>}
+                    {form.proyecto || <span className="text-muted-foreground italic">No asignado</span>}
                   </TableCell>
                 )}
                 <TableCell>{new Date(form.date).toLocaleDateString()}</TableCell>

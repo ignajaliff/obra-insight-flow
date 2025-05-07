@@ -6,15 +6,15 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { CheckIcon, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface CompanySelectorProps {
-  companies: string[];
-  selectedCompany: string | null;
-  onSelect: (company: string | null) => void;
+interface ProjectSelectorProps {
+  projects: string[];
+  selectedProject: string | null;
+  onSelect: (project: string | null) => void;
 }
 
-export function CompanySelector({ companies = [], selectedCompany, onSelect }: CompanySelectorProps) {
-  // Ensure companies is always an array, even if undefined is passed
-  const safeCompanies = Array.isArray(companies) ? companies : [];
+export function ProjectSelector({ projects = [], selectedProject, onSelect }: ProjectSelectorProps) {
+  // Ensure projects is always an array, even if undefined is passed
+  const safeProjects = Array.isArray(projects) ? projects : [];
   
   return (
     <Popover>
@@ -22,13 +22,13 @@ export function CompanySelector({ companies = [], selectedCompany, onSelect }: C
         <Button variant="outline" className="flex items-center gap-2">
           <Building className="h-4 w-4" />
           <span>
-            {selectedCompany ? selectedCompany : "Todas las empresas"}
+            {selectedProject ? selectedProject : "Todos los proyectos"}
           </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[250px] p-0">
         <Command>
-          <CommandInput placeholder="Buscar empresa..." />
+          <CommandInput placeholder="Buscar proyecto..." />
           <CommandEmpty>No se encontraron resultados.</CommandEmpty>
           <CommandGroup>
             <CommandItem 
@@ -37,27 +37,27 @@ export function CompanySelector({ companies = [], selectedCompany, onSelect }: C
             >
               <div className={cn(
                 "flex h-5 w-5 items-center justify-center rounded-sm border",
-                selectedCompany === null ? "bg-primary border-primary" : "border-muted"
+                selectedProject === null ? "bg-primary border-primary" : "border-muted"
               )}>
-                {selectedCompany === null && <CheckIcon className="h-3 w-3 text-primary-foreground" />}
+                {selectedProject === null && <CheckIcon className="h-3 w-3 text-primary-foreground" />}
               </div>
-              Todas las empresas
+              Todos los proyectos
             </CommandItem>
             
-            {safeCompanies.map((company) => (
+            {safeProjects.map((project) => (
               <CommandItem 
-                key={company}
-                value={company}
-                onSelect={() => onSelect(company)}
+                key={project}
+                value={project}
+                onSelect={() => onSelect(project)}
                 className="flex items-center gap-2"
               >
                 <div className={cn(
                   "flex h-5 w-5 items-center justify-center rounded-sm border",
-                  selectedCompany === company ? "bg-primary border-primary" : "border-muted"
+                  selectedProject === project ? "bg-primary border-primary" : "border-muted"
                 )}>
-                  {selectedCompany === company && <CheckIcon className="h-3 w-3 text-primary-foreground" />}
+                  {selectedProject === project && <CheckIcon className="h-3 w-3 text-primary-foreground" />}
                 </div>
-                {company}
+                {project}
               </CommandItem>
             ))}
           </CommandGroup>

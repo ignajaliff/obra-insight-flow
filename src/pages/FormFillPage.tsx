@@ -53,8 +53,8 @@ const FormFillPage = () => {
               },
               {
                 id: '2',
-                name: 'empresa',
-                label: 'Empresa',
+                name: 'proyecto',
+                label: 'Proyecto',
                 type: 'text',
                 required: true,
                 field_order: 1

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -12,10 +13,10 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
-  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
-  const [companies, setCompanies] = useState<string[]>([]); // Initialize with empty array
+  const [projects, setProjects] = useState<string[]>([]); // Initialize with empty array
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   
@@ -44,16 +45,16 @@ const Dashboard = () => {
         const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
         setFormTypes(['Todos', ...uniqueFormTypes]);
         
-        // Extraer todas las empresas únicas
-        const uniqueCompanies = Array.from(new Set(
+        // Extraer todos los proyectos únicos
+        const uniqueProjects = Array.from(new Set(
           typedData
-            .filter(form => form.empresa) // Filter out undefined empresas
-            .map(form => form.empresa)
+            .filter(form => form.proyecto) // Filter out undefined proyectos
+            .map(form => form.proyecto)
             .filter(Boolean) as string[]
         ));
         
-        setCompanies(['Todas', ...uniqueCompanies]);
-        setSelectedCompany('Todas'); // Set default selection to "Todas"
+        setProjects(['Todos', ...uniqueProjects]);
+        setSelectedProject('Todos'); // Set default selection to "Todos"
         
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -75,15 +76,15 @@ const Dashboard = () => {
     if (end) setEndDate(end);
   };
 
-  // Filtrar datos por empresa, tipo de formulario y rango de fecha
+  // Filtrar datos por proyecto, tipo de formulario y rango de fecha
   const getFilteredData = () => {
     return formResponses.filter(form => {
       const formDate = new Date(form.date);
       const isInDateRange = formDate >= startDate && formDate <= endDate;
       const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
-      const matchesCompany = selectedCompany === 'Todas' || form.empresa === selectedCompany;
+      const matchesProject = selectedProject === 'Todos' || form.proyecto === selectedProject;
       
-      return isInDateRange && matchesType && matchesCompany;
+      return isInDateRange && matchesType && matchesProject;
     });
   };
   
@@ -97,18 +98,18 @@ const Dashboard = () => {
     negativos: filteredData.filter(f => f.status === 'Contiene item negativo').length
   };
 
-  // Obtener tipos de formulario relevantes según la empresa seleccionada
+  // Obtener tipos de formulario relevantes según el proyecto seleccionado
   const getRelevantFormTypes = () => {
-    if (selectedCompany && selectedCompany !== 'Todas') {
-      // Si hay una empresa seleccionada, mostrar solo sus tipos de formulario
-      const companyFormTypes = formResponses
-        .filter(form => form.empresa === selectedCompany)
+    if (selectedProject && selectedProject !== 'Todos') {
+      // Si hay un proyecto seleccionado, mostrar solo sus tipos de formulario
+      const projectFormTypes = formResponses
+        .filter(form => form.proyecto === selectedProject)
         .map(form => form.form_type);
       
-      const uniqueTypes = Array.from(new Set(companyFormTypes));
+      const uniqueTypes = Array.from(new Set(projectFormTypes));
       return ['Todos', ...uniqueTypes];
     }
-    // Si no hay empresa seleccionada o es "Todas", mostrar todos los tipos de formulario
+    // Si no hay proyecto seleccionado o es "Todos", mostrar todos los tipos de formulario
     return formTypes;
   };
 
@@ -133,18 +134,18 @@ const Dashboard = () => {
       
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-bold mb-4">Formularios por empresa</h2>
+          <h2 className="text-xl font-bold mb-4">Formularios por proyecto</h2>
           
-          {/* Companies as Tabs with softer yellow styling */}
-          <Tabs defaultValue={companies[0] || 'Todas'} value={selectedCompany || 'Todas'} onValueChange={setSelectedCompany}>
+          {/* Projects as Tabs with softer yellow styling */}
+          <Tabs defaultValue={projects[0] || 'Todos'} value={selectedProject || 'Todos'} onValueChange={setSelectedProject}>
             <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
-              {companies.map((company) => (
+              {projects.map((project) => (
                 <TabsTrigger 
-                  key={company} 
-                  value={company} 
+                  key={project} 
+                  value={project} 
                   className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-800 data-[state=active]:shadow-md transition-all duration-200"
                 >
-                  {company}
+                  {project}
                 </TabsTrigger>
               ))}
             </TabsList>

@@ -4,7 +4,7 @@ export interface FormResponse {
   worker_name: string;
   form_type: string;
   form_type_id?: string;
-  empresa?: string;
+  proyecto?: string;
   date: string;
   status: 'Todo positivo' | 'Contiene item negativo';
   document_link?: string;
@@ -37,13 +37,13 @@ export interface FormSubmission {
   templateId: string;
   values: Record<string, any>;
   created_at?: string;
-  empresa?: string;
+  proyecto?: string;
   submitter_name?: string; 
   template_name?: string;
 }
 
 // Add these new interfaces to fix the type errors
-export interface Company {
+export interface Project {
   id: string;
   name: string;
   description?: string;
@@ -56,10 +56,10 @@ export interface FormType {
   id: string;
   name: string;
   description?: string;
-  company_id: string;
+  project_id: string;
 }
 
-export interface CompanyWithFormTypes extends Company {
+export interface ProjectWithFormTypes extends Project {
   formTypes: FormType[];
 }
 
