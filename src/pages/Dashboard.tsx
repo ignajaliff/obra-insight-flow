@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -136,14 +135,14 @@ const Dashboard = () => {
         <div>
           <h2 className="text-xl font-bold mb-4">Formularios por empresa</h2>
           
-          {/* Companies as Tabs with enhanced styling */}
+          {/* Companies as Tabs with softer yellow styling */}
           <Tabs defaultValue={companies[0] || 'Todas'} value={selectedCompany || 'Todas'} onValueChange={setSelectedCompany}>
             <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
               {companies.map((company) => (
                 <TabsTrigger 
                   key={company} 
                   value={company} 
-                  className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-brand-300 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+                  className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-800 data-[state=active]:shadow-md transition-all duration-200"
                 >
                   {company}
                 </TabsTrigger>
