@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckSquare, AlertTriangle, BarChart2 } from 'lucide-react';
+import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
 import { CompanySelector } from '@/components/forms/CompanySelector';
-import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { FormResponse } from '@/types/forms';
@@ -18,7 +17,7 @@ const Dashboard = () => {
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
-  const [companies, setCompanies] = useState<string[]>([]);
+  const [companies, setCompanies] = useState<string[]>([]); // Initialize with empty array
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   
