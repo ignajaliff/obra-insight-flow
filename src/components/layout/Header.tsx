@@ -13,9 +13,9 @@ export function Header({ title }: { title: string }) {
         </div>
         <div className="flex items-center space-x-4">
           <img 
-            src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+            src="/lovable-uploads/16695ac6-b1e1-473e-b132-5a44490a52ed.png" 
             alt="Sepcon Logo" 
-            className="h-8"
+            className="h-10"
           />
           <div className="h-6 w-px bg-border hidden md:block" />
           <h1 className="text-lg font-semibold hidden md:block">{title}</h1>
