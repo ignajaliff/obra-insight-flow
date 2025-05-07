@@ -5,83 +5,83 @@
 
 @layer base {
   :root {
-    --background: 202 40% 98%;
-    --foreground: 202 80% 5%;
+    --background: 195 45% 98%;
+    --foreground: 200 80% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 202 80% 5%;
+    --card-foreground: 200 80% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 202 80% 5%;
+    --popover-foreground: 200 80% 10%;
 
-    --primary: 198 70% 66%;
-    --primary-foreground: 202 80% 5%;
+    --primary: 197 70% 66%;
+    --primary-foreground: 200 80% 10%;
 
-    --secondary: 196 60% 92%;
-    --secondary-foreground: 202 80% 5%;
+    --secondary: 196 60% 95%;
+    --secondary-foreground: 200 80% 10%;
 
-    --muted: 196 60% 92%;
-    --muted-foreground: 202 20% 50%;
+    --muted: 196 60% 95%;
+    --muted-foreground: 200 20% 50%;
 
-    --accent: 199 70% 80%;
-    --accent-foreground: 202 80% 5%;
+    --accent: 199 70% 85%;
+    --accent-foreground: 200 80% 10%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 202 40% 98%;
+    --destructive-foreground: 200 40% 98%;
 
-    --border: 202 20% 90%;
-    --input: 202 20% 90%;
-    --ring: 198 70% 66%;
+    --border: 200 20% 90%;
+    --input: 200 20% 90%;
+    --ring: 197 70% 66%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 201 70% 20%;
-    --sidebar-foreground: 202 30% 92%;
-    --sidebar-primary: 198 70% 66%;
+    --sidebar-background: 200 70% 25%;
+    --sidebar-foreground: 200 30% 92%;
+    --sidebar-primary: 197 70% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 201 70% 30%;
-    --sidebar-accent-foreground: 202 30% 92%;
-    --sidebar-border: 201 27% 30%;
-    --sidebar-ring: 199 76% 48%;
+    --sidebar-accent: 200 70% 35%;
+    --sidebar-accent-foreground: 200 30% 92%;
+    --sidebar-border: 200 27% 35%;
+    --sidebar-ring: 199 76% 60%;
   }
 
   .dark {
-    --background: 202 80% 5%;
-    --foreground: 202 40% 98%;
+    --background: 200 80% 5%;
+    --foreground: 200 40% 98%;
 
-    --card: 202 80% 5%;
-    --card-foreground: 202 40% 98%;
+    --card: 200 80% 5%;
+    --card-foreground: 200 40% 98%;
 
-    --popover: 202 80% 5%;
-    --popover-foreground: 202 40% 98%;
+    --popover: 200 80% 5%;
+    --popover-foreground: 200 40% 98%;
 
-    --primary: 198 70% 66%;
-    --primary-foreground: 202 80% 5%;
+    --primary: 197 70% 66%;
+    --primary-foreground: 200 80% 5%;
 
-    --secondary: 201 50% 20%;
-    --secondary-foreground: 202 40% 98%;
+    --secondary: 200 50% 20%;
+    --secondary-foreground: 200 40% 98%;
 
-    --muted: 201 50% 20%;
-    --muted-foreground: 202 20% 65%;
+    --muted: 200 50% 20%;
+    --muted-foreground: 200 20% 65%;
 
-    --accent: 201 50% 30%;
-    --accent-foreground: 202 40% 98%;
+    --accent: 200 50% 30%;
+    --accent-foreground: 200 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 202 40% 98%;
+    --destructive-foreground: 200 40% 98%;
 
-    --border: 201 50% 20%;
-    --input: 201 50% 20%;
-    --ring: 199 76% 48%;
+    --border: 200 50% 20%;
+    --input: 200 50% 20%;
+    --ring: 197 76% 60%;
     
-    --sidebar-background: 201 70% 15%;
-    --sidebar-foreground: 202 30% 92%;
-    --sidebar-primary: 198 70% 66%;
+    --sidebar-background: 200 70% 15%;
+    --sidebar-foreground: 200 30% 92%;
+    --sidebar-primary: 197 70% 66%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 201 70% 10%;
-    --sidebar-accent-foreground: 202 30% 92%;
-    --sidebar-border: 201 27% 20%;
-    --sidebar-ring: 199 76% 48%;
+    --sidebar-accent: 200 70% 10%;
+    --sidebar-accent-foreground: 200 30% 92%;
+    --sidebar-border: 200 27% 20%;
+    --sidebar-ring: 197 76% 60%;
   }
 }
 
@@ -104,11 +104,11 @@
   }
   
   .card-gradient {
-    @apply bg-gradient-to-br from-card to-secondary/80 backdrop-blur-sm;
+    @apply bg-gradient-to-br from-white to-[#e1f5fe]/80 backdrop-blur-sm;
   }
   
   .btn-gradient {
-    @apply bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 transition-all;
+    @apply bg-gradient-to-r from-[#6EC1E4] to-[#4bacd6] hover:from-[#6EC1E4]/90 hover:to-[#4bacd6]/90 transition-all;
   }
 }
 

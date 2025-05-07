@@ -14,6 +14,8 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
+  const [paths, setPaths] = useState<Array<{points: {x: number, y: number}[]}>>([]); 
+  const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
 
   // Initialize canvas and load existing signature if any
   useEffect(() => {
@@ -24,7 +26,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     if (!ctx) return;
     
     // Set canvas style
-    ctx.lineWidth = 1.5; // Más delgada para optimizar
+    ctx.lineWidth = 1.5;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000';
     
@@ -33,12 +35,23 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     
     // Load existing signature if available
     if (value) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0);
-        setHasSignature(true);
-      };
-      img.src = value;
+      if (value.startsWith('data:image/svg+xml')) {
+        // SVG signature - we need to render it on canvas
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          setHasSignature(true);
+        };
+        img.src = value;
+      } else {
+        // Legacy PNG format
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          setHasSignature(true);
+        };
+        img.src = value;
+      }
     }
   }, [value]);
 
@@ -66,6 +79,9 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     
     ctx.beginPath();
     ctx.moveTo(x, y);
+    
+    // Store the beginning of the path
+    setCurrentPath([{x, y}]);
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -91,6 +107,9 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     ctx.lineTo(x, y);
     ctx.stroke();
     setHasSignature(true);
+    
+    // Add to current path
+    setCurrentPath(prevPath => [...prevPath, {x, y}]);
   };
 
   const endDrawing = () => {
@@ -105,11 +124,54 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     ctx.closePath();
     setIsDrawing(false);
     
+    // Store the complete path
+    if (currentPath.length > 1) {
+      setPaths(prevPaths => [...prevPaths, {points: currentPath}]);
+      setCurrentPath([]);
+    }
+    
     // Save the signature
     if (hasSignature) {
-      const dataURL = optimizeSignature();
-      onChange(dataURL);
+      const svgString = createSVGFromPaths();
+      onChange(svgString);
     }
+  };
+
+  // Convert paths to SVG format
+  const createSVGFromPaths = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return '';
+    
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    let pathsData = '';
+    
+    // Generate path data from stored paths
+    paths.forEach(path => {
+      if (path.points.length < 2) return;
+      
+      let pathData = `M${path.points[0].x},${path.points[0].y}`;
+      for (let i = 1; i < path.points.length; i++) {
+        pathData += ` L${path.points[i].x},${path.points[i].y}`;
+      }
+      pathsData += `<path d="${pathData}" stroke="black" stroke-width="1.5" fill="none" stroke-linecap="round" />`;
+    });
+    
+    // Add current path if it exists
+    if (currentPath.length >= 2) {
+      let pathData = `M${currentPath[0].x},${currentPath[0].y}`;
+      for (let i = 1; i < currentPath.length; i++) {
+        pathData += ` L${currentPath[i].x},${currentPath[i].y}`;
+      }
+      pathsData += `<path d="${pathData}" stroke="black" stroke-width="1.5" fill="none" stroke-linecap="round" />`;
+    }
+    
+    // Create SVG string
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${pathsData}</svg>`;
+    
+    // Convert to data URL
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
   };
 
   const clearSignature = () => {
@@ -121,6 +183,8 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasSignature(false);
+    setPaths([]);
+    setCurrentPath([]);
     onChange(null);
   };
 
@@ -128,17 +192,8 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     const canvas = canvasRef.current;
     if (!canvas || !hasSignature) return;
     
-    const dataURL = optimizeSignature();
-    onChange(dataURL);
-  };
-
-  // Función para optimizar la firma
-  const optimizeSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return '';
-    
-    // Usa una calidad más baja para reducir el tamaño
-    return canvas.toDataURL('image/png', 0.5);
+    const svgString = createSVGFromPaths();
+    onChange(svgString);
   };
 
   return (
@@ -151,7 +206,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
           ref={canvasRef}
           id={id}
           width={400}
-          height={150} // Reducimos la altura para optimizar
+          height={150}
           className="w-full h-auto cursor-crosshair"
           onMouseDown={startDrawing}
           onMouseMove={draw}

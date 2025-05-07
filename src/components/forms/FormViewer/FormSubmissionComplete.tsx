@@ -11,10 +11,10 @@ interface FormSubmissionCompleteProps {
 
 export function FormSubmissionComplete({ template, submissionData }: FormSubmissionCompleteProps) {
   return (
-    <Card className="text-center shadow-card border-accent/20">
+    <Card className="text-center shadow-lg border-[#6EC1E4]/20 bg-white">
       <CardHeader className="pb-2">
-        <div className="mx-auto rounded-full bg-green-100 p-3 w-16 h-16 flex items-center justify-center mb-4">
-          <Check className="h-8 w-8 text-green-600" />
+        <div className="mx-auto rounded-full bg-[#e7f5fa] p-3 w-16 h-16 flex items-center justify-center mb-4">
+          <Check className="h-8 w-8 text-[#6EC1E4]" />
         </div>
         <CardTitle className="text-2xl font-display">¡Gracias por enviar el formulario!</CardTitle>
         <CardDescription className="text-base">
@@ -23,6 +23,13 @@ export function FormSubmissionComplete({ template, submissionData }: FormSubmiss
       </CardHeader>
       <CardContent>
         <div id="form-pdf-content" className="hidden">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+              alt="Sepcon Logo" 
+              className="h-12"
+            />
+          </div>
           <h2 className="text-xl font-bold mb-4">{template.name}</h2>
           <div className="mb-4">
             <p><strong>Nombre:</strong> {submissionData.submitter_name}</p>

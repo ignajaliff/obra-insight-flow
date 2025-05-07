@@ -6,21 +6,30 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export function Header({ title }: { title: string }) {
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-white shadow-sm">
       <div className="flex h-16 items-center px-4 sm:px-6">
         <div className="md:hidden">
           <SidebarTrigger />
         </div>
-        <div className="flex-1">
-          <h1 className="text-lg font-semibold">{title}</h1>
+        <div className="flex items-center space-x-4">
+          <img 
+            src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+            alt="Sepcon Logo" 
+            className="h-8"
+          />
+          <div className="h-6 w-px bg-border hidden md:block" />
+          <h1 className="text-lg font-semibold hidden md:block">{title}</h1>
+        </div>
+        <div className="flex-1 flex justify-center md:justify-start md:ml-4">
+          <h1 className="text-lg font-semibold md:hidden">{title}</h1>
         </div>
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="bg-gradient-to-r from-[#e1f5fe]/50 to-[#e7f5fa]/50">
             Ayuda
           </Button>
           <Avatar>
             <AvatarImage src="" />
-            <AvatarFallback className="bg-brand-600 text-white">JD</AvatarFallback>
+            <AvatarFallback className="bg-[#6EC1E4] text-white">JD</AvatarFallback>
           </Avatar>
         </div>
       </div>

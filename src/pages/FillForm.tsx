@@ -35,10 +35,10 @@ export default function FillForm() {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background to-secondary/30">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-lg font-medium text-muted-foreground">Cargando formulario...</p>
+          <div className="w-16 h-16 border-4 border-[#6EC1E4] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-medium text-[#2980b9]">Cargando formulario...</p>
         </div>
       </div>
     );
@@ -46,15 +46,23 @@ export default function FillForm() {
   
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-background to-secondary/30 p-8 space-y-4">
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-8 space-y-4">
         <div className="text-destructive text-xl font-medium">{error}</div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-12 px-4">
       <div className="max-w-3xl mx-auto">
+        <div className="flex justify-center mb-8">
+          <img 
+            src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+            alt="Sepcon Logo" 
+            className="h-16"
+          />
+        </div>
+        
         {template && (
           <FormViewer 
             template={template} 
