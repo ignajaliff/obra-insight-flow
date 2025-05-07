@@ -1,22 +1,19 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-
-export function Header({ title }: { title: string }) {
-  return (
-    <header className="border-b bg-white shadow-sm">
+export function Header({
+  title
+}: {
+  title: string;
+}) {
+  return <header className="border-b bg-white shadow-sm">
       <div className="flex h-16 items-center px-4 sm:px-6">
         <div className="md:hidden">
           <SidebarTrigger />
         </div>
         <div className="flex items-center space-x-4">
-          <img 
-            src="/lovable-uploads/16695ac6-b1e1-473e-b132-5a44490a52ed.png" 
-            alt="Sepcon Logo" 
-            className="h-10"
-          />
+          
           <div className="h-6 w-px bg-border hidden md:block" />
           <h1 className="text-lg font-semibold hidden md:block">{title}</h1>
         </div>
@@ -33,6 +30,5 @@ export function Header({ title }: { title: string }) {
           </Avatar>
         </div>
       </div>
-    </header>
-  );
+    </header>;
 }
