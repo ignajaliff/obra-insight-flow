@@ -4,7 +4,6 @@ import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
-import { CompanySelector } from '@/components/forms/CompanySelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { FormResponse } from '@/types/forms';
@@ -54,7 +53,8 @@ const Dashboard = () => {
             .filter(Boolean) as string[]
         ));
         
-        setCompanies(uniqueCompanies);
+        setCompanies(['Todas', ...uniqueCompanies]);
+        setSelectedCompany('Todas'); // Set default selection to "Todas"
         
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -76,19 +76,13 @@ const Dashboard = () => {
     if (end) setEndDate(end);
   };
 
-  const handleCompanySelect = (company: string | null) => {
-    setSelectedCompany(company);
-    // Resetear la selección de tipo de formulario
-    setSelectedFormType('Todos');
-  };
-
   // Filtrar datos por empresa, tipo de formulario y rango de fecha
   const getFilteredData = () => {
     return formResponses.filter(form => {
       const formDate = new Date(form.date);
       const isInDateRange = formDate >= startDate && formDate <= endDate;
       const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
-      const matchesCompany = selectedCompany === null || form.empresa === selectedCompany;
+      const matchesCompany = selectedCompany === 'Todas' || form.empresa === selectedCompany;
       
       return isInDateRange && matchesType && matchesCompany;
     });
@@ -106,7 +100,7 @@ const Dashboard = () => {
 
   // Obtener tipos de formulario relevantes según la empresa seleccionada
   const getRelevantFormTypes = () => {
-    if (selectedCompany) {
+    if (selectedCompany && selectedCompany !== 'Todas') {
       // Si hay una empresa seleccionada, mostrar solo sus tipos de formulario
       const companyFormTypes = formResponses
         .filter(form => form.empresa === selectedCompany)
@@ -115,7 +109,7 @@ const Dashboard = () => {
       const uniqueTypes = Array.from(new Set(companyFormTypes));
       return ['Todos', ...uniqueTypes];
     }
-    // Si no hay empresa seleccionada, mostrar todos los tipos de formulario
+    // Si no hay empresa seleccionada o es "Todas", mostrar todos los tipos de formulario
     return formTypes;
   };
 
@@ -139,13 +133,19 @@ const Dashboard = () => {
       </div>
       
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <h2 className="text-xl font-bold">Formularios por empresa</h2>
-          <CompanySelector 
-            companies={companies}
-            selectedCompany={selectedCompany}
-            onSelect={handleCompanySelect}
-          />
+        <div>
+          <h2 className="text-xl font-bold mb-4">Formularios por empresa</h2>
+          
+          {/* Companies as Tabs */}
+          <Tabs defaultValue={companies[0] || 'Todas'} value={selectedCompany || 'Todas'} onValueChange={setSelectedCompany}>
+            <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
+              {companies.map((company) => (
+                <TabsTrigger key={company} value={company} className="whitespace-nowrap">
+                  {company}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
         
         <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>
