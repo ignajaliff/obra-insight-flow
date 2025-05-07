@@ -159,13 +159,6 @@ const Dashboard = () => {
           />
         </div>
         
-        <div className="mb-4">
-          <NegativeEventFilter 
-            value={negativeFilter}
-            onChange={setNegativeFilter}
-          />
-        </div>
-        
         <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>
           <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
             {relevantFormTypes.map((type) => (
@@ -204,22 +197,6 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-medium">¿Necesitas importar nuevos formularios?</h3>
-            <p className="text-sm text-muted-foreground">
-              Importa formularios desde CSV, Excel o directamente desde JotForm
-            </p>
-          </div>
-          <a href="/importar" className="shrink-0">
-            <button className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded">
-              Importar datos
-            </button>
-          </a>
-        </div>
-      </Card>
     </div>
   );
 };
