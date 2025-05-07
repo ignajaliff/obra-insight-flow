@@ -34,25 +34,34 @@ export default function FillForm() {
   }, [templateId]);
   
   if (loading) {
-    return <div className="flex justify-center p-8">Cargando formulario...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background to-secondary/30">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-medium text-muted-foreground">Cargando formulario...</p>
+        </div>
+      </div>
+    );
   }
   
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <div className="text-destructive text-lg font-medium">{error}</div>
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-background to-secondary/30 p-8 space-y-4">
+        <div className="text-destructive text-xl font-medium">{error}</div>
       </div>
     );
   }
   
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
-      {template && (
-        <FormViewer 
-          template={template} 
-          webhookUrl="https://primary-2yza-production.up.railway.app/webhook-test/119213b0-18e7-43bb-9309-dc5db1caaea6" 
-        />
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/30 py-12 px-4">
+      <div className="max-w-3xl mx-auto">
+        {template && (
+          <FormViewer 
+            template={template} 
+            webhookUrl="https://primary-2yza-production.up.railway.app/webhook-test/119213b0-18e7-43bb-9309-dc5db1caaea6" 
+          />
+        )}
+      </div>
     </div>
   );
 }

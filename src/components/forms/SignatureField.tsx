@@ -24,7 +24,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     if (!ctx) return;
     
     // Set canvas style
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5; // Más delgada para optimizar
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000';
     
@@ -107,7 +107,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     
     // Save the signature
     if (hasSignature) {
-      const dataURL = canvas.toDataURL('image/png');
+      const dataURL = optimizeSignature();
       onChange(dataURL);
     }
   };
@@ -128,8 +128,17 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     const canvas = canvasRef.current;
     if (!canvas || !hasSignature) return;
     
-    const dataURL = canvas.toDataURL('image/png');
+    const dataURL = optimizeSignature();
     onChange(dataURL);
+  };
+
+  // Función para optimizar la firma
+  const optimizeSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return '';
+    
+    // Usa una calidad más baja para reducir el tamaño
+    return canvas.toDataURL('image/png', 0.5);
   };
 
   return (
@@ -142,7 +151,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
           ref={canvasRef}
           id={id}
           width={400}
-          height={200}
+          height={150} // Reducimos la altura para optimizar
           className="w-full h-auto cursor-crosshair"
           onMouseDown={startDrawing}
           onMouseMove={draw}
@@ -161,6 +170,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
             variant="outline" 
             onClick={clearSignature}
             disabled={!hasSignature}
+            className="text-gray-600 hover:bg-gray-100"
           >
             <Trash2 className="mr-2 h-4 w-4" /> Borrar firma
           </Button>
@@ -168,6 +178,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
             type="button"
             onClick={saveSignature}
             disabled={!hasSignature}
+            className="bg-primary hover:bg-primary/90"
           >
             <Check className="mr-2 h-4 w-4" /> Confirmar firma
           </Button>

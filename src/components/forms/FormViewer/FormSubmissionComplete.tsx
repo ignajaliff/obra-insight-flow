@@ -2,6 +2,7 @@
 import React from 'react';
 import { FormTemplate, FormSubmission } from '@/types/forms';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Check } from 'lucide-react';
 
 interface FormSubmissionCompleteProps {
   template: FormTemplate;
@@ -10,10 +11,13 @@ interface FormSubmissionCompleteProps {
 
 export function FormSubmissionComplete({ template, submissionData }: FormSubmissionCompleteProps) {
   return (
-    <Card className="text-center">
-      <CardHeader>
-        <CardTitle>¡Gracias por enviar el formulario!</CardTitle>
-        <CardDescription>
+    <Card className="text-center shadow-card border-accent/20">
+      <CardHeader className="pb-2">
+        <div className="mx-auto rounded-full bg-green-100 p-3 w-16 h-16 flex items-center justify-center mb-4">
+          <Check className="h-8 w-8 text-green-600" />
+        </div>
+        <CardTitle className="text-2xl font-display">¡Gracias por enviar el formulario!</CardTitle>
+        <CardDescription className="text-base">
           Tu respuesta ha sido registrada correctamente.
         </CardDescription>
       </CardHeader>
@@ -35,7 +39,7 @@ export function FormSubmissionComplete({ template, submissionData }: FormSubmiss
                     <img 
                       src={submissionData.values[field.name]} 
                       alt="Firma" 
-                      className="max-h-32 mt-1" 
+                      className="max-h-28 mt-1" 
                     />
                   ) : <p className="text-muted-foreground">No firmado</p>
                 ) : (
