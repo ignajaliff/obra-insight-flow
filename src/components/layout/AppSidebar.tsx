@@ -79,8 +79,11 @@ export function AppSidebar() {
     <Sidebar className="border-r">
       <SidebarHeader className="py-6">
         <div className="px-4 flex flex-col justify-center items-center">
-          <h1 className="text-2xl font-bold text-white">Sepcon</h1>
-          <p className="text-xs text-muted-foreground">Gestión de formularios</p>
+          <img 
+            src="/lovable-uploads/e1717e3f-3d42-4acf-be38-5c58da1bd4d9.png" 
+            alt="Sepcon Logo" 
+            className="h-12 w-auto mb-1"
+          />
         </div>
       </SidebarHeader>
       <SidebarContent>
