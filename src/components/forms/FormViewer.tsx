@@ -31,7 +31,7 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitterName, setSubmitterName] = useState('');
-  const [empresa, setEmpresa] = useState('');
+  const [proyecto, setProyecto] = useState('');
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   
@@ -81,7 +81,7 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
         templateId: template.id,
         values: formValues,
         created_at: new Date().toISOString(),
-        empresa: empresa || undefined,
+        proyecto: proyecto || undefined,
         submitter_name: submitterName,
         template_name: template.name
       };
@@ -253,7 +253,7 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
             <h2 className="text-xl font-bold mb-4">{template.name}</h2>
             <div className="mb-4">
               <p><strong>Nombre:</strong> {submissionData.submitter_name}</p>
-              {submissionData.empresa && <p><strong>Empresa:</strong> {submissionData.empresa}</p>}
+              {submissionData.proyecto && <p><strong>Proyecto:</strong> {submissionData.proyecto}</p>}
               <p><strong>Fecha:</strong> {new Date(submissionData.created_at).toLocaleDateString()}</p>
             </div>
             
@@ -318,12 +318,12 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
             </div>
             
             <div>
-              <Label htmlFor="empresa">Empresa (opcional)</Label>
+              <Label htmlFor="proyecto">Proyecto (opcional)</Label>
               <Input
-                id="empresa"
-                value={empresa}
-                onChange={(e) => setEmpresa(e.target.value)}
-                placeholder="Nombre de la empresa"
+                id="proyecto"
+                value={proyecto}
+                onChange={(e) => setProyecto(e.target.value)}
+                placeholder="Nombre del proyecto"
                 disabled={readOnly || submissionComplete}
               />
             </div>

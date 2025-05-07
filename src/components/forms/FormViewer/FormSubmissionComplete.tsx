@@ -33,7 +33,7 @@ export function FormSubmissionComplete({ template, submissionData }: FormSubmiss
           <h2 className="text-xl font-bold mb-4">{template.name}</h2>
           <div className="mb-4">
             <p><strong>Nombre:</strong> {submissionData.submitter_name}</p>
-            {submissionData.empresa && <p><strong>Empresa:</strong> {submissionData.empresa}</p>}
+            {submissionData.proyecto && <p><strong>Proyecto:</strong> {submissionData.proyecto}</p>}
             <p><strong>Fecha:</strong> {new Date(submissionData.created_at || '').toLocaleDateString()}</p>
           </div>
           
