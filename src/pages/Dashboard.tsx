@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckSquare, AlertTriangle, BarChart2 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -196,17 +195,6 @@ const Dashboard = () => {
               />
             </div>
             
-            <PieChart 
-              data={[
-                { name: 'Todo positivo', value: stats.positivos },
-                { name: 'Contiene item negativo', value: stats.negativos }
-              ]} 
-              title="Distribución de estados" 
-              dataKey="value"
-              nameKey="name"
-              colors={colorsPie}
-              className="w-full"
-            />
             
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Lista de formularios</h2>
