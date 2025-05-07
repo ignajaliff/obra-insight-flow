@@ -1,10 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckSquare, AlertTriangle, BarChart2 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { BarChart } from '@/components/dashboard/BarChart';
-import { PieChart } from '@/components/dashboard/PieChart';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
-import { NegativeEventFilter } from '@/components/forms/NegativeEventFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
 import { CompanySelector } from '@/components/forms/CompanySelector';
 import { Card } from '@/components/ui/card';
@@ -12,9 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { FormResponse } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
-
-// Colores para los gráficos de pie
-const colorsPie = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
 
 const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
@@ -25,7 +20,6 @@ const Dashboard = () => {
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
   const [companies, setCompanies] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [negativeFilter, setNegativeFilter] = useState<'all' | 'yes' | 'no'>('all');
   const { toast } = useToast();
   
   // Cargar formularios
@@ -89,7 +83,7 @@ const Dashboard = () => {
     setSelectedFormType('Todos');
   };
 
-  // Filtrar datos por empresa, tipo de formulario, rango de fecha y estado
+  // Filtrar datos por empresa, tipo de formulario y rango de fecha
   const getFilteredData = () => {
     return formResponses.filter(form => {
       const formDate = new Date(form.date);
@@ -97,11 +91,7 @@ const Dashboard = () => {
       const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
       const matchesCompany = selectedCompany === null || form.empresa === selectedCompany;
       
-      const matchesStatus = negativeFilter === 'all' || 
-        (negativeFilter === 'yes' && form.status === 'Contiene item negativo') ||
-        (negativeFilter === 'no' && form.status === 'Todo positivo');
-      
-      return isInDateRange && matchesType && matchesCompany && matchesStatus;
+      return isInDateRange && matchesType && matchesCompany;
     });
   };
   
