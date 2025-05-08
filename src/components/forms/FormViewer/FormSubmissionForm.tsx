@@ -8,6 +8,12 @@ import { CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from 
 import { v4 as uuidv4 } from 'uuid';
 import { FormFields } from './FormFields';
 import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 interface FormSubmissionFormProps {
   template: FormTemplate;
@@ -28,7 +34,7 @@ export function FormSubmissionForm({
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitterName, setSubmitterName] = useState('');
-  const [proyecto, setProyecto] = useState('');
+  const [submissionDate, setSubmissionDate] = useState<Date>(new Date());
   
   const handleChange = (field: FormField, value: any) => {
     setFormValues(prev => ({
@@ -72,7 +78,7 @@ export function FormSubmissionForm({
         templateId: template.id,
         values: formValues,
         created_at: new Date().toISOString(),
-        proyecto: proyecto || undefined,
+        submissionDate: submissionDate.toISOString(),
         submitter_name: submitterName,
         template_name: template.name,
         projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
@@ -92,10 +98,9 @@ export function FormSubmissionForm({
           webhookContent += `pregunta 0: Nombre del remitente\n`;
           webhookContent += `Respuesta 0: ${submitterName}\n\n`;
           
-          if (proyecto) {
-            webhookContent += `pregunta extra: Proyecto\n`;
-            webhookContent += `Respuesta extra: ${proyecto}\n\n`;
-          }
+          // Add submission date
+          webhookContent += `pregunta extra: Fecha de envío\n`;
+          webhookContent += `Respuesta extra: ${format(submissionDate, 'dd/MM/yyyy', { locale: es })}\n\n`;
           
           // Add project metadata if available
           if (template.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
@@ -202,14 +207,32 @@ export function FormSubmissionForm({
             </div>
             
             <div>
-              <Label htmlFor="proyecto">Proyecto (opcional)</Label>
-              <Input
-                id="proyecto"
-                value={proyecto}
-                onChange={(e) => setProyecto(e.target.value)}
-                placeholder="Nombre del proyecto"
-                disabled={readOnly}
-              />
+              <Label htmlFor="submission-date">Fecha de envío</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="submission-date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !submissionDate && "text-muted-foreground"
+                    )}
+                    disabled={readOnly}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {submissionDate ? format(submissionDate, 'dd/MM/yyyy', { locale: es }) : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={submissionDate}
+                    onSelect={(date) => setSubmissionDate(date || new Date())}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           

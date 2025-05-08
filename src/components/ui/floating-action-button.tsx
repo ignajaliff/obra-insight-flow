@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 interface FloatingActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: React.ReactNode;
   href?: string;
+  className?: string;
 }
 
 export function FloatingActionButton({ 

@@ -1,4 +1,3 @@
-
 export interface FormResponse {
   id: string;
   worker_name: string;
@@ -41,13 +40,14 @@ export interface FormField {
 }
 
 export interface FormSubmission {
-  id?: string;
+  id: string;
   templateId: string;
   values: Record<string, any>;
-  created_at?: string;
+  created_at: string;
+  submissionDate?: string;
+  submitter_name: string;
+  template_name: string;
   proyecto?: string;
-  submitter_name?: string; 
-  template_name?: string;
   projectMetadata?: ProjectMetadata;
 }
 

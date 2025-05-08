@@ -31,7 +31,7 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitterName, setSubmitterName] = useState('');
-  const [proyecto, setProyecto] = useState('');
+  const [submissionDate, setSubmissionDate] = useState<Date>(new Date());
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   
@@ -81,7 +81,7 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
         templateId: template.id,
         values: formValues,
         created_at: new Date().toISOString(),
-        proyecto: proyecto || undefined,
+        submissionDate: submissionDate.toISOString(),
         submitter_name: submitterName,
         template_name: template.name
       };
@@ -93,14 +93,68 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
       // Send to webhook
       if (webhookUrl) {
         try {
-          console.log('Sending data to webhook:', submission);
-          await fetch(webhookUrl, {
+          // Prepare data with numbered questions and answers
+          let webhookContent = ``;
+          
+          // Add submitter name as "pregunta 0"
+          webhookContent += `pregunta 0: Nombre del remitente\n`;
+          webhookContent += `Respuesta 0: ${submitterName}\n\n`;
+          
+          // Add submission date
+          webhookContent += `pregunta extra: Fecha de envío\n`;
+          webhookContent += `Respuesta extra: ${format(submissionDate, 'dd/MM/yyyy', { locale: es })}\n\n`;
+          
+          // Add project metadata if available
+          if (template.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
+            webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
+            
+            Object.entries(template.projectMetadata).forEach(([key, value]) => {
+              if (value) {
+                const readableKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                webhookContent += `${readableKey}: ${value}\n`;
+              }
+            });
+            
+            webhookContent += `\n`;
+          }
+          
+          // Add each field with its number
+          template.fields.forEach((field, index) => {
+            const questionNumber = index + 1;
+            webhookContent += `pregunta ${questionNumber}: ${field.label}\n`;
+            
+            let responseValue = formValues[field.name];
+            
+            // Format the response value based on the field type
+            if (field.type === 'date' && responseValue) {
+              try {
+                responseValue = new Date(responseValue).toLocaleDateString();
+              } catch (e) {
+                // If date parsing fails, use the original value
+              }
+            } else if (field.type === 'signature') {
+              responseValue = responseValue ? "[Firma adjunta]" : "[Sin firma]";
+            } else if (responseValue === undefined || responseValue === null) {
+              responseValue = "";
+            }
+            
+            webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
+          });
+          
+          console.log('Sending data to webhook:', webhookContent);
+          
+          const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'text/plain',
             },
-            body: JSON.stringify(submission)
+            body: webhookContent
           });
+          
+          if (!response.ok) {
+            throw new Error(`Error en la respuesta: ${response.status}`);
+          }
+          
           console.log('Webhook called successfully');
         } catch (webhookError) {
           console.error('Error sending data to webhook:', webhookError);
@@ -253,8 +307,9 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
             <h2 className="text-xl font-bold mb-4">{template.name}</h2>
             <div className="mb-4">
               <p><strong>Nombre:</strong> {submissionData.submitter_name}</p>
-              {submissionData.proyecto && <p><strong>Proyecto:</strong> {submissionData.proyecto}</p>}
-              <p><strong>Fecha:</strong> {new Date(submissionData.created_at).toLocaleDateString()}</p>
+              <p><strong>Fecha:</strong> {submissionData.submissionDate ? 
+                format(new Date(submissionData.submissionDate), 'dd/MM/yyyy', { locale: es }) : 
+                format(new Date(submissionData.created_at), 'dd/MM/yyyy', { locale: es })}</p>
             </div>
             
             <div className="space-y-4">
@@ -318,14 +373,32 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
             </div>
             
             <div>
-              <Label htmlFor="proyecto">Proyecto (opcional)</Label>
-              <Input
-                id="proyecto"
-                value={proyecto}
-                onChange={(e) => setProyecto(e.target.value)}
-                placeholder="Nombre del proyecto"
-                disabled={readOnly || submissionComplete}
-              />
+              <Label htmlFor="submission-date">Fecha de envío</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="submission-date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !submissionDate && "text-muted-foreground"
+                    )}
+                    disabled={readOnly || submissionComplete}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {submissionDate ? format(submissionDate, 'dd/MM/yyyy', { locale: es }) : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={submissionDate}
+                    onSelect={(date) => setSubmissionDate(date || new Date())}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           
