@@ -74,7 +74,8 @@ export function FormSubmissionForm({
         created_at: new Date().toISOString(),
         proyecto: proyecto || undefined,
         submitter_name: submitterName,
-        template_name: template.name
+        template_name: template.name,
+        projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
       };
       
       // For demo: save to localStorage
@@ -94,6 +95,20 @@ export function FormSubmissionForm({
           if (proyecto) {
             webhookContent += `pregunta extra: Proyecto\n`;
             webhookContent += `Respuesta extra: ${proyecto}\n\n`;
+          }
+          
+          // Add project metadata if available
+          if (template.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
+            webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
+            
+            Object.entries(template.projectMetadata).forEach(([key, value]) => {
+              if (value) {
+                const readableKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                webhookContent += `${readableKey}: ${value}\n`;
+              }
+            });
+            
+            webhookContent += `\n`;
           }
           
           // Add each field with its number

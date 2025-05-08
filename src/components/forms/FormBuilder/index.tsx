@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { FormBasicInfo } from './FormBasicInfo';
 import { FieldsList } from './FieldsList';
 import { AddFieldSection } from './AddFieldSection';
+import { FormMetadataSection } from './FormMetadataSection';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function FormBuilder() {
   const { toast } = useToast();
@@ -19,9 +21,11 @@ export function FormBuilder() {
     fields: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    projectMetadata: {},
   });
   
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("fields");
   
   const saveTemplate = async () => {
     // Validate form
@@ -85,17 +89,31 @@ export function FormBuilder() {
       />
       
       <div className="border-t pt-6">
-        <h3 className="font-medium text-lg mb-4">Campos del formulario</h3>
-        
-        <FieldsList 
-          fields={template.fields}
-          setTemplate={setTemplate}
-        />
-        
-        <AddFieldSection 
-          template={template}
-          setTemplate={setTemplate}
-        />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="fields">Campos del formulario</TabsTrigger>
+            <TabsTrigger value="metadata">Información del proyecto</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="fields" className="space-y-6">
+            <FieldsList 
+              fields={template.fields}
+              setTemplate={setTemplate}
+            />
+            
+            <AddFieldSection 
+              template={template}
+              setTemplate={setTemplate}
+            />
+          </TabsContent>
+          
+          <TabsContent value="metadata">
+            <FormMetadataSection
+              template={template}
+              setTemplate={setTemplate}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
       
       <div className="border-t pt-6 flex justify-end">

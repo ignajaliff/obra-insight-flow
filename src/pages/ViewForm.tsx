@@ -5,9 +5,10 @@ import { FormTemplate } from '@/types/forms';
 import { FormViewer } from '@/components/forms/FormViewer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Copy, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, Copy, Link as LinkIcon, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ViewForm() {
   const { templateId } = useParams();
@@ -65,6 +66,8 @@ export default function ViewForm() {
     );
   }
   
+  const hasProjectMetadata = template?.projectMetadata && Object.values(template?.projectMetadata).some(val => !!val);
+  
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
       <div className="mb-6">
@@ -93,7 +96,52 @@ export default function ViewForm() {
       
       {template && (
         <Card>
-          <FormViewer template={template} readOnly={true} />
+          <Tabs defaultValue="preview">
+            <TabsList className="w-full">
+              <TabsTrigger value="preview" className="flex-1">Vista previa</TabsTrigger>
+              {hasProjectMetadata && (
+                <TabsTrigger value="metadata" className="flex-1">
+                  <ClipboardList className="mr-2 h-4 w-4" /> Información del proyecto
+                </TabsTrigger>
+              )}
+            </TabsList>
+            
+            <TabsContent value="preview">
+              <FormViewer template={template} readOnly={true} />
+            </TabsContent>
+            
+            {hasProjectMetadata && (
+              <TabsContent value="metadata">
+                <div className="p-6 space-y-4">
+                  <h2 className="text-xl font-semibold">Información del proyecto</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Esta información no es visible para quienes completan el formulario, 
+                    pero se envía junto con las respuestas.
+                  </p>
+                  
+                  <div className="border rounded-md p-4 space-y-3">
+                    {Object.entries(template.projectMetadata || {}).map(([key, value]) => {
+                      if (!value) return null;
+                      const readableKey = key
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, c => c.toUpperCase());
+                      
+                      return (
+                        <div key={key} className="grid grid-cols-3">
+                          <span className="font-medium">{readableKey}:</span>
+                          <span className="col-span-2">{value}</span>
+                        </div>
+                      );
+                    })}
+                    
+                    {!hasProjectMetadata && (
+                      <p className="text-muted-foreground">No hay información adicional configurada.</p>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            )}
+          </Tabs>
         </Card>
       )}
     </div>
