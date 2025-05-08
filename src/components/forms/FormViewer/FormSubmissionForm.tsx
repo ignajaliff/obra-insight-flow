@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -171,7 +170,7 @@ export function FormSubmissionForm({
             firmaimg: firma || ""
           });
           
-          // Send webhook content as text/plain and signature separately as firmaimg
+          // Send webhook content as text/plain and signature as PNG in base64
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {

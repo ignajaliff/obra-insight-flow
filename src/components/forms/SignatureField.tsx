@@ -27,7 +27,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
       
       // Set canvas dimensions to match container's CSS dimensions
       const rect = container.getBoundingClientRect();
-      canvas.width = rect.width;
+      canvas.width = 300; // Fixed width for consistency
       canvas.height = 150; // Fixed height for consistency
       
       // Redraw signature after resize
@@ -166,8 +166,8 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     const canvas = canvasRef.current;
     if (!canvas || !hasSignature) return;
     
-    // Convert canvas to PNG data URL
-    const dataURL = canvas.toDataURL('image/png');
+    // Convert canvas to PNG data URL with high quality
+    const dataURL = canvas.toDataURL('image/png', 0.9);
     onChange(dataURL);
   };
 
@@ -190,13 +190,14 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
       <div 
         ref={containerRef}
         className="border rounded-md bg-white relative"
-        style={{ touchAction: 'none' }}
+        style={{ touchAction: 'none', height: '150px', width: '300px', margin: '0 auto' }}
       >
         <canvas
           ref={canvasRef}
           id={id}
+          width={300}
           height={150}
-          className="w-full h-auto cursor-crosshair"
+          className="cursor-crosshair"
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={endDrawing}
