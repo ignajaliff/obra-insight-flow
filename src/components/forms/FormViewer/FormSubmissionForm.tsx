@@ -81,16 +81,40 @@ export function FormSubmissionForm({
       const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
       localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submission]));
       
-      // Send to webhook
+      // Send to webhook with the new format
       if (webhookUrl) {
         try {
-          console.log('Sending data to webhook:', submission);
+          // Prepare data in the required format
+          const webhookData = {
+            title: template.name,
+            fields: template.fields.map(field => {
+              const fieldData: {
+                label: string;
+                type: string;
+                value: any;
+                options?: string[];
+              } = {
+                label: field.label,
+                type: field.type,
+                value: formValues[field.name] || ""
+              };
+              
+              // Add options array if the field type is select
+              if (field.type === 'select' && field.options) {
+                fieldData.options = field.options;
+              }
+              
+              return fieldData;
+            })
+          };
+          
+          console.log('Sending data to webhook:', webhookData);
           await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(submission)
+            body: JSON.stringify(webhookData)
           });
           console.log('Webhook called successfully');
         } catch (webhookError) {
