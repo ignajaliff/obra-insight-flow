@@ -69,23 +69,12 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     
     // Load existing signature if available
     if (value) {
-      if (value.startsWith('data:image/svg+xml')) {
-        // SVG signature - we need to render it on canvas
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          setHasSignature(true);
-        };
-        img.src = value;
-      } else {
-        // Legacy PNG format
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          setHasSignature(true);
-        };
-        img.src = value;
-      }
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        setHasSignature(true);
+      };
+      img.src = value;
     }
   };
 
@@ -168,46 +157,18 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     
     // Save the signature
     if (hasSignature) {
-      const svgString = createSVGFromPaths();
-      onChange(svgString);
+      saveSignature();
     }
   };
 
-  // Convert paths to SVG format
-  const createSVGFromPaths = () => {
+  // Convert canvas to PNG format and save as base64
+  const saveSignature = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return '';
+    if (!canvas || !hasSignature) return;
     
-    const width = canvas.width;
-    const height = canvas.height;
-    
-    let pathsData = '';
-    
-    // Generate path data from stored paths
-    paths.forEach(path => {
-      if (path.points.length < 2) return;
-      
-      let pathData = `M${path.points[0].x},${path.points[0].y}`;
-      for (let i = 1; i < path.points.length; i++) {
-        pathData += ` L${path.points[i].x},${path.points[i].y}`;
-      }
-      pathsData += `<path d="${pathData}" stroke="black" stroke-width="1.5" fill="none" stroke-linecap="round" />`;
-    });
-    
-    // Add current path if it exists
-    if (currentPath.length >= 2) {
-      let pathData = `M${currentPath[0].x},${currentPath[0].y}`;
-      for (let i = 1; i < currentPath.length; i++) {
-        pathData += ` L${currentPath[i].x},${currentPath[i].y}`;
-      }
-      pathsData += `<path d="${pathData}" stroke="black" stroke-width="1.5" fill="none" stroke-linecap="round" />`;
-    }
-    
-    // Create SVG string
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${pathsData}</svg>`;
-    
-    // Convert to data URL
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svgString)}`;
+    // Convert canvas to PNG data URL
+    const dataURL = canvas.toDataURL('image/png');
+    onChange(dataURL);
   };
 
   const clearSignature = () => {
@@ -222,14 +183,6 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     setPaths([]);
     setCurrentPath([]);
     onChange(null);
-  };
-
-  const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !hasSignature) return;
-    
-    const svgString = createSVGFromPaths();
-    onChange(svgString);
   };
 
   return (
