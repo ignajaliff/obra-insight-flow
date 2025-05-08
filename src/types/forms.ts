@@ -14,6 +14,7 @@ export interface FormResponse {
 export interface FormTemplate {
   id: string;
   name: string;
+  description?: string; // Adding the description property as optional
   fields: FormField[];
   created_at: string;
   updated_at: string;
