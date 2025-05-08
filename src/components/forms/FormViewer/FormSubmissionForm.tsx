@@ -81,40 +81,51 @@ export function FormSubmissionForm({
       const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
       localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submission]));
       
-      // Send to webhook with the new format
+      // Send to webhook with the new numbered format
       if (webhookUrl) {
         try {
-          // Prepare data in the required format
-          const webhookData = {
-            title: template.name,
-            fields: template.fields.map(field => {
-              const fieldData: {
-                label: string;
-                type: string;
-                value: any;
-                options?: string[];
-              } = {
-                label: field.label,
-                type: field.type,
-                value: formValues[field.name] || ""
-              };
-              
-              // Add options array if the field type is select
-              if (field.type === 'select' && field.options) {
-                fieldData.options = field.options;
-              }
-              
-              return fieldData;
-            })
-          };
+          // Prepare data with numbered questions and answers
+          let webhookContent = ``;
           
-          console.log('Sending data to webhook:', webhookData);
+          // Add submitter name as "pregunta 0"
+          webhookContent += `pregunta 0: Nombre del remitente\n`;
+          webhookContent += `Respuesta 0: ${submitterName}\n\n`;
+          
+          if (proyecto) {
+            webhookContent += `pregunta extra: Proyecto\n`;
+            webhookContent += `Respuesta extra: ${proyecto}\n\n`;
+          }
+          
+          // Add each field with its number
+          template.fields.forEach((field, index) => {
+            const questionNumber = index + 1;
+            webhookContent += `pregunta ${questionNumber}: ${field.label}\n`;
+            
+            let responseValue = formValues[field.name];
+            
+            // Format the response value based on the field type
+            if (field.type === 'date' && responseValue) {
+              try {
+                responseValue = new Date(responseValue).toLocaleDateString();
+              } catch (e) {
+                // If date parsing fails, use the original value
+              }
+            } else if (field.type === 'signature') {
+              responseValue = responseValue ? "[Firma adjunta]" : "[Sin firma]";
+            } else if (responseValue === undefined || responseValue === null) {
+              responseValue = "";
+            }
+            
+            webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
+          });
+          
+          console.log('Sending data to webhook:', webhookContent);
           await fetch(webhookUrl, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'text/plain',
             },
-            body: JSON.stringify(webhookData)
+            body: webhookContent
           });
           console.log('Webhook called successfully');
         } catch (webhookError) {
