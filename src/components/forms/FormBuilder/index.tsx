@@ -17,11 +17,14 @@ export function FormBuilder() {
   const [template, setTemplate] = useState<FormTemplate>({
     id: uuidv4(),
     name: '',
-    description: '',
     fields: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    projectMetadata: {},
+    projectMetadata: {
+      projectName: '',
+      companyName: '',
+      location: ''
+    },
   });
   
   const [isSaving, setIsSaving] = useState(false);

@@ -14,21 +14,18 @@ export interface FormResponse {
 export interface FormTemplate {
   id: string;
   name: string;
-  description: string;
   fields: FormField[];
   created_at: string;
   updated_at: string;
   public_url?: string;
-  projectMetadata?: ProjectMetadata; // Nueva propiedad para metadatos del proyecto
+  projectMetadata?: ProjectMetadata;
 }
 
 export interface ProjectMetadata {
-  projectId?: string;
   projectName?: string;
+  companyName?: string;
   location?: string;
-  supervisor?: string;
-  notes?: string;
-  [key: string]: string | undefined; // Para campos dinámicos adicionales
+  [key: string]: string | undefined;
 }
 
 export interface FormField {
@@ -50,7 +47,7 @@ export interface FormSubmission {
   proyecto?: string;
   submitter_name?: string; 
   template_name?: string;
-  projectMetadata?: ProjectMetadata; // Añadimos los metadatos aquí también
+  projectMetadata?: ProjectMetadata;
 }
 
 // Add these new interfaces to fix the type errors
