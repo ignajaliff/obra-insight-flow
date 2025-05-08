@@ -1,14 +1,17 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { FormTemplate } from '@/types/forms';
-import { FormViewer } from '@/components/forms/FormViewer';
+import { FormTemplate, FormSubmission } from '@/types/forms';
+import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
+import { Card } from '@/components/ui/card';
 
 export default function FillForm() {
   const { templateId } = useParams();
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submissionComplete, setSubmissionComplete] = useState(false);
+  const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   
   useEffect(() => {
     // Load the template from localStorage
@@ -64,10 +67,22 @@ export default function FillForm() {
         </div>
         
         {template && (
-          <FormViewer 
-            template={template} 
-            webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850" 
-          />
+          <Card>
+            {submissionComplete && submissionData ? (
+              <div className="p-6 text-center">
+                <h2 className="text-2xl font-bold text-green-600 mb-4">¡Formulario enviado correctamente!</h2>
+                <p className="mb-4">Gracias por completar el formulario "{template.name}".</p>
+                <p>Tu respuesta ha sido registrada.</p>
+              </div>
+            ) : (
+              <FormSubmissionForm 
+                template={template}
+                webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850"
+                setSubmissionComplete={setSubmissionComplete}
+                setSubmissionData={setSubmissionData}
+              />
+            )}
+          </Card>
         )}
       </div>
     </div>

@@ -81,7 +81,7 @@ export function FormSubmissionForm({
       const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
       localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submission]));
       
-      // Send to webhook with the new numbered format
+      // Send to webhook with the new numbered format as plain text
       if (webhookUrl) {
         try {
           // Prepare data with numbered questions and answers
@@ -120,13 +120,20 @@ export function FormSubmissionForm({
           });
           
           console.log('Sending data to webhook:', webhookContent);
-          await fetch(webhookUrl, {
+          
+          // Importante: realmente enviar como text/plain, no como application/json
+          const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
             },
             body: webhookContent
           });
+          
+          if (!response.ok) {
+            throw new Error(`Error en la respuesta: ${response.status}`);
+          }
+          
           console.log('Webhook called successfully');
         } catch (webhookError) {
           console.error('Error sending data to webhook:', webhookError);
@@ -137,6 +144,11 @@ export function FormSubmissionForm({
       // Store submission for potential download
       setSubmissionData(submission);
       setSubmissionComplete(true);
+      
+      toast({
+        title: "Enviado correctamente",
+        description: "Tu formulario ha sido enviado con éxito.",
+      });
       
     } catch (error) {
       console.error("Error submitting form:", error);
