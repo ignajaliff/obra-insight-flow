@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -157,36 +156,23 @@ export function FormSubmissionForm({
             webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
           });
           
-          // Add standard section data with continuing numbers
-          let lastNumber = template.fields.length;
+          // Add additional information section as a separate block, not as questions
+          webhookContent += `== INFORMACIÓN ADICIONAL ==\n`;
+          webhookContent += `Elaborado por: ${elaboradoPor || ""}\n`;
+          webhookContent += `Supervisor/Capataz: ${supervisor || ""}\n`;
+          webhookContent += `Supervisor de SSMA: ${supervisorSSMA || ""}\n`;
+          webhookContent += `Observaciones: ${observaciones || ""}\n`;
+          webhookContent += `Cargo: ${cargo || ""}\n`;
           
-          // Elaborado por
-          webhookContent += `pregunta ${lastNumber + 1}: Elaborado por\n`;
-          webhookContent += `Respuesta ${lastNumber + 1}: ${elaboradoPor || ""}\n\n`;
+          // Send the signature as a separate field, not in the main content
+          const requestBody = {
+            content: webhookContent,
+            signature: firma || ""
+          };
           
-          // Supervisor/Capataz
-          webhookContent += `pregunta ${lastNumber + 2}: Supervisor/Capataz\n`;
-          webhookContent += `Respuesta ${lastNumber + 2}: ${supervisor || ""}\n\n`;
+          console.log('Sending data to webhook:', requestBody);
           
-          // Supervisor de SSMA
-          webhookContent += `pregunta ${lastNumber + 3}: Supervisor de SSMA\n`;
-          webhookContent += `Respuesta ${lastNumber + 3}: ${supervisorSSMA || ""}\n\n`;
-          
-          // Observaciones
-          webhookContent += `pregunta ${lastNumber + 4}: Observaciones\n`;
-          webhookContent += `Respuesta ${lastNumber + 4}: ${observaciones || ""}\n\n`;
-          
-          // Firma
-          webhookContent += `pregunta ${lastNumber + 5}: Firma\n`;
-          webhookContent += `Respuesta ${lastNumber + 5}: ${firma ? "[Firma adjunta]" : "[Sin firma]"}\n\n`;
-          
-          // Cargo
-          webhookContent += `pregunta ${lastNumber + 6}: Cargo\n`;
-          webhookContent += `Respuesta ${lastNumber + 6}: ${cargo || ""}\n\n`;
-          
-          console.log('Sending data to webhook:', webhookContent);
-          
-          // Importante: realmente enviar como text/plain, no como application/json
+          // Change content type to application/json and send structured data
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
