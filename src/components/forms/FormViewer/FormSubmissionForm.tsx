@@ -14,6 +14,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { SignatureField } from '../SignatureField';
 
 interface FormSubmissionFormProps {
   template: FormTemplate;
@@ -35,6 +37,14 @@ export function FormSubmissionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitterName, setSubmitterName] = useState('');
   const [submissionDate, setSubmissionDate] = useState<Date>(new Date());
+  
+  // States for standard section fields
+  const [elaboradoPor, setElaboradoPor] = useState('');
+  const [supervisor, setSupervisor] = useState('');
+  const [supervisorSSMA, setSupervisorSSMA] = useState('');
+  const [observaciones, setObservaciones] = useState('');
+  const [firma, setFirma] = useState<string | null>(null);
+  const [cargo, setCargo] = useState('');
   
   const handleChange = (field: FormField, value: any) => {
     setFormValues(prev => ({
@@ -76,7 +86,15 @@ export function FormSubmissionForm({
       const submission: FormSubmission = {
         id: uuidv4(),
         templateId: template.id,
-        values: formValues,
+        values: {
+          ...formValues,
+          elaboradoPor,
+          supervisor,
+          supervisorSSMA,
+          observaciones,
+          firma,
+          cargo
+        },
         created_at: new Date().toISOString(),
         submissionDate: submissionDate.toISOString(),
         submitter_name: submitterName,
@@ -138,6 +156,33 @@ export function FormSubmissionForm({
             
             webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
           });
+          
+          // Add standard section data with continuing numbers
+          let lastNumber = template.fields.length;
+          
+          // Elaborado por
+          webhookContent += `pregunta ${lastNumber + 1}: Elaborado por\n`;
+          webhookContent += `Respuesta ${lastNumber + 1}: ${elaboradoPor || ""}\n\n`;
+          
+          // Supervisor/Capataz
+          webhookContent += `pregunta ${lastNumber + 2}: Supervisor/Capataz\n`;
+          webhookContent += `Respuesta ${lastNumber + 2}: ${supervisor || ""}\n\n`;
+          
+          // Supervisor de SSMA
+          webhookContent += `pregunta ${lastNumber + 3}: Supervisor de SSMA\n`;
+          webhookContent += `Respuesta ${lastNumber + 3}: ${supervisorSSMA || ""}\n\n`;
+          
+          // Observaciones
+          webhookContent += `pregunta ${lastNumber + 4}: Observaciones\n`;
+          webhookContent += `Respuesta ${lastNumber + 4}: ${observaciones || ""}\n\n`;
+          
+          // Firma
+          webhookContent += `pregunta ${lastNumber + 5}: Firma\n`;
+          webhookContent += `Respuesta ${lastNumber + 5}: ${firma ? "[Firma adjunta]" : "[Sin firma]"}\n\n`;
+          
+          // Cargo
+          webhookContent += `pregunta ${lastNumber + 6}: Cargo\n`;
+          webhookContent += `Respuesta ${lastNumber + 6}: ${cargo || ""}\n\n`;
           
           console.log('Sending data to webhook:', webhookContent);
           
@@ -245,6 +290,85 @@ export function FormSubmissionForm({
             handleChange={handleChange}
             readOnly={readOnly}
           />
+          
+          {/* Standard form section with predefined fields */}
+          <div className="mt-8">
+            <h3 className="text-lg font-medium mb-4">Información adicional</h3>
+            
+            <div className="space-y-4">
+              {/* Elaborado por */}
+              <div>
+                <Label htmlFor="elaborado-por">Elaborado por</Label>
+                <Input
+                  id="elaborado-por"
+                  value={elaboradoPor}
+                  onChange={(e) => setElaboradoPor(e.target.value)}
+                  placeholder="Nombre de quien elaboró"
+                  disabled={readOnly}
+                />
+              </div>
+              
+              {/* Supervisor/Capataz */}
+              <div>
+                <Label htmlFor="supervisor">Supervisor/Capataz</Label>
+                <Input
+                  id="supervisor"
+                  value={supervisor}
+                  onChange={(e) => setSupervisor(e.target.value)}
+                  placeholder="Nombre del supervisor o capataz"
+                  disabled={readOnly}
+                />
+              </div>
+              
+              {/* Supervisor de SSMA */}
+              <div>
+                <Label htmlFor="supervisor-ssma">Supervisor de SSMA</Label>
+                <Input
+                  id="supervisor-ssma"
+                  value={supervisorSSMA}
+                  onChange={(e) => setSupervisorSSMA(e.target.value)}
+                  placeholder="Nombre del supervisor de SSMA"
+                  disabled={readOnly}
+                />
+              </div>
+              
+              {/* Observaciones */}
+              <div>
+                <Label htmlFor="observaciones">Observaciones</Label>
+                <Textarea
+                  id="observaciones"
+                  value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  placeholder="Ingrese sus observaciones"
+                  disabled={readOnly}
+                  rows={3}
+                />
+              </div>
+              
+              {/* Firma */}
+              <div>
+                <Label htmlFor="firma">Firma</Label>
+                <SignatureField
+                  id="firma"
+                  value={firma}
+                  onChange={setFirma}
+                  readOnly={readOnly}
+                />
+              </div>
+              
+              {/* Cargo */}
+              <div>
+                <Label htmlFor="cargo">Cargo</Label>
+                <Input
+                  id="cargo"
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                  placeholder="Ingrese su cargo"
+                  disabled={readOnly}
+                />
+              </div>
+            </div>
+          </div>
           
           {/* Submit button */}
           {!readOnly && (

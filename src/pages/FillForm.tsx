@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
 import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
+import { FormSubmissionComplete } from '@/components/forms/FormViewer/FormSubmissionComplete';
 import { Card } from '@/components/ui/card';
 
 export default function FillForm() {
@@ -69,11 +70,7 @@ export default function FillForm() {
         {template && (
           <Card>
             {submissionComplete && submissionData ? (
-              <div className="p-6 text-center">
-                <h2 className="text-2xl font-bold text-green-600 mb-4">¡Formulario enviado correctamente!</h2>
-                <p className="mb-4">Gracias por completar el formulario "{template.name}".</p>
-                <p>Tu respuesta ha sido registrada.</p>
-              </div>
+              <FormSubmissionComplete template={template} submissionData={submissionData} />
             ) : (
               <FormSubmissionForm 
                 template={template}
