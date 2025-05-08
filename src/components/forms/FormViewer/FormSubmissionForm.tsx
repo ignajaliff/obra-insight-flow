@@ -164,21 +164,19 @@ export function FormSubmissionForm({
           webhookContent += `Observaciones: ${observaciones || ""}\n`;
           webhookContent += `Cargo: ${cargo || ""}\n`;
           
-          // Send the signature as a separate field, not in the main content
-          const requestBody = {
+          // Log the data being sent
+          console.log('Sending data to webhook:', {
             content: webhookContent,
-            signature: firma || ""
-          };
+            firmaimg: firma || ""
+          });
           
-          console.log('Sending data to webhook:', requestBody);
-          
-          // Change content type to application/json and send structured data
+          // Send webhook content as text/plain and include signature separately
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
             },
-            body: webhookContent
+            body: webhookContent + `\n\nfirmaimg: ${firma || ""}`
           });
           
           if (!response.ok) {

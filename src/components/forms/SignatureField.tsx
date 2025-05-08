@@ -12,26 +12,60 @@ interface SignatureFieldProps {
 
 export function SignatureField({ id, value, onChange, readOnly = false }: SignatureFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
   const [paths, setPaths] = useState<Array<{points: {x: number, y: number}[]}>>([]); 
   const [currentPath, setCurrentPath] = useState<{x: number, y: number}[]>([]);
+
+  // Handle canvas resize to match container
+  useEffect(() => {
+    const resizeCanvas = () => {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      if (!canvas || !container) return;
+      
+      // Set canvas dimensions to match container's CSS dimensions
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = 150; // Fixed height for consistency
+      
+      // Redraw signature after resize
+      drawSignature();
+    };
+    
+    // Initial resize and add listener
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, []);
 
   // Initialize canvas and load existing signature if any
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
+    drawSignature();
+  }, [value]);
+  
+  // Draw the signature on canvas
+  const drawSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Set canvas style
     ctx.lineWidth = 1.5;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#000';
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Load existing signature if available
     if (value) {
@@ -39,7 +73,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
         // SVG signature - we need to render it on canvas
         const img = new Image();
         img.onload = () => {
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           setHasSignature(true);
         };
         img.src = value;
@@ -47,13 +81,13 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
         // Legacy PNG format
         const img = new Image();
         img.onload = () => {
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           setHasSignature(true);
         };
         img.src = value;
       }
     }
-  }, [value]);
+  };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (readOnly) return;
@@ -66,10 +100,11 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     
     setIsDrawing(true);
     
-    // Get coordinates
+    // Get coordinates relative to canvas
+    const rect = canvas.getBoundingClientRect();
     let x, y;
+    
     if ('touches' in e) {
-      const rect = canvas.getBoundingClientRect();
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
     } else {
@@ -93,10 +128,11 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Get coordinates
+    // Get coordinates relative to canvas
+    const rect = canvas.getBoundingClientRect();
     let x, y;
+    
     if ('touches' in e) {
-      const rect = canvas.getBoundingClientRect();
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
     } else {
@@ -199,13 +235,13 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
   return (
     <div className="flex flex-col space-y-2">
       <div 
+        ref={containerRef}
         className="border rounded-md bg-white relative"
         style={{ touchAction: 'none' }}
       >
         <canvas
           ref={canvasRef}
           id={id}
-          width={400}
           height={150}
           className="w-full h-auto cursor-crosshair"
           onMouseDown={startDrawing}
