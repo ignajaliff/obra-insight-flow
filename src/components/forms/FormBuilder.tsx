@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { FormField, FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, Calendar, Text, List, Pen, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Calendar, Text, List, Pen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,15 +16,31 @@ export function FormBuilder() {
   const [template, setTemplate] = useState<FormTemplate>({
     id: uuidv4(),
     name: '',
-    description: '',
     fields: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    projectMetadata: {
+      projectName: '',
+      companyName: '',
+      location: ''
+    }
   });
   
   const [newFieldType, setNewFieldType] = useState<FormField['type']>('text');
   const [newFieldLabel, setNewFieldLabel] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  
+  const updateMetadata = (key: string, value: string) => {
+    const currentMetadata = template.projectMetadata || {};
+    
+    setTemplate({
+      ...template,
+      projectMetadata: {
+        ...currentMetadata,
+        [key]: value
+      }
+    });
+  };
   
   const addField = () => {
     if (!newFieldLabel.trim()) {
@@ -230,16 +244,44 @@ export function FormBuilder() {
           />
         </div>
         
-        <div>
-          <Label htmlFor="form-description">Descripción (opcional)</Label>
-          <Textarea
-            id="form-description"
-            value={template.description}
-            onChange={e => setTemplate({ ...template, description: e.target.value })}
-            placeholder="Describe el propósito de este formulario..."
-            rows={3}
-          />
-        </div>
+        <Card className="p-4">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Información del Proyecto</h3>
+            <p className="text-sm text-muted-foreground">
+              Esta información se adjuntará al formulario pero no será visible para quienes lo completen.
+            </p>
+            
+            <div>
+              <Label htmlFor="metadata-projectName">Nombre proyecto</Label>
+              <Input
+                id="metadata-projectName"
+                value={template.projectMetadata?.projectName || ''}
+                onChange={e => updateMetadata('projectName', e.target.value)}
+                placeholder="Ingresa el nombre del proyecto"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="metadata-companyName">Razón Social</Label>
+              <Input
+                id="metadata-companyName"
+                value={template.projectMetadata?.companyName || ''}
+                onChange={e => updateMetadata('companyName', e.target.value)}
+                placeholder="Ingresa la razón social"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="metadata-location">Lugar</Label>
+              <Input
+                id="metadata-location"
+                value={template.projectMetadata?.location || ''}
+                onChange={e => updateMetadata('location', e.target.value)}
+                placeholder="Ingresa la ubicación"
+              />
+            </div>
+          </div>
+        </Card>
       </div>
       
       <div className="border-t pt-6">
