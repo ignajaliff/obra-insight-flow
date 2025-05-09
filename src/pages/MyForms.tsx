@@ -54,41 +54,21 @@ export default function MyForms() {
         } else {
           console.log("Templates loaded from Supabase:", supabaseTemplates);
           
-          // Merge templates from both sources, giving priority to Supabase for status
-          const mergedTemplates = storedTemplates.map((localTemplate: FormTemplate) => {
-            const supabaseMatch = supabaseTemplates.find((st: any) => st.id === localTemplate.id);
-            
-            // If we have a match, update the active status
-            if (supabaseMatch) {
-              return {
-                ...localTemplate,
-                is_active: supabaseMatch.is_active
-              };
-            }
-            
-            return localTemplate;
+          // Process Supabase templates to ensure they match our FormTemplate type
+          const processedTemplates = supabaseTemplates.map((template: any) => {
+            return {
+              id: template.id,
+              name: template.name,
+              description: template.description || '',
+              fields: Array.isArray(template.fields) ? template.fields : [],
+              created_at: template.created_at,
+              updated_at: template.updated_at,
+              public_url: template.public_url,
+              is_active: template.is_active
+            };
           });
           
-          // Add any templates that are in Supabase but not in localStorage
-          // (creating minimal template structure)
-          supabaseTemplates.forEach((supabaseTemplate: any) => {
-            if (!storedTemplates.some((t: FormTemplate) => t.id === supabaseTemplate.id)) {
-              const minimalTemplate: FormTemplate = {
-                id: supabaseTemplate.id,
-                name: supabaseTemplate.name,
-                description: supabaseTemplate.description,
-                fields: [],
-                created_at: supabaseTemplate.created_at,
-                updated_at: supabaseTemplate.updated_at,
-                public_url: supabaseTemplate.public_url,
-                is_active: supabaseTemplate.is_active
-              };
-              
-              mergedTemplates.push(minimalTemplate);
-            }
-          });
-          
-          setTemplates(mergedTemplates);
+          setTemplates(processedTemplates);
         }
       } catch (err) {
         console.error("Error loading templates:", err);
@@ -276,11 +256,8 @@ export default function MyForms() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/formularios/ver/${template.id}`)}>
-                            <Eye className="h-4 w-4 mr-2" /> Ver
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/formularios/editar/${template.id}`)}>
-                            <Pen className="h-4 w-4 mr-2" /> Editar
+                          <DropdownMenuItem onClick={() => navigate(`/formularios/rellenar/${template.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" /> Vista previa
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => copyFormLink(template)} className="sm:hidden">
                             <Copy className="h-4 w-4 mr-2" /> Copiar enlace

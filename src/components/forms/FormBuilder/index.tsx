@@ -65,27 +65,23 @@ export function FormBuilder() {
       const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
       localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
       
-      // Save to Supabase - Convert fields and metadata to JSON format
-      const { data, error } = await supabase
+      // Save to Supabase - Convert fields to JSON format
+      const { error } = await supabase
         .from('form_templates')
         .insert({
           id: template.id,
           name: template.name,
           description: template.description || null,
-          fields: JSON.parse(JSON.stringify(template.fields)),
+          fields: template.fields,
           public_url: publicUrl,
-          is_active: true,
-          // Store metadata as additional property in JSON format
-          fields_metadata: JSON.parse(JSON.stringify({
-            projectMetadata: template.projectMetadata || {}
-          }))
+          is_active: true
         });
       
       if (error) {
         console.error("Error saving to Supabase:", error);
         // Continue even if Supabase save fails, as we have localStorage backup
       } else {
-        console.log("Form successfully saved to Supabase:", data);
+        console.log("Form successfully saved to Supabase");
       }
       
       toast({
@@ -93,8 +89,8 @@ export function FormBuilder() {
         description: "Tu formulario ha sido guardado correctamente."
       });
       
-      // Navigate to the form view page
-      navigate(`/formularios/ver/${template.id}`);
+      // Navigate to the form list page
+      navigate(`/formularios/mis-formularios`);
     } catch (error) {
       console.error("Error saving template:", error);
       toast({

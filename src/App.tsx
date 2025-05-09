@@ -10,14 +10,12 @@ import FormsList from "./pages/FormsList";
 import ImportData from "./pages/ImportData";
 import NotFound from "./pages/NotFound";
 import FormAdmin from "./pages/FormAdmin";
-import AvailableForms from "./pages/AvailableForms";
 import Login from "./pages/Login";
 import UsersManagement from "./pages/UsersManagement";
 import Index from "./pages/Index";
 import MyForms from "./pages/MyForms";
 import CreateForm from "./pages/CreateForm";
 import FillForm from "./pages/FillForm";
-import ViewForm from "./pages/ViewForm";
 
 const queryClient = new QueryClient();
 
@@ -41,8 +39,6 @@ const App = () => (
             <Route path="/formularios" element={<FormsList />} />
             <Route path="/formularios/mis-formularios" element={<MyForms />} />
             <Route path="/formularios/crear" element={<CreateForm />} />
-            <Route path="/formularios/ver/:templateId" element={<ViewForm />} />
-            <Route path="/formularios/disponibles" element={<AvailableForms />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<UsersManagement />} />
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}

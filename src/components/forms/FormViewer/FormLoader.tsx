@@ -68,8 +68,8 @@ export function FormLoader({
                 }
               ];
               
-              // Extract metadata from fields_metadata if available
-              const projectMetadata = formData.fields_metadata?.projectMetadata || {};
+              // Extract project metadata if available
+              const projectMetadata = {}; // Default to empty object
               
               // Create a complete form template with default fields
               const formWithFields: FormTemplate = {
@@ -91,13 +91,13 @@ export function FormLoader({
               console.log("Form found with valid fields:", formData);
               
               // Ensure each field has the correct type by casting
-              const typedFields = formData.fields.map((field: any) => ({
+              const typedFields: FormField[] = formData.fields.map((field: any) => ({
                 ...field,
                 type: field.type as FieldType
               }));
               
-              // Extract metadata from fields_metadata if available
-              const projectMetadata = formData.fields_metadata?.projectMetadata || {};
+              // Extract project metadata (with a safe default)
+              const projectMetadata = {};
               
               // Ensure the form data matches our FormTemplate type
               const validForm: FormTemplate = {
