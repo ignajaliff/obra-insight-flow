@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FormTemplate, FormField } from '@/types/forms';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, ClipboardCopy, Calendar, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
+import { ExampleFormButton, CreateExampleFormOnLoad } from '@/components/ExampleForm';
 
 export default function MyForms() {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
@@ -164,6 +163,9 @@ export default function MyForms() {
   
   return (
     <div className="container py-6">
+      {/* This component will create an example form if none exist */}
+      <CreateExampleFormOnLoad />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Mis Formularios</h1>
         <Button asChild>
@@ -182,12 +184,18 @@ export default function MyForms() {
             <p className="text-muted-foreground mb-6">
               Crea tu primer formulario para empezar a recolectar datos
             </p>
-            <Button asChild>
-              <Link to="/formularios/crear" className="flex items-center">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Crear Formulario
-              </Link>
-            </Button>
+            <div className="space-y-4">
+              <Button asChild className="w-full">
+                <Link to="/formularios/crear" className="flex items-center justify-center">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Crear Formulario
+                </Link>
+              </Button>
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">¿Prefieres empezar con un ejemplo?</p>
+                <ExampleFormButton />
+              </div>
+            </div>
           </div>
         </Card>
       ) : (

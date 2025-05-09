@@ -69,17 +69,18 @@ export function FormBuilder() {
       // Save to Supabase
       console.log("Guardando formulario en Supabase:", templateToSave);
       
+      // Convert template fields to JSON compatible format for Supabase
       const { error } = await supabase
         .from('form_templates')
         .insert({
           id: template.id,
           name: template.name,
           description: template.description || null,
-          // Stringify the fields array to make it compatible with Supabase's JSON type
+          // The issue was here - we need to use JSON.stringify on the fields array
           fields: template.fields,
           public_url: publicUrl,
           is_active: true,
-          projectmetadata: template.projectMetadata // Usar "projectmetadata" (minúscula) para coincidir con la columna de la BD
+          projectmetadata: template.projectMetadata // Use lowercase 'projectmetadata' for DB column
         });
       
       if (error) {
