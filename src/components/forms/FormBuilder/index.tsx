@@ -9,6 +9,7 @@ import { FormBasicInfo } from './FormBasicInfo';
 import { FieldsList } from './FieldsList';
 import { AddFieldSection } from './AddFieldSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
 
 export function FormBuilder() {
   const { toast } = useToast();
@@ -60,9 +61,27 @@ export function FormBuilder() {
         updated_at: new Date().toISOString()
       };
       
-      // Save to localStorage for now (would be to Supabase in production)
+      // Save to localStorage for compatibility
       const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
       localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
+      
+      // Save to Supabase
+      const { data, error } = await supabase
+        .from('form_templates')
+        .insert({
+          id: template.id,
+          name: template.name,
+          description: template.description || null,
+          public_url: publicUrl,
+          is_active: true
+        });
+      
+      if (error) {
+        console.error("Error saving to Supabase:", error);
+        // Continue even if Supabase save fails, as we have localStorage backup
+      } else {
+        console.log("Form successfully saved to Supabase:", data);
+      }
       
       toast({
         title: "Formulario guardado",
@@ -115,7 +134,7 @@ export function FormBuilder() {
           onClick={saveTemplate}
           disabled={isSaving || template.name.trim() === '' || template.fields.length === 0}
         >
-          Guardar formulario
+          {isSaving ? "Guardando..." : "Guardar formulario"}
         </Button>
       </div>
     </div>

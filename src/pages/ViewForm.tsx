@@ -5,6 +5,7 @@ import { FormTemplate } from '@/types/forms';
 import { FormViewer } from '@/components/forms/FormViewer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { 
   ArrowLeft, 
   Copy, 
@@ -12,12 +13,15 @@ import {
   ClipboardList, 
   FileText, 
   Eye, 
-  Share2 
+  Share2,
+  CheckCircle,
+  XCircle 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ViewForm() {
   const { templateId } = useParams();
@@ -34,15 +39,56 @@ export default function ViewForm() {
   const [error, setError] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [isActive, setIsActive] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   
   useEffect(() => {
-    // Cargar el template desde localStorage
-    const loadTemplate = () => {
+    // Cargar el template desde localStorage y Supabase
+    const loadTemplate = async () => {
       try {
+        // Load from localStorage for form content
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        let foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        
+        // Check Supabase for active status
+        try {
+          const { data: supabaseTemplate, error } = await supabase
+            .from('form_templates')
+            .select('*')
+            .eq('id', templateId)
+            .single();
+            
+          if (error) {
+            console.warn("No se encontró el formulario en Supabase:", error);
+          } else if (supabaseTemplate) {
+            console.log("Datos del formulario en Supabase:", supabaseTemplate);
+            
+            // If found in Supabase, get the active status
+            setIsActive(supabaseTemplate.is_active !== false);
+            
+            // If not found in localStorage but found in Supabase, create minimal template
+            if (!foundTemplate) {
+              foundTemplate = {
+                id: supabaseTemplate.id,
+                name: supabaseTemplate.name,
+                description: supabaseTemplate.description,
+                fields: [],
+                created_at: supabaseTemplate.created_at,
+                updated_at: supabaseTemplate.updated_at,
+                is_active: supabaseTemplate.is_active
+              };
+            } else {
+              // Update foundTemplate with Supabase status
+              foundTemplate = {
+                ...foundTemplate,
+                is_active: supabaseTemplate.is_active
+              };
+            }
+          }
+        } catch (supabaseErr) {
+          console.error("Error al verificar el estado en Supabase:", supabaseErr);
+        }
         
         if (foundTemplate) {
           setTemplate(foundTemplate);
@@ -94,6 +140,40 @@ export default function ViewForm() {
     }
   };
   
+  const toggleActiveStatus = async () => {
+    if (!template) return;
+    
+    try {
+      const newStatus = !isActive;
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('form_templates')
+        .update({ is_active: newStatus })
+        .eq('id', template.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setIsActive(newStatus);
+      
+      toast({
+        title: newStatus ? "Formulario activado" : "Formulario desactivado",
+        description: newStatus 
+          ? "El formulario ahora está disponible para ser completado." 
+          : "El formulario ya no está disponible para ser completado."
+      });
+    } catch (error) {
+      console.error("Error updating form status:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del formulario.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   if (loading) {
     return <div className="flex justify-center p-8">Cargando formulario...</div>;
   }
@@ -124,6 +204,27 @@ export default function ViewForm() {
           <h1 className="text-2xl font-bold">Ver formulario</h1>
           
           <div className="flex items-center gap-2">
+            <div className="flex items-center space-x-2 mr-2">
+              <Switch 
+                id="active-status"
+                checked={isActive} 
+                onCheckedChange={toggleActiveStatus} 
+              />
+              <Label htmlFor="active-status" className="flex items-center">
+                {isActive ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                    <span>Activo</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 text-red-500 mr-1" />
+                    <span>Inactivo</span>
+                  </>
+                )}
+              </Label>
+            </div>
+            
             <Button variant="outline" size="sm" onClick={openShareDialog}>
               <Share2 className="mr-2 h-4 w-4" /> Compartir formulario
             </Button>
@@ -190,6 +291,19 @@ export default function ViewForm() {
             
             <TabsContent value="share" className="p-6 space-y-4">
               <h2 className="text-xl font-semibold">Compartir formulario</h2>
+              
+              {!isActive && (
+                <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mb-4 flex items-start">
+                  <XCircle className="h-5 w-5 text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-amber-800">El formulario está inactivo</p>
+                    <p className="text-sm text-amber-700">
+                      Este formulario no puede ser completado por los usuarios. Actívalo utilizando el interruptor en la parte superior.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <p className="text-muted-foreground">
                 Comparte este formulario con otras personas para que lo completen.
               </p>
@@ -249,6 +363,19 @@ export default function ViewForm() {
               Comparte este enlace para que otras personas puedan completar el formulario.
             </DialogDescription>
           </DialogHeader>
+          {!isActive && (
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-md mb-2">
+              <div className="flex items-start">
+                <XCircle className="h-5 w-5 text-amber-500 mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-amber-800">El formulario está inactivo</p>
+                  <p className="text-sm text-amber-700">
+                    Este formulario no puede ser completado. Actívalo primero.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex items-center space-x-2">
             <Input
               value={shareUrl}
@@ -265,6 +392,7 @@ export default function ViewForm() {
               variant="outline"
               onClick={handleShare}
               className="mb-2 sm:mb-0"
+              disabled={!isActive}
             >
               <Share2 className="mr-2 h-4 w-4" /> Compartir
             </Button>
@@ -272,12 +400,14 @@ export default function ViewForm() {
               <Button
                 variant="outline"
                 onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Por favor completa este formulario: ${template?.name} ${shareUrl}`)}`, '_blank')}
+                disabled={!isActive}
               >
                 WhatsApp
               </Button>
               <Button
                 variant="outline"
                 onClick={() => window.open(`mailto:?subject=${encodeURIComponent(`Formulario: ${template?.name}`)}&body=${encodeURIComponent(`Por favor completa este formulario: ${shareUrl}`)}`, '_blank')}
+                disabled={!isActive}
               >
                 Email
               </Button>

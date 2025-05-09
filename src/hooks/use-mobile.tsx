@@ -10,29 +10,44 @@ export function useIsMobile() {
     // Función para verificar si es un dispositivo móvil
     const checkMobile = () => {
       if (typeof window !== 'undefined') {
-        // Utilizamos tanto el ancho de pantalla como userAgent para mejor detección
-        const isMobileByWidth = window.innerWidth < MOBILE_BREAKPOINT;
-        
-        // Mejorar la detección de dispositivos móviles con regex más completa
-        const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
-        const isMobileByAgent = mobileRegex.test(navigator.userAgent);
-        
-        // Agregamos touch events check
-        const touchEnabled = ('ontouchstart' in window) || 
-                            (navigator.maxTouchPoints > 0) || 
-                            (navigator as any).msMaxTouchPoints > 0;
-        
-        console.log("Detección móvil mejorada:", { 
-          isMobileByWidth, 
-          isMobileByAgent,
-          touchEnabled,
-          width: window.innerWidth, 
-          height: window.innerHeight,
-          userAgent: navigator.userAgent 
-        });
-        
-        // Si cualquiera de los tres indica que es móvil, lo consideramos móvil
-        setIsMobile(isMobileByWidth || isMobileByAgent || touchEnabled);
+        try {
+          // Utilizamos tanto el ancho de pantalla como userAgent para mejor detección
+          const isMobileByWidth = window.innerWidth < MOBILE_BREAKPOINT;
+          
+          // Mejorar la detección de dispositivos móviles con regex más completa
+          const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+          const isMobileByAgent = mobileRegex.test(navigator.userAgent);
+          
+          // Agregamos touch events check
+          const touchEnabled = ('ontouchstart' in window) || 
+                              (navigator.maxTouchPoints > 0) || 
+                              (navigator as any).msMaxTouchPoints > 0;
+          
+          // Platform-specific checks to address specific mobile devices
+          const isPlatformMobile = /Android|iPhone|iPad|iPod/.test(navigator.platform) ||
+                                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          
+          console.log("Detección móvil mejorada 2.0:", { 
+            isMobileByWidth, 
+            isMobileByAgent,
+            touchEnabled,
+            isPlatformMobile,
+            width: window.innerWidth, 
+            height: window.innerHeight,
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            maxTouchPoints: navigator.maxTouchPoints
+          });
+          
+          // Si cualquiera de las detecciones indica que es móvil, lo consideramos móvil
+          const isActuallyMobile = isMobileByWidth || isMobileByAgent || touchEnabled || isPlatformMobile;
+          
+          setIsMobile(isActuallyMobile);
+        } catch (error) {
+          console.error("Error en la detección de dispositivo móvil:", error);
+          // Si hay un error, asumimos que es móvil para estar seguros
+          setIsMobile(true);
+        }
       } else {
         // Si window no está disponible, asumimos que es móvil por defecto para ser más precavidos
         setIsMobile(true);

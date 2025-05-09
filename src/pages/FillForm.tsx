@@ -27,7 +27,37 @@ export default function FillForm() {
         console.log("Cargando formulario en dispositivo:", isMobile ? "móvil" : "escritorio");
         console.log("Intentando cargar formulario con ID:", templateId);
         
-        // First try from localStorage
+        // First try from Supabase to check if form is active
+        let formIsActive = true;
+        
+        try {
+          const { data: supabaseFormStatus, error: statusError } = await supabase
+            .from('form_templates')
+            .select('id, is_active')
+            .eq('id', templateId)
+            .single();
+          
+          console.log("Respuesta de Supabase sobre estado del formulario:", supabaseFormStatus);
+          
+          if (statusError) {
+            console.warn("No se pudo verificar el estado del formulario en Supabase:", statusError);
+            // Continue with localStorage approach if Supabase status check fails
+          } else if (supabaseFormStatus && !supabaseFormStatus.is_active) {
+            formIsActive = false;
+            setError('Este formulario ya no está activo');
+            setLoading(false);
+            return;
+          }
+        } catch (supabaseErr) {
+          console.warn("Error verificando estado en Supabase:", supabaseErr);
+          // Continue with localStorage approach if Supabase fails
+        }
+        
+        if (!formIsActive) {
+          return;
+        }
+        
+        // Then try from localStorage
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
         let foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
         
@@ -35,13 +65,10 @@ export default function FillForm() {
         if (!foundTemplate) {
           console.log("Formulario no encontrado en localStorage, buscando en Supabase...");
           
-          // Create a form_templates table if needed in Supabase
-          // For now, we'll simulate having the table and accessing it
           try {
-            // Try to fetch from a hypothetical form_templates table
-            // This is just a placeholder - we'd need to create this table first
+            // Try to fetch from form_templates table in Supabase
             const { data: supabaseTemplate, error: supabaseError } = await supabase
-              .from('form_responses')
+              .from('form_templates')
               .select('*')
               .eq('id', templateId)
               .single();
@@ -54,33 +81,40 @@ export default function FillForm() {
             if (supabaseTemplate) {
               console.log("Formulario encontrado en Supabase:", supabaseTemplate);
               
-              // Convert supabase response to FormTemplate format
-              // This is just a simplified example
-              foundTemplate = {
-                id: supabaseTemplate.id,
-                name: supabaseTemplate.form_type || "Formulario",
-                description: "Formulario cargado desde Supabase",
-                fields: [
-                  {
-                    id: "1",
-                    name: "worker_name",
-                    label: "Nombre del Trabajador",
-                    type: "text",
-                    required: true,
-                    field_order: 0
-                  },
-                  {
-                    id: "2",
-                    name: "proyecto",
-                    label: "Proyecto",
-                    type: "text",
-                    required: true,
-                    field_order: 1
-                  }
-                ],
-                created_at: supabaseTemplate.created_at,
-                updated_at: supabaseTemplate.created_at
-              };
+              // Try to load form data from localStorage using the ID
+              const localFormData = storedTemplates.find((t: FormTemplate) => t.id === supabaseTemplate.id);
+              
+              if (localFormData) {
+                // We have the form content in localStorage
+                foundTemplate = localFormData;
+              } else {
+                // Get default form template (we need to create a minimal structure)
+                foundTemplate = {
+                  id: supabaseTemplate.id,
+                  name: supabaseTemplate.name,
+                  description: supabaseTemplate.description || "Formulario",
+                  fields: [
+                    {
+                      id: "1",
+                      name: "worker_name",
+                      label: "Nombre del Trabajador",
+                      type: "text",
+                      required: true,
+                      field_order: 0
+                    },
+                    {
+                      id: "2",
+                      name: "proyecto",
+                      label: "Proyecto",
+                      type: "text",
+                      required: true,
+                      field_order: 1
+                    }
+                  ],
+                  created_at: supabaseTemplate.created_at,
+                  updated_at: supabaseTemplate.updated_at
+                };
+              }
             }
           } catch (supabaseErr) {
             console.error("Error buscando en Supabase:", supabaseErr);
