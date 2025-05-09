@@ -35,7 +35,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/formularios" element={<MyForms />} /> {/* Changed from FormsList to MyForms */}
+            <Route path="/formularios" element={<MyForms />} />
             <Route path="/formularios/mis-formularios" element={<MyForms />} />
             <Route path="/formularios/crear" element={<CreateForm />} />
             <Route path="/formularios/ver/:templateId" element={<FormAdmin />} />

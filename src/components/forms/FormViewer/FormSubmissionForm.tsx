@@ -96,7 +96,7 @@ export function FormSubmissionForm({
         submissionDate: submissionDate.toISOString(),
         submitter_name: submitterName,
         template_name: template.name,
-        projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
+        projectMetadata: template.projectMetadata // Include project metadata
       };
       
       // Send to webhook with the new numbered format as plain text

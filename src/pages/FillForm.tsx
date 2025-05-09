@@ -95,7 +95,7 @@ export default function FillForm() {
             }
           } else if (Array.isArray(data.fields)) {
             // If fields is already an array, map it to ensure type safety
-            fields = (data.fields as Json[]).map(field => {
+            fields = data.fields.map((field: any) => {
               if (typeof field === 'object' && field !== null) {
                 return {
                   id: String(field.id || ''),

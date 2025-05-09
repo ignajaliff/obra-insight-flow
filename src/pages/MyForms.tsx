@@ -68,7 +68,7 @@ export default function MyForms() {
               }
             } else if (Array.isArray(template.fields)) {
               // If fields is already an array, map it to ensure type safety
-              fields = (template.fields as Json[]).map(field => {
+              fields = template.fields.map((field: any) => {
                 if (typeof field === 'object' && field !== null) {
                   return {
                     id: String(field.id || ''),
