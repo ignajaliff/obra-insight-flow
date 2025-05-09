@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { FormTemplate, FormField, FieldType } from '@/types/forms';
+import { FormTemplate, FormField, FieldType, ProjectMetadata } from '@/types/forms';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FormLoaderProps {
@@ -80,8 +80,10 @@ export function FormLoader({
               updated_at: formData.updated_at,
               is_active: formData.is_active,
               public_url: formData.public_url,
-              // Fix the property name mismatch - use projectmetadata from the database
-              projectMetadata: formData.projectmetadata || undefined
+              // Fix the property name and ensure proper type conversion
+              projectMetadata: formData.projectmetadata && typeof formData.projectmetadata === 'object'
+                ? formData.projectmetadata as ProjectMetadata 
+                : undefined
             };
             
             console.log("Processed form:", formWithFields);
