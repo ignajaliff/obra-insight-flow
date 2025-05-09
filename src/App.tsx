@@ -11,7 +11,6 @@ import ImportData from "./pages/ImportData";
 import NotFound from "./pages/NotFound";
 import FormAdmin from "./pages/FormAdmin";
 import AvailableForms from "./pages/AvailableForms";
-import FormFillPage from "./pages/FormFillPage";
 import Login from "./pages/Login";
 import UsersManagement from "./pages/UsersManagement";
 import Index from "./pages/Index";
@@ -32,7 +31,7 @@ const App = () => (
           {/* Authentication Routes */}
           <Route path="/login" element={<Login />} />
           
-          {/* Public Form Route */}
+          {/* Public Form Route - Must be outside the AppLayout to be fully public */}
           <Route path="/formularios/rellenar/:templateId" element={<FillForm />} />
 
           {/* Protected Routes */}
@@ -44,8 +43,6 @@ const App = () => (
             <Route path="/formularios/crear" element={<CreateForm />} />
             <Route path="/formularios/ver/:templateId" element={<ViewForm />} />
             <Route path="/formularios/disponibles" element={<AvailableForms />} />
-            <Route path="/formularios/rellenar/:templateId" element={<FormFillPage />} />
-            <Route path="/formularios/admin" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<UsersManagement />} />
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
