@@ -30,6 +30,7 @@ export default function FillForm() {
           setTemplate(foundTemplate);
         } else {
           setError('Formulario no encontrado');
+          console.error(`Formulario con ID ${templateId} no encontrado`);
         }
       } catch (err) {
         console.error('Error loading template:', err);
@@ -61,11 +62,21 @@ export default function FillForm() {
   
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-8 space-y-4">
-        <div className="text-destructive text-xl font-medium">{error}</div>
-        <Button onClick={() => navigate('/')} variant="default">
-          Volver al inicio
-        </Button>
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-4 md:p-8 text-center">
+        <img 
+          src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+          alt="Sepcon Logo" 
+          className="h-12 md:h-16 mb-6"
+        />
+        <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
+          <div className="text-destructive text-xl font-medium mb-4">{error}</div>
+          <p className="text-gray-600 mb-6">
+            Es posible que este formulario ya no esté disponible o haya sido respondido anteriormente.
+          </p>
+          <Button onClick={() => window.location.href = "/"} variant="default" className="w-full">
+            Volver
+          </Button>
+        </div>
       </div>
     );
   }
