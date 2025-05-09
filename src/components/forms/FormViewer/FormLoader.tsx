@@ -56,8 +56,13 @@ export function FormLoader({
               }))
             : [];
             
-          // Simplify project metadata handling
-          const projectMetadata = formData.projectmetadata || {};
+          // Handle project metadata safely by creating a new object to avoid type issues
+          const rawMetadata = formData.projectmetadata || {};
+          const projectMetadata = {
+            projectName: rawMetadata.projectName as string | undefined,
+            companyName: rawMetadata.companyName as string | undefined,
+            location: rawMetadata.location as string | undefined
+          };
           
           const formWithFields: FormTemplate = {
             id: formData.id,

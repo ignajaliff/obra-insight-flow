@@ -22,6 +22,7 @@ export default function FillForm() {
   
   console.log("FillForm rendering with isMobile:", isMobile);
   console.log("Template ID:", templateId);
+  console.log("Current loading state:", loading);
   
   // Handle template loading with the FormLoader component
   const handleTemplateLoaded = (loadedTemplate: FormTemplate) => {
@@ -36,6 +37,7 @@ export default function FillForm() {
   };
   
   const handleLoadingChange = (isLoading: boolean) => {
+    console.log("Loading state changed to:", isLoading);
     setLoading(isLoading);
   };
   
