@@ -90,14 +90,20 @@ export function FormLoader({
               // If fields exist and are valid, use the form as is
               console.log("Form found with valid fields:", formData);
               
-              // Ensure each field has the correct type by casting
+              // Ensure each field has the correct type by properly casting
               const typedFields: FormField[] = formData.fields.map((field: any) => ({
-                ...field,
-                type: field.type as FieldType
+                id: String(field.id),
+                name: String(field.name),
+                label: String(field.label),
+                type: field.type as FieldType,
+                required: Boolean(field.required),
+                field_order: Number(field.field_order),
+                options: Array.isArray(field.options) ? field.options.map(String) : undefined,
+                isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined
               }));
               
               // Extract project metadata (with a safe default)
-              const projectMetadata = {};
+              const projectMetadata = {}; // Default to empty object
               
               // Ensure the form data matches our FormTemplate type
               const validForm: FormTemplate = {

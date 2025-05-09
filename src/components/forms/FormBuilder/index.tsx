@@ -72,7 +72,8 @@ export function FormBuilder() {
           id: template.id,
           name: template.name,
           description: template.description || null,
-          fields: template.fields,
+          // Stringify the fields array to make it compatible with Supabase's JSON type
+          fields: JSON.parse(JSON.stringify(template.fields)),
           public_url: publicUrl,
           is_active: true
         });
