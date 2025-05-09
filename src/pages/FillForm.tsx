@@ -89,14 +89,6 @@ export default function FillForm() {
           } else if (supabaseForm) {
             console.log("Formulario encontrado en Supabase:", supabaseForm);
             
-            // Only check if form is active when loading from Supabase
-            // IMPORTANT: Remove the active check to allow anyone with the link to access
-            // if (supabaseForm.is_active === false) {
-            //   setError('Este formulario ya no está activo');
-            //   setLoading(false);
-            //   return;
-            // }
-            
             // Get fields from localStorage if needed
             const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
             const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
@@ -109,8 +101,29 @@ export default function FillForm() {
                 projectMetadata: localTemplate.projectMetadata
               });
             } else {
-              // Use what we have from Supabase
-              setTemplate(supabaseForm);
+              // If we have the form from Supabase but no fields data,
+              // we need to create a default fields array
+              setTemplate({
+                ...supabaseForm,
+                fields: [
+                  {
+                    id: "1",
+                    name: "worker_name",
+                    label: "Nombre del Trabajador",
+                    type: "text",
+                    required: true,
+                    field_order: 0
+                  },
+                  {
+                    id: "2",
+                    name: "proyecto",
+                    label: "Proyecto",
+                    type: "text",
+                    required: true,
+                    field_order: 1
+                  }
+                ]
+              });
             }
           }
         } catch (supabaseErr) {
