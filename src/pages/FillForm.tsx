@@ -91,10 +91,11 @@ export default function FillForm() {
               }
             ];
             
-            // We have the basic form info, but we need to ensure it has fields
+            // Fixed TypeScript error: Explicitly cast to FormTemplate with fields
             const formWithFields: FormTemplate = {
               ...formData,
-              fields: formData.fields || defaultFields
+              // Add fields array, either from formData.fields or use default if undefined
+              fields: (formData as any).fields || defaultFields
             };
             
             console.log("Form with fields:", formWithFields);
