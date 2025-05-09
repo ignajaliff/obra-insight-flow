@@ -1,12 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -15,22 +13,24 @@ export default function FillForm() {
   const [error, setError] = useState<string | null>(null);
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   
   useEffect(() => {
     // Load the template from localStorage
-    const loadTemplate = () => {
+    const loadTemplate = async () => {
       try {
+        setLoading(true);
+        console.log("Intentando cargar formulario con ID:", templateId);
+        
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
         const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
         
         if (foundTemplate) {
+          console.log("Formulario encontrado:", foundTemplate.name);
           setTemplate(foundTemplate);
         } else {
           setError('Formulario no encontrado');
-          console.error(`Formulario con ID ${templateId} no encontrado`);
+          console.error(`Formulario con ID ${templateId} no encontrado`, { storedTemplates });
         }
       } catch (err) {
         console.error('Error loading template:', err);
@@ -47,6 +47,7 @@ export default function FillForm() {
   useEffect(() => {
     setSubmissionComplete(false);
     setSubmissionData(null);
+    setError(null);
   }, [templateId]);
 
   if (loading) {
@@ -73,9 +74,7 @@ export default function FillForm() {
           <p className="text-gray-600 mb-6">
             Es posible que este formulario ya no esté disponible o haya sido respondido anteriormente.
           </p>
-          <Button onClick={() => window.location.href = "/"} variant="default" className="w-full">
-            Volver
-          </Button>
+          {/* Eliminamos el botón para evitar navegación no deseada */}
         </div>
       </div>
     );

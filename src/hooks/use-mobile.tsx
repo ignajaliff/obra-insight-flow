@@ -1,31 +1,42 @@
 
-import * as React from "react"
+import * as React from "react";
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 768;
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean>(
-    typeof window !== 'undefined' ? window.innerWidth < MOBILE_BREAKPOINT : false
-  )
+  const [isMobile, setIsMobile] = React.useState<boolean>(false);
 
   React.useEffect(() => {
-    if (typeof window === 'undefined') return
-    
+    // Función para verificar si es un dispositivo móvil
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    }
+      if (typeof window !== 'undefined') {
+        // Utilizamos tanto el ancho de pantalla como userAgent para mejor detección
+        const isMobileByWidth = window.innerWidth < MOBILE_BREAKPOINT;
+        const isMobileByAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        console.log("Detección móvil:", { 
+          isMobileByWidth, 
+          isMobileByAgent, 
+          width: window.innerWidth, 
+          userAgent: navigator.userAgent 
+        });
+        
+        // Si cualquiera de los dos indica que es móvil, lo consideramos móvil
+        setIsMobile(isMobileByWidth || isMobileByAgent);
+      }
+    };
     
-    // Check immediately on component mount
-    checkMobile()
+    // Verificar inmediatamente al montar el componente
+    checkMobile();
     
-    // Add event listener for window resize
-    window.addEventListener('resize', checkMobile)
+    // Añadir event listener para cuando cambie el tamaño de la ventana
+    window.addEventListener('resize', checkMobile);
     
-    // Clean up
+    // Limpiar
     return () => {
-      window.removeEventListener('resize', checkMobile)
-    }
-  }, [])
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
-  return isMobile
+  return isMobile;
 }
