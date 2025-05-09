@@ -5,16 +5,35 @@ import { FormTemplate } from '@/types/forms';
 import { FormViewer } from '@/components/forms/FormViewer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Copy, Link as LinkIcon, ClipboardList } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Copy, 
+  Link as LinkIcon, 
+  ClipboardList, 
+  FileText, 
+  Eye, 
+  Share2 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function ViewForm() {
   const { templateId } = useParams();
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -27,6 +46,7 @@ export default function ViewForm() {
         
         if (foundTemplate) {
           setTemplate(foundTemplate);
+          setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
         } else {
           setError('Formulario no encontrado');
         }
@@ -42,13 +62,36 @@ export default function ViewForm() {
   }, [templateId]);
 
   const copyFormLink = () => {
-    const url = `${window.location.origin}/formularios/rellenar/${templateId}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(shareUrl);
     
     toast({
       title: "Enlace copiado",
       description: "El enlace del formulario ha sido copiado al portapapeles."
     });
+  };
+  
+  const openShareDialog = () => {
+    setShareDialogOpen(true);
+  };
+  
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Formulario: ${template?.name}`,
+          text: `Por favor completa este formulario: ${template?.name}`,
+          url: shareUrl
+        });
+        toast({
+          title: "Compartido",
+          description: "El formulario ha sido compartido exitosamente."
+        });
+      } catch (error) {
+        console.error('Error al compartir:', error);
+      }
+    } else {
+      copyFormLink();
+    }
   };
   
   if (loading) {
@@ -81,13 +124,13 @@ export default function ViewForm() {
           <h1 className="text-2xl font-bold">Ver formulario</h1>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={copyFormLink}>
-              <Copy className="mr-2 h-4 w-4" /> Copiar enlace
+            <Button variant="outline" size="sm" onClick={openShareDialog}>
+              <Share2 className="mr-2 h-4 w-4" /> Compartir formulario
             </Button>
             
             <Button asChild variant="outline" size="sm">
-              <Link to={`/formularios/rellenar/${templateId}`}>
-                <LinkIcon className="mr-2 h-4 w-4" /> Abrir formulario
+              <Link to={`/formularios/rellenar/${templateId}`} target="_blank">
+                <Eye className="mr-2 h-4 w-4" /> Vista previa
               </Link>
             </Button>
           </div>
@@ -104,6 +147,9 @@ export default function ViewForm() {
                   <ClipboardList className="mr-2 h-4 w-4" /> Información del proyecto
                 </TabsTrigger>
               )}
+              <TabsTrigger value="share" className="flex-1">
+                <LinkIcon className="mr-2 h-4 w-4" /> Compartir
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="preview">
@@ -141,9 +187,104 @@ export default function ViewForm() {
                 </div>
               </TabsContent>
             )}
+            
+            <TabsContent value="share" className="p-6 space-y-4">
+              <h2 className="text-xl font-semibold">Compartir formulario</h2>
+              <p className="text-muted-foreground">
+                Comparte este formulario con otras personas para que lo completen.
+              </p>
+              
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-col space-y-2">
+                  <label htmlFor="share-url" className="text-sm font-medium">
+                    Enlace del formulario
+                  </label>
+                  <div className="flex space-x-2">
+                    <Input 
+                      id="share-url"
+                      value={shareUrl} 
+                      readOnly 
+                      className="flex-1" 
+                    />
+                    <Button onClick={copyFormLink} className="shrink-0">
+                      <Copy className="mr-2 h-4 w-4" /> Copiar
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="pt-4 flex flex-col space-y-2">
+                  <h3 className="font-medium">Compartir directamente</h3>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={handleShare} variant="outline">
+                      <Share2 className="mr-2 h-4 w-4" /> Compartir
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Por favor completa este formulario: ${template.name} ${shareUrl}`)}`, '_blank')}
+                    >
+                      WhatsApp
+                    </Button>
+                    
+                    <Button 
+                      variant="outline"
+                      onClick={() => window.open(`mailto:?subject=${encodeURIComponent(`Formulario: ${template.name}`)}&body=${encodeURIComponent(`Por favor completa este formulario: ${shareUrl}`)}`, '_blank')}
+                    >
+                      Email
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
           </Tabs>
         </Card>
       )}
+      
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartir formulario</DialogTitle>
+            <DialogDescription>
+              Comparte este enlace para que otras personas puedan completar el formulario.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <Input
+              value={shareUrl}
+              readOnly
+              className="flex-1"
+            />
+            <Button onClick={copyFormLink} type="submit" size="sm" className="px-3">
+              <span className="sr-only">Copiar</span>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between">
+            <Button 
+              variant="outline"
+              onClick={handleShare}
+              className="mb-2 sm:mb-0"
+            >
+              <Share2 className="mr-2 h-4 w-4" /> Compartir
+            </Button>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Por favor completa este formulario: ${template?.name} ${shareUrl}`)}`, '_blank')}
+              >
+                WhatsApp
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open(`mailto:?subject=${encodeURIComponent(`Formulario: ${template?.name}`)}&body=${encodeURIComponent(`Por favor completa este formulario: ${shareUrl}`)}`, '_blank')}
+              >
+                Email
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

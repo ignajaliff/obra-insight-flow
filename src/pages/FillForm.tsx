@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
-import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
-import { FormSubmissionComplete } from '@/components/forms/FormViewer/FormSubmissionComplete';
+import { FormViewer } from '@/components/forms/FormViewer';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -13,6 +14,8 @@ export default function FillForm() {
   const [error, setError] = useState<string | null>(null);
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
   useEffect(() => {
     // Load the template from localStorage
@@ -37,6 +40,11 @@ export default function FillForm() {
     loadTemplate();
   }, [templateId]);
   
+  const handleSubmissionComplete = (submission: FormSubmission) => {
+    setSubmissionData(submission);
+    setSubmissionComplete(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc]">
@@ -52,6 +60,9 @@ export default function FillForm() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-8 space-y-4">
         <div className="text-destructive text-xl font-medium">{error}</div>
+        <Button onClick={() => navigate('/')} variant="default">
+          Volver al inicio
+        </Button>
       </div>
     );
   }
@@ -69,16 +80,15 @@ export default function FillForm() {
         
         {template && (
           <Card>
-            {submissionComplete && submissionData ? (
-              <FormSubmissionComplete template={template} submissionData={submissionData} />
-            ) : (
-              <FormSubmissionForm 
-                template={template}
-                webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850"
-                setSubmissionComplete={setSubmissionComplete}
-                setSubmissionData={setSubmissionData}
-              />
-            )}
+            <FormViewer 
+              template={template}
+              readOnly={submissionComplete}
+              webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850"
+              submissionComplete={submissionComplete}
+              submissionData={submissionData}
+              setSubmissionComplete={setSubmissionComplete}
+              setSubmissionData={setSubmissionData}
+            />
           </Card>
         )}
       </div>

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { SignatureField } from './SignatureField';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import html2pdf from 'html2pdf.js';
 
@@ -24,16 +22,35 @@ interface FormViewerProps {
   template?: FormTemplate;
   readOnly?: boolean;
   webhookUrl?: string;
+  submissionComplete?: boolean;
+  submissionData?: FormSubmission | null;
+  setSubmissionComplete?: (value: boolean) => void;
+  setSubmissionData?: (data: FormSubmission) => void;
 }
 
-export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewerProps) {
+export function FormViewer({ 
+  template, 
+  readOnly = false, 
+  webhookUrl,
+  submissionComplete: externalSubmissionComplete,
+  submissionData: externalSubmissionData,
+  setSubmissionComplete: externalSetSubmissionComplete,
+  setSubmissionData: externalSetSubmissionData
+}: FormViewerProps) {
   const { toast } = useToast();
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitterName, setSubmitterName] = useState('');
   const [submissionDate, setSubmissionDate] = useState<Date>(new Date());
-  const [submissionComplete, setSubmissionComplete] = useState(false);
-  const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
+  
+  // Use external state if provided, otherwise use local state
+  const [internalSubmissionComplete, setInternalSubmissionComplete] = useState(false);
+  const [internalSubmissionData, setInternalSubmissionData] = useState<FormSubmission | null>(null);
+  
+  const submissionComplete = externalSubmissionComplete !== undefined ? externalSubmissionComplete : internalSubmissionComplete;
+  const setSubmissionComplete = externalSetSubmissionComplete || setInternalSubmissionComplete;
+  const submissionData = externalSubmissionData !== undefined ? externalSubmissionData : internalSubmissionData;
+  const setSubmissionData = externalSetSubmissionData || setInternalSubmissionData;
   
   if (!template) {
     return <div className="text-center p-8">Formulario no encontrado</div>;
@@ -118,6 +135,10 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
             webhookContent += `\n`;
           }
           
+          // Extract signature for separate field
+          const signatureField = template.fields.find(f => f.type === 'signature');
+          const firma = signatureField ? formValues[signatureField.name] : null;
+          
           // Add each field with its number
           template.fields.forEach((field, index) => {
             const questionNumber = index + 1;
@@ -143,12 +164,16 @@ export function FormViewer({ template, readOnly = false, webhookUrl }: FormViewe
           
           console.log('Sending data to webhook:', webhookContent);
           
+          // Send webhook content as text/plain and signature as PNG in base64
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
             },
-            body: webhookContent
+            body: JSON.stringify({
+              contenido: webhookContent,
+              firmaimg: firma || ""
+            })
           });
           
           if (!response.ok) {
