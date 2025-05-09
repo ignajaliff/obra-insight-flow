@@ -32,10 +32,8 @@ export function FormLoader({
         console.log("Loading template with ID:", templateId);
         
         // Try to load from Supabase first
-        let formFound = false;
-        
         try {
-          // Try to get the form from Supabase
+          // Get the form from Supabase including fields
           const { data: formData, error: supabaseError } = await supabase
             .from('form_templates')
             .select('*')
@@ -46,90 +44,112 @@ export function FormLoader({
           console.log("Supabase error:", supabaseError);
           
           if (formData && !supabaseError) {
-            // Add default fields if none are present
-            const defaultFields = [
-              {
-                id: "1",
-                name: "worker_name",
-                label: "Nombre del Trabajador",
-                type: "text",
-                required: true,
-                field_order: 0
-              },
-              {
-                id: "2",
-                name: "proyecto",
-                label: "Proyecto",
-                type: "text",
-                required: true,
-                field_order: 1
-              }
-            ];
-            
-            // Explicitly cast to FormTemplate with fields
-            const formWithFields: FormTemplate = {
-              ...formData,
-              // Add fields array, either from formData.fields or use default if undefined
-              fields: Array.isArray((formData as any).fields) ? (formData as any).fields : defaultFields
-            };
-            
-            console.log("Form with fields:", formWithFields);
-            onLoaded(formWithFields);
-            formFound = true;
-          }
-        } catch (e) {
-          // Continue to localStorage fallback
-          console.error("Error al obtener formulario de Supabase:", e);
-        }
-        
-        // If we didn't find the form in Supabase, try localStorage
-        if (!formFound) {
-          console.log("Form not found in Supabase, trying localStorage");
-          
-          try {
-            const storedTemplates = localStorage.getItem('formTemplates');
-            if (!storedTemplates) {
-              console.log("No templates found in localStorage");
-              onError('No se encontraron formularios guardados');
-              onLoadingChange(false);
-              return;
-            }
-            
-            const parsedTemplates = JSON.parse(storedTemplates);
-            console.log("Local storage templates:", parsedTemplates);
-            
-            if (!Array.isArray(parsedTemplates)) {
-              console.log("Stored templates is not an array");
-              onError('Formato de formularios guardados no válido');
-              onLoadingChange(false);
-              return;
-            }
-            
-            const localTemplate = parsedTemplates.find((t: any) => t.id === templateId);
-            console.log("Found local template:", localTemplate);
-            
-            if (localTemplate) {
-              // Ensure fields exist
-              const templateWithFields: FormTemplate = {
-                ...localTemplate,
-                fields: Array.isArray(localTemplate.fields) ? localTemplate.fields : []
+            // Check if fields exist and are in the right format
+            if (!formData.fields || !Array.isArray(formData.fields)) {
+              console.log("Form found but fields are missing or invalid");
+              
+              // Add default fields if none are present
+              const defaultFields = [
+                {
+                  id: "1",
+                  name: "worker_name",
+                  label: "Nombre del Trabajador",
+                  type: "text",
+                  required: true,
+                  field_order: 0
+                },
+                {
+                  id: "2",
+                  name: "proyecto",
+                  label: "Proyecto",
+                  type: "text",
+                  required: true,
+                  field_order: 1
+                }
+              ];
+              
+              // Create a complete form template with default fields
+              const formWithFields: FormTemplate = {
+                id: formData.id,
+                name: formData.name,
+                description: formData.description || undefined,
+                fields: defaultFields,
+                created_at: formData.created_at,
+                updated_at: formData.updated_at,
+                is_active: formData.is_active,
+                public_url: formData.public_url,
+                projectMetadata: formData.projectMetadata || {}
               };
               
-              onLoaded(templateWithFields);
-              formFound = true;
+              console.log("Created form with default fields:", formWithFields);
+              onLoaded(formWithFields);
             } else {
-              console.log("Form not found in localStorage either");
-              onError('Formulario no encontrado');
+              // If fields exist and are valid, use the form as is
+              console.log("Form found with valid fields:", formData);
+              
+              // Ensure the form data matches our FormTemplate type
+              const validForm: FormTemplate = {
+                id: formData.id,
+                name: formData.name,
+                description: formData.description || undefined,
+                fields: formData.fields,
+                created_at: formData.created_at,
+                updated_at: formData.updated_at,
+                is_active: formData.is_active,
+                public_url: formData.public_url,
+                projectMetadata: formData.projectMetadata || {}
+              };
+              
+              onLoaded(validForm);
             }
-          } catch (localStorageError) {
-            console.error("Error accessing localStorage:", localStorageError);
-            onError('Error al buscar el formulario');
+            return;
+          } else if (supabaseError) {
+            console.error("Error fetching form from Supabase:", supabaseError);
           }
+        } catch (supabaseError) {
+          console.error("Exception while fetching form from Supabase:", supabaseError);
         }
         
-        if (!formFound) {
-          console.log("Form not found anywhere");
-          onError('Formulario no encontrado');
+        // If Supabase fails or form not found, fall back to localStorage
+        console.log("Form not found in Supabase, trying localStorage");
+        
+        try {
+          const storedTemplates = localStorage.getItem('formTemplates');
+          if (!storedTemplates) {
+            console.log("No templates found in localStorage");
+            onError('No se encontraron formularios guardados');
+            onLoadingChange(false);
+            return;
+          }
+          
+          const parsedTemplates = JSON.parse(storedTemplates);
+          console.log("Local storage templates:", parsedTemplates);
+          
+          if (!Array.isArray(parsedTemplates)) {
+            console.log("Stored templates is not an array");
+            onError('Formato de formularios guardados no válido');
+            onLoadingChange(false);
+            return;
+          }
+          
+          const localTemplate = parsedTemplates.find((t: any) => t.id === templateId);
+          console.log("Found local template:", localTemplate);
+          
+          if (localTemplate) {
+            // Ensure fields exist
+            const templateWithFields: FormTemplate = {
+              ...localTemplate,
+              fields: Array.isArray(localTemplate.fields) ? localTemplate.fields : []
+            };
+            
+            onLoaded(templateWithFields);
+          } else {
+            console.log("Form not found in localStorage either");
+            onError('Formulario no encontrado');
+          }
+        } catch (localStorageError) {
+          console.error("Error accessing localStorage:", localStorageError);
+          onError('Error al buscar el formulario');
         }
       } catch (err) {
         console.error('Error loading template:', err);

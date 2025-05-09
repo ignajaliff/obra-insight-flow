@@ -65,13 +65,14 @@ export function FormBuilder() {
       const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
       localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
       
-      // Save to Supabase
+      // Save to Supabase - Now storing the entire template including fields
       const { data, error } = await supabase
         .from('form_templates')
         .insert({
           id: template.id,
           name: template.name,
           description: template.description || null,
+          fields: template.fields,
           public_url: publicUrl,
           is_active: true
         });

@@ -1,33 +1,35 @@
 
-import { ArrowLeft } from 'lucide-react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
 
 interface ErrorStateProps {
   errorMessage: string;
+  backUrl?: string;
 }
 
-export function ErrorState({ errorMessage }: ErrorStateProps) {
-  const navigate = useNavigate();
-  
+export function ErrorState({ 
+  errorMessage, 
+  backUrl = '/formularios' 
+}: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-4 md:p-8 text-center">
-      <img 
-        src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
-        alt="Sepcon Logo" 
-        className="h-12 md:h-16 mb-6"
-      />
-      <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
-        <div className="text-destructive text-xl font-medium mb-4">{errorMessage}</div>
-        <p className="text-gray-600 mb-6">
-          Es posible que este formulario ya no esté disponible o haya sido respondido anteriormente. Por favor verifica la URL o contacta a la persona que compartió el enlace.
-        </p>
-        
-        <Button 
-          className="w-full bg-[#5DADE2] hover:bg-[#3498DB]" 
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+    <div className="min-h-[300px] w-full flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-sm">
+      <div className="rounded-full bg-red-100 p-3 mb-4">
+        <AlertCircle className="h-8 w-8 text-red-600" />
+      </div>
+      <h3 className="text-xl font-semibold mb-2 text-center">Error al cargar el formulario</h3>
+      <p className="text-muted-foreground text-center mb-4">
+        {errorMessage}
+      </p>
+      <div className="flex gap-3">
+        <Button onClick={() => window.location.reload()} variant="outline">
+          Reintentar
+        </Button>
+        <Button asChild>
+          <Link to={backUrl}>
+            Ver formularios disponibles
+          </Link>
         </Button>
       </div>
     </div>
