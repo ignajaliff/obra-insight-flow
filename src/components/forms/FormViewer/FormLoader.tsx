@@ -57,8 +57,25 @@ export function FormLoader({
               }))
             : [];
             
-          // Handle project metadata
-          const projectMetadata: ProjectMetadata = formData.projectmetadata || {};
+          // Handle project metadata with proper type checking
+          const rawMetadata = formData.projectmetadata;
+          let projectMetadata: ProjectMetadata = {};
+          
+          // Make sure projectmetadata is an object before trying to use it
+          if (rawMetadata && typeof rawMetadata === 'object' && !Array.isArray(rawMetadata)) {
+            projectMetadata = {
+              projectName: typeof rawMetadata.projectName === 'string' ? rawMetadata.projectName : undefined,
+              companyName: typeof rawMetadata.companyName === 'string' ? rawMetadata.companyName : undefined,
+              location: typeof rawMetadata.location === 'string' ? rawMetadata.location : undefined,
+            };
+            
+            // Add any additional properties from rawMetadata
+            Object.entries(rawMetadata).forEach(([key, value]) => {
+              if (!['projectName', 'companyName', 'location'].includes(key) && typeof value === 'string') {
+                projectMetadata[key] = value;
+              }
+            });
+          }
           
           const formWithFields: FormTemplate = {
             id: formData.id,
