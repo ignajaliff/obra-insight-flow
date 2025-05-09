@@ -9,20 +9,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExampleFormButton, CreateExampleFormOnLoad } from '@/components/ExampleForm';
 import { Json } from '@/integrations/supabase/types';
 import { FormBuilder } from '@/components/forms/FormBuilder';
+import { FormTemplateList } from '@/components/forms/FormTemplateList';
 
 export default function MyForms() {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFormBuilder, setShowFormBuilder] = useState(false);
+  const [templateToEdit, setTemplateToEdit] = useState<FormTemplate | null>(null);
   const { toast } = useToast();
-  
-  const copyToClipboard = (url: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}${url}`);
-    toast({
-      title: "Enlace copiado",
-      description: "El enlace del formulario ha sido copiado al portapapeles."
-    });
-  };
   
   const loadTemplates = async () => {
     try {
@@ -111,10 +105,21 @@ export default function MyForms() {
     // Refresh the forms list and hide the form builder
     loadTemplates();
     setShowFormBuilder(false);
+    setTemplateToEdit(null);
     toast({
-      title: "Formulario creado",
-      description: "Tu formulario ha sido creado exitosamente."
+      title: "Formulario guardado",
+      description: "Tu formulario ha sido guardado exitosamente."
     });
+  };
+  
+  const handleEditTemplate = (template: FormTemplate) => {
+    setTemplateToEdit(template);
+    setShowFormBuilder(true);
+  };
+  
+  const handleDeleteTemplate = (templateId: string) => {
+    // Update the local state to remove the deleted template
+    setTemplates(templates.filter(template => template.id !== templateId));
   };
   
   if (loading) {
@@ -149,17 +154,25 @@ export default function MyForms() {
     return (
       <div className="container py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Crear Formulario</h1>
+          <h1 className="text-2xl font-bold">
+            {templateToEdit ? 'Editar Formulario' : 'Crear Formulario'}
+          </h1>
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => setShowFormBuilder(false)}
+            onClick={() => {
+              setShowFormBuilder(false);
+              setTemplateToEdit(null);
+            }}
             className="flex items-center"
           >
             <X className="mr-2 h-4 w-4" /> Cancelar
           </Button>
         </div>
-        <FormBuilder onFormCreated={handleFormCreated} />
+        <FormBuilder 
+          onFormCreated={handleFormCreated}
+          initialTemplate={templateToEdit}
+        />
       </div>
     );
   }
@@ -198,54 +211,11 @@ export default function MyForms() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {templates.map((template) => (
-            <Card key={template.id}>
-              <CardHeader>
-                <CardTitle>{template.name}</CardTitle>
-                <CardDescription>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {new Date(template.created_at).toLocaleDateString()}
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {template.fields.length} campos
-                </p>
-                {/* Display project info summary if available */}
-                {template.projectMetadata && template.projectMetadata.projectName && (
-                  <p className="text-sm mt-1">
-                    <span className="font-medium">Proyecto:</span> {template.projectMetadata.projectName}
-                  </p>
-                )}
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-2">
-                <div className="flex gap-2 w-full">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => copyToClipboard(template.public_url || `/formularios/rellenar/${template.id}`)}
-                  >
-                    <ClipboardCopy className="h-3.5 w-3.5 mr-2" />
-                    Compartir
-                  </Button>
-                  <Button
-                    asChild
-                    size="sm"
-                    className="flex-1"
-                  >
-                    <a href={`/formularios/rellenar/${template.id}`} target="_blank" rel="noopener noreferrer">
-                      Ver
-                    </a>
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        <FormTemplateList 
+          templates={templates} 
+          onEdit={handleEditTemplate} 
+          onDelete={handleDeleteTemplate} 
+        />
       )}
     </div>
   );
