@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { FormTemplate, FormField, FieldType, ProjectMetadata } from '@/types/forms';
+import { FormTemplate, FormField, FieldType } from '@/types/forms';
 import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
 
 interface FormLoaderProps {
   templateId: string | undefined;
@@ -57,25 +56,8 @@ export function FormLoader({
               }))
             : [];
             
-          // Handle project metadata with proper type checking
-          const rawMetadata = formData.projectmetadata;
-          let projectMetadata: ProjectMetadata = {};
-          
-          // Make sure projectmetadata is an object before trying to use it
-          if (rawMetadata && typeof rawMetadata === 'object' && !Array.isArray(rawMetadata)) {
-            projectMetadata = {
-              projectName: typeof rawMetadata.projectName === 'string' ? rawMetadata.projectName : undefined,
-              companyName: typeof rawMetadata.companyName === 'string' ? rawMetadata.companyName : undefined,
-              location: typeof rawMetadata.location === 'string' ? rawMetadata.location : undefined,
-            };
-            
-            // Add any additional properties from rawMetadata
-            Object.entries(rawMetadata).forEach(([key, value]) => {
-              if (!['projectName', 'companyName', 'location'].includes(key) && typeof value === 'string') {
-                projectMetadata[key] = value;
-              }
-            });
-          }
+          // Simplify project metadata handling
+          const projectMetadata = formData.projectmetadata || {};
           
           const formWithFields: FormTemplate = {
             id: formData.id,
