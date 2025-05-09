@@ -22,7 +22,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { FormField, FormTemplate } from '@/pages/FormAdmin';
+import { FormField, FormTemplate } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
 
 interface FormFillProps {

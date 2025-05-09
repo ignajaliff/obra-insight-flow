@@ -45,6 +45,7 @@ export function FormFields({
             disabled={readOnly}
             required={field.required}
             className="w-full"
+            placeholder={isMobile ? "Escriba aquí..." : ""}
           />
         );
         
@@ -58,6 +59,7 @@ export function FormFields({
             required={field.required}
             rows={3}
             className="w-full"
+            placeholder={isMobile ? "Escriba aquí..." : ""}
           />
         );
         
@@ -76,7 +78,9 @@ export function FormFields({
               side={isMobile ? "bottom" : undefined}
               align={isMobile ? "center" : undefined}
               avoidCollisions={true}
-              className={isMobile ? "max-w-[90vw]" : undefined}
+              className={cn(
+                isMobile ? "w-[calc(100vw-24px)] max-w-[calc(100vw-24px)]" : undefined
+              )}
             >
               {field.options?.map((option) => (
                 <SelectItem key={option} value={option}>
@@ -109,10 +113,13 @@ export function FormFields({
               </Button>
             </PopoverTrigger>
             <PopoverContent 
-              className="w-auto p-0" 
+              className={cn(
+                "p-0",
+                isMobile ? "w-[calc(100vw-24px)] max-w-[calc(100vw-24px)]" : "w-auto"
+              )}
               align={isMobile ? "center" : "start"}
               sideOffset={isMobile ? 5 : 10}
-              side={isMobile ? "bottom" : "right"}
+              side={isMobile ? "bottom" : "bottom"}
               avoidCollisions={true}
             >
               <Calendar
@@ -120,7 +127,7 @@ export function FormFields({
                 selected={formValues[field.name] ? new Date(formValues[field.name]) : undefined}
                 onSelect={(date) => handleChange(field, date?.toISOString())}
                 initialFocus
-                className={cn("p-3 pointer-events-auto")} 
+                className={cn("p-3")}
               />
             </PopoverContent>
           </Popover>

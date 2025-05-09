@@ -7,27 +7,27 @@ export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean>(false);
 
   React.useEffect(() => {
-    // Función para verificar si es un dispositivo móvil
+    // Function to check if device is mobile
     const checkMobile = () => {
       if (typeof window !== 'undefined') {
         try {
-          // Utilizamos tanto el ancho de pantalla como userAgent para mejor detección
+          // Use both screen width and userAgent for better detection
           const isMobileByWidth = window.innerWidth < MOBILE_BREAKPOINT;
           
-          // Mejorar la detección de dispositivos móviles con regex más completa
+          // Improve mobile detection with comprehensive regex
           const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
           const isMobileByAgent = mobileRegex.test(navigator.userAgent);
           
-          // Agregamos touch events check
+          // Add touch events check
           const touchEnabled = ('ontouchstart' in window) || 
                               (navigator.maxTouchPoints > 0) || 
                               (navigator as any).msMaxTouchPoints > 0;
           
-          // Platform-specific checks to address specific mobile devices
+          // Platform-specific checks for specific mobile devices
           const isPlatformMobile = /Android|iPhone|iPad|iPod/.test(navigator.platform) ||
                                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
           
-          console.log("Detección móvil mejorada 2.0:", { 
+          console.log("Mobile detection enhanced 3.0:", { 
             isMobileByWidth, 
             isMobileByAgent,
             touchEnabled,
@@ -39,31 +39,31 @@ export function useIsMobile() {
             maxTouchPoints: navigator.maxTouchPoints
           });
           
-          // Si cualquiera de las detecciones indica que es móvil, lo consideramos móvil
+          // If any detection indicates mobile, consider it mobile
           const isActuallyMobile = isMobileByWidth || isMobileByAgent || touchEnabled || isPlatformMobile;
           
           setIsMobile(isActuallyMobile);
         } catch (error) {
-          console.error("Error en la detección de dispositivo móvil:", error);
-          // Si hay un error, asumimos que es móvil para estar seguros
+          console.error("Error in mobile device detection:", error);
+          // If there's an error, assume it's mobile to be safe
           setIsMobile(true);
         }
       } else {
-        // Si window no está disponible, asumimos que es móvil por defecto para ser más precavidos
+        // If window is not available, assume it's mobile by default to be cautious
         setIsMobile(true);
       }
     };
     
-    // Verificar inmediatamente al montar el componente
+    // Check immediately when component mounts
     checkMobile();
     
-    // Añadir event listener para cuando cambie el tamaño de la ventana
+    // Add event listener for window resize
     window.addEventListener('resize', checkMobile);
     
-    // Añadir event listener para cuando cambie la orientación en móviles
+    // Add event listener for orientation change on mobile
     window.addEventListener('orientationchange', checkMobile);
     
-    // Limpiar
+    // Cleanup
     return () => {
       window.removeEventListener('resize', checkMobile);
       window.removeEventListener('orientationchange', checkMobile);
