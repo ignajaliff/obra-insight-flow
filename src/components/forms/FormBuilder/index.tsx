@@ -90,7 +90,7 @@ export function FormBuilder() {
         description: "Tu formulario ha sido guardado correctamente."
       });
       
-      // Navigate to the form list page
+      // Navigate to the form list page - FIXED: changing to the correct route
       navigate(`/formularios/mis-formularios`);
     } catch (error) {
       console.error("Error saving template:", error);
