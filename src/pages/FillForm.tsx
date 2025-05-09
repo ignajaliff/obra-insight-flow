@@ -29,9 +29,16 @@ export default function FillForm() {
         console.log("Cargando formulario en dispositivo:", isMobile ? "móvil" : "escritorio");
         console.log("Intentando cargar formulario con ID:", templateId);
         
-        // First try to load from Supabase
+        if (!templateId) {
+          console.error("No se proporcionó ID de formulario");
+          setError('ID de formulario no proporcionado');
+          setLoading(false);
+          return;
+        }
+        
         try {
-          // Fetch form from Supabase
+          // Fetch form from Supabase with more detailed error logging
+          console.log("Intentando obtener formulario desde Supabase con ID:", templateId);
           const { data: supabaseForm, error: supabaseError } = await supabase
             .from('form_templates')
             .select('*')
@@ -40,7 +47,9 @@ export default function FillForm() {
           
           if (supabaseError) {
             console.warn("Error al cargar desde Supabase:", supabaseError);
+            
             // Try loading from localStorage as a fallback
+            console.log("Intentando cargar desde localStorage");
             const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
             const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
             
@@ -49,6 +58,7 @@ export default function FillForm() {
               setTemplate(localTemplate);
             } else {
               // Create a minimal template with default fields as a last resort
+              console.log("Intentando obtener información básica del formulario");
               const { data: basicTemplateInfo } = await supabase
                 .from('form_templates')
                 .select('id, name, description')
@@ -83,6 +93,7 @@ export default function FillForm() {
                   updated_at: new Date().toISOString()
                 });
               } else {
+                console.error("No se pudo encontrar información básica del formulario");
                 setError('Formulario no encontrado');
               }
             }
@@ -94,6 +105,7 @@ export default function FillForm() {
             const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
             
             if (localTemplate && localTemplate.fields) {
+              console.log("Combinando datos de Supabase con campos de localStorage");
               // Merge fields from localStorage with Supabase data
               setTemplate({
                 ...supabaseForm,
@@ -101,6 +113,7 @@ export default function FillForm() {
                 projectMetadata: localTemplate.projectMetadata
               });
             } else {
+              console.log("Usando datos de Supabase con campos por defecto");
               // If we have the form from Supabase but no fields data,
               // we need to create a default fields array
               setTemplate({
@@ -127,9 +140,10 @@ export default function FillForm() {
             }
           }
         } catch (supabaseErr) {
-          console.warn("Error de conexión con Supabase:", supabaseErr);
+          console.error("Error de conexión con Supabase:", supabaseErr);
           
           // Fallback to localStorage
+          console.log("Intentando cargar desde localStorage como último recurso");
           const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
           const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
           
@@ -137,6 +151,7 @@ export default function FillForm() {
             console.log("Formulario encontrado en localStorage (fallback):", localTemplate);
             setTemplate(localTemplate);
           } else {
+            console.error("Formulario no encontrado en ninguna fuente");
             setError('Formulario no encontrado');
           }
         }
