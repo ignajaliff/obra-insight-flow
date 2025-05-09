@@ -107,7 +107,7 @@ export function FormBuilder() {
   
   // Function to handle navigation back to forms list
   const goToFormsList = () => {
-    navigate('/formularios/mis-formularios');
+    navigate('/formularios');  // Changed to redirect to /formularios instead of /formularios/mis-formularios
   };
   
   return (

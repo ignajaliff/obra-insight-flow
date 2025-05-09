@@ -4,10 +4,8 @@ import { useParams } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
-import { FormLoader } from '@/components/forms/FormViewer/FormLoader';
-import { LoadingState } from '@/components/forms/FormViewer/LoadingState';
-import { ErrorState } from '@/components/forms/FormViewer/ErrorState';
+import { FormViewer } from '@/components/forms/FormViewer';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -39,43 +37,110 @@ export default function FillForm() {
       window.removeEventListener('orientationchange', checkMobile);
     };
   }, []);
-  
-  // Reset form state when the template ID changes
+
+  // Load form template from Supabase or localStorage
   useEffect(() => {
-    setSubmissionComplete(false);
-    setSubmissionData(null);
-    setError(null);
-    setLoading(true);
+    const loadTemplate = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        if (!templateId) {
+          throw new Error("ID del formulario no proporcionado");
+        }
+        
+        // Try to get from Supabase first
+        const { data, error } = await supabase
+          .from('form_templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
+        
+        if (error) {
+          console.error("Error fetching from Supabase:", error);
+          
+          // Fallback to localStorage
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (localTemplate) {
+            setTemplate(localTemplate);
+          } else {
+            throw new Error("Formulario no encontrado");
+          }
+        } else {
+          // Process fields if they're stored as a JSON string
+          let fields = data.fields;
+          if (typeof fields === 'string') {
+            try {
+              fields = JSON.parse(fields);
+            } catch (e) {
+              console.error("Error parsing fields:", e);
+              fields = [];
+            }
+          }
+          
+          setTemplate({
+            ...data,
+            fields: fields || []
+          });
+        }
+      } catch (err) {
+        console.error("Error loading template:", err);
+        setError(err instanceof Error ? err.message : "Error desconocido");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadTemplate();
   }, [templateId]);
-
-  // Handle successful template loading
-  const handleTemplateLoaded = (loadedTemplate: FormTemplate) => {
-    console.log("Template loaded successfully:", loadedTemplate);
-    setTemplate(loadedTemplate);
-    setError(null);
-    setLoading(false);
-  };
-
-  // Handle template loading error
-  const handleTemplateError = (errorMessage: string) => {
-    console.error("Error loading template:", errorMessage);
-    setError(errorMessage);
-    setTemplate(null);
-    setLoading(false);
-  };
-
-  // Handle loading state changes
-  const handleLoadingChange = (isLoading: boolean) => {
-    console.log("Loading state changed to:", isLoading);
-    setLoading(isLoading);
-  };
-
+  
   if (loading) {
-    return <LoadingState message="Cargando formulario..." />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-3 px-2 sm:py-6 sm:px-3 overflow-y-auto">
+        <div className="w-full max-w-3xl mx-auto">
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <img 
+              src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+              alt="Sepcon Logo" 
+              className="h-10 sm:h-12 md:h-16"
+            />
+          </div>
+          <Card className="p-8 text-center">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="h-8 w-8 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin mb-4"></div>
+              <p>Cargando formulario...</p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
   }
   
   if (error) {
-    return <ErrorState errorMessage={error} />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-3 px-2 sm:py-6 sm:px-3 overflow-y-auto">
+        <div className="w-full max-w-3xl mx-auto">
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <img 
+              src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+              alt="Sepcon Logo" 
+              className="h-10 sm:h-12 md:h-16"
+            />
+          </div>
+          <Card className="p-8 text-center">
+            <div className="flex flex-col items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-xl font-bold mb-2">Error al cargar el formulario</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
   }
   
   return (
@@ -89,23 +154,16 @@ export default function FillForm() {
           />
         </div>
         
-        {/* Form Loader Component */}
-        <FormLoader
-          templateId={templateId}
-          onLoaded={handleTemplateLoaded}
-          onError={handleTemplateError}
-          onLoadingChange={handleLoadingChange}
-        />
-        
         {template && (
           <Card className="mx-auto overflow-hidden">
-            <FormSubmissionForm 
+            <FormViewer 
               template={template}
               readOnly={submissionComplete}
               webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850"
+              submissionComplete={submissionComplete}
+              submissionData={submissionData}
               setSubmissionComplete={setSubmissionComplete}
               setSubmissionData={setSubmissionData}
-              isMobile={isMobile}
             />
           </Card>
         )}

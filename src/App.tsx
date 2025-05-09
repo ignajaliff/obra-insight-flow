@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import FormsList from "./pages/FormsList";
 import ImportData from "./pages/ImportData";
 import NotFound from "./pages/NotFound";
 import FormAdmin from "./pages/FormAdmin";
@@ -36,7 +35,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/formularios" element={<FormsList />} />
+            <Route path="/formularios" element={<MyForms />} /> {/* Changed from FormsList to MyForms */}
             <Route path="/formularios/mis-formularios" element={<MyForms />} />
             <Route path="/formularios/crear" element={<CreateForm />} />
             <Route path="/formularios/ver/:templateId" element={<FormAdmin />} />
