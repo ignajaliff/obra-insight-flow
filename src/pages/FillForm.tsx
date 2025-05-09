@@ -1,13 +1,13 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
 import { Card } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { FormViewer } from '@/components/forms/FormViewer';
-import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { FormLoader } from '@/components/forms/FormViewer/FormLoader';
+import { LoadingState } from '@/components/forms/FormViewer/LoadingState';
+import { ErrorState } from '@/components/forms/FormViewer/ErrorState';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -16,12 +16,12 @@ export default function FillForm() {
   const [error, setError] = useState<string | null>(null);
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
-  const { toast } = useToast();
   
   // Use the hook to detect mobile devices
   const isMobile = useIsMobile();
   
   console.log("FillForm rendering with isMobile:", isMobile);
+  console.log("Template ID:", templateId);
   
   // Handle template loading with the FormLoader component
   const handleTemplateLoaded = (loadedTemplate: FormTemplate) => {
@@ -45,7 +45,7 @@ export default function FillForm() {
       <div className="w-full max-w-3xl mx-auto">
         <div className="flex justify-center mb-4 sm:mb-6">
           <img 
-            src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+            src="/lovable-uploads/6cc6cd56-15f0-4976-9b36-678dcf92dc52.png" 
             alt="Sepcon Logo" 
             className="h-10 sm:h-12 md:h-16"
           />
@@ -58,26 +58,9 @@ export default function FillForm() {
           onLoadingChange={handleLoadingChange}
         />
         
-        {loading && (
-          <Card className="p-8 text-center">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-8 w-8 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin mb-4"></div>
-              <p>Cargando formulario...</p>
-            </div>
-          </Card>
-        )}
+        {loading && <LoadingState message="Cargando formulario..." />}
         
-        {error && (
-          <Card className="p-8 text-center">
-            <div className="flex flex-col items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="text-xl font-bold mb-2">Error al cargar el formulario</h3>
-              <p className="text-muted-foreground mb-4">{error}</p>
-            </div>
-          </Card>
-        )}
+        {error && <ErrorState errorMessage={error} />}
         
         {!loading && !error && template && (
           <Card className="mx-auto overflow-hidden">

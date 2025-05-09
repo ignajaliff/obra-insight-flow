@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -61,13 +60,8 @@ export function FormBuilder({ onFormCreated }: FormBuilderProps) {
       
       // Generate a public URL for the form
       const publicUrl = `/formularios/rellenar/${template.id}`;
-      const templateToSave = {
-        ...template,
-        public_url: publicUrl,
-        updated_at: new Date().toISOString()
-      };
       
-      console.log("Guardando formulario en Supabase:", templateToSave);
+      console.log("Guardando formulario en Supabase:", template);
       
       // Save to Supabase - with explicit type casting for fields and projectMetadata
       const { error } = await supabase
