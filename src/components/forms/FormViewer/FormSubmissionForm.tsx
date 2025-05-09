@@ -1,20 +1,16 @@
+
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { v4 as uuidv4 } from 'uuid';
 import { FormFields } from './FormFields';
-import { Label } from '@/components/ui/label';
+import { SubmitterInfoSection } from './SubmitterInfoSection';
+import { AdditionalInfoSection } from './AdditionalInfoSection';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { SignatureField } from '../SignatureField';
 
 interface FormSubmissionFormProps {
   template: FormTemplate;
@@ -231,49 +227,14 @@ export function FormSubmissionForm({
       <CardContent className={cn("px-3 sm:px-6", isMobile && "p-4")}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Submitter info */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="submitter-name">Tu nombre</Label>
-              <Input
-                id="submitter-name"
-                value={submitterName}
-                onChange={(e) => setSubmitterName(e.target.value)}
-                placeholder="Escribe tu nombre completo"
-                required
-                disabled={readOnly}
-                className="w-full"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="submission-date">Fecha de envío</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="submission-date"
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !submissionDate && "text-muted-foreground"
-                    )}
-                    disabled={readOnly}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {submissionDate ? format(submissionDate, 'dd/MM/yyyy', { locale: es }) : "Seleccionar fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align={isMobile ? "center" : "start"} side={isMobile ? "bottom" : "right"}>
-                  <Calendar
-                    mode="single"
-                    selected={submissionDate}
-                    onSelect={(date) => setSubmissionDate(date || new Date())}
-                    initialFocus
-                    className="p-3"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
+          <SubmitterInfoSection
+            submitterName={submitterName}
+            setSubmitterName={setSubmitterName}
+            submissionDate={submissionDate}
+            setSubmissionDate={setSubmissionDate}
+            readOnly={readOnly}
+            isMobile={isMobile}
+          />
           
           <div className="border-t my-4"></div>
           
@@ -287,88 +248,21 @@ export function FormSubmissionForm({
           />
           
           {/* Standard form section with predefined fields */}
-          <div className="mt-8">
-            <h3 className="text-lg font-medium mb-4">Información adicional</h3>
-            
-            <div className="space-y-4">
-              {/* Elaborado por */}
-              <div>
-                <Label htmlFor="elaborado-por">Elaborado por</Label>
-                <Input
-                  id="elaborado-por"
-                  value={elaboradoPor}
-                  onChange={(e) => setElaboradoPor(e.target.value)}
-                  placeholder="Nombre de quien elaboró"
-                  disabled={readOnly}
-                  className="w-full"
-                />
-              </div>
-              
-              {/* Supervisor/Capataz */}
-              <div>
-                <Label htmlFor="supervisor">Supervisor/Capataz</Label>
-                <Input
-                  id="supervisor"
-                  value={supervisor}
-                  onChange={(e) => setSupervisor(e.target.value)}
-                  placeholder="Nombre del supervisor o capataz"
-                  disabled={readOnly}
-                  className="w-full"
-                />
-              </div>
-              
-              {/* Supervisor de SSMA */}
-              <div>
-                <Label htmlFor="supervisor-ssma">Supervisor de SSMA</Label>
-                <Input
-                  id="supervisor-ssma"
-                  value={supervisorSSMA}
-                  onChange={(e) => setSupervisorSSMA(e.target.value)}
-                  placeholder="Nombre del supervisor de SSMA"
-                  disabled={readOnly}
-                  className="w-full"
-                />
-              </div>
-              
-              {/* Observaciones */}
-              <div>
-                <Label htmlFor="observaciones">Observaciones</Label>
-                <Textarea
-                  id="observaciones"
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                  placeholder="Ingrese sus observaciones"
-                  disabled={readOnly}
-                  rows={3}
-                  className="w-full"
-                />
-              </div>
-              
-              {/* Firma */}
-              <div>
-                <Label htmlFor="firma">Firma</Label>
-                <SignatureField
-                  id="firma"
-                  value={firma}
-                  onChange={setFirma}
-                  readOnly={readOnly}
-                />
-              </div>
-              
-              {/* Cargo */}
-              <div>
-                <Label htmlFor="cargo">Cargo</Label>
-                <Input
-                  id="cargo"
-                  value={cargo}
-                  onChange={(e) => setCargo(e.target.value)}
-                  placeholder="Ingrese su cargo"
-                  disabled={readOnly}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
+          <AdditionalInfoSection
+            elaboradoPor={elaboradoPor}
+            setElaboradoPor={setElaboradoPor}
+            supervisor={supervisor}
+            setSupervisor={setSupervisor}
+            supervisorSSMA={supervisorSSMA}
+            setSupervisorSSMA={setSupervisorSSMA}
+            observaciones={observaciones}
+            setObservaciones={setObservaciones}
+            firma={firma}
+            setFirma={setFirma}
+            cargo={cargo}
+            setCargo={setCargo}
+            readOnly={readOnly}
+          />
           
           {/* Submit button */}
           {!readOnly && (

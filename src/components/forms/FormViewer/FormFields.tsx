@@ -120,7 +120,7 @@ export function FormFields({
                 selected={formValues[field.name] ? new Date(formValues[field.name]) : undefined}
                 onSelect={(date) => handleChange(field, date?.toISOString())}
                 initialFocus
-                className={cn("p-3")} 
+                className={cn("p-3 pointer-events-auto")} 
               />
             </PopoverContent>
           </Popover>
