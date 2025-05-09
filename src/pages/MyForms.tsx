@@ -13,13 +13,20 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Copy, MoreVertical, Pen, Trash2, Eye, Link, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Copy, MoreVertical, Pen, Trash2, Eye, Link, Loader2, CheckCircle, XCircle, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +36,8 @@ export default function MyForms() {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -82,6 +91,11 @@ export default function MyForms() {
     
     loadTemplates();
   }, []);
+  
+  const openShareDialog = (template: FormTemplate) => {
+    setSelectedTemplate(template);
+    setShareDialogOpen(true);
+  };
   
   const copyFormLink = (template: FormTemplate) => {
     const url = `${window.location.origin}/formularios/rellenar/${template.id}`;
@@ -244,9 +258,9 @@ export default function MyForms() {
                         variant="outline" 
                         size="sm"
                         className="hidden sm:flex"
-                        onClick={() => copyFormLink(template)}
+                        onClick={() => openShareDialog(template)}
                       >
-                        <Copy className="h-4 w-4 mr-2" /> Copiar enlace
+                        <Share2 className="h-4 w-4 mr-2" /> Compartir
                       </Button>
                       
                       <DropdownMenu>
@@ -259,7 +273,10 @@ export default function MyForms() {
                           <DropdownMenuItem onClick={() => navigate(`/formularios/rellenar/${template.id}`)}>
                             <Eye className="h-4 w-4 mr-2" /> Vista previa
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => copyFormLink(template)} className="sm:hidden">
+                          <DropdownMenuItem onClick={() => openShareDialog(template)} className="sm:hidden">
+                            <Share2 className="h-4 w-4 mr-2" /> Compartir
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => copyFormLink(template)}>
                             <Copy className="h-4 w-4 mr-2" /> Copiar enlace
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleActiveStatus(template)}>
@@ -289,6 +306,73 @@ export default function MyForms() {
           </Table>
         </Card>
       )}
+      
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Compartir formulario</DialogTitle>
+            <DialogDescription>
+              Comparte este enlace con las personas que quieras que completen el formulario.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTemplate && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted rounded-md flex items-center justify-between gap-2">
+                <span className="text-sm text-ellipsis overflow-hidden">
+                  {`${window.location.origin}/formularios/rellenar/${selectedTemplate.id}`}
+                </span>
+                <Button size="sm" onClick={() => copyFormLink(selectedTemplate)}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <h4 className="font-medium">Opciones de compartir</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const url = `${window.location.origin}/formularios/rellenar/${selectedTemplate.id}`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(`Completa este formulario: ${selectedTemplate.name}\n${url}`)}`, '_blank');
+                    }}
+                  >
+                    WhatsApp
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const url = `${window.location.origin}/formularios/rellenar/${selectedTemplate.id}`;
+                      window.open(`mailto:?subject=Formulario: ${selectedTemplate.name}&body=Completa este formulario: ${url}`, '_blank');
+                    }}
+                  >
+                    Email
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <h4 className="font-medium">Estado del formulario</h4>
+                <div className="flex items-center gap-2">
+                  {selectedTemplate.is_active !== false ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  )}
+                  <span>
+                    {selectedTemplate.is_active !== false 
+                      ? "El formulario está activo y puede ser completado." 
+                      : "El formulario está desactivado y no puede ser completado."}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

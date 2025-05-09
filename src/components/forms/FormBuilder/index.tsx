@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -90,8 +89,9 @@ export function FormBuilder() {
         description: "Tu formulario ha sido guardado correctamente."
       });
       
-      // Navigate to the form list page - FIXED: changing to the correct route
-      navigate(`/formularios/mis-formularios`);
+      // Return to the previous behavior - allow for sharing by not redirecting immediately
+      // This will keep the user on the current page with the toast notification
+      // Instead of redirecting, we'll let them manually navigate back
     } catch (error) {
       console.error("Error saving template:", error);
       toast({
