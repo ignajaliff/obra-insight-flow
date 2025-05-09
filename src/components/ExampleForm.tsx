@@ -5,6 +5,7 @@ import { FormTemplate, FieldType } from '@/types/forms';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Json } from '@/integrations/supabase/types';
 
 export const createExampleForm = async () => {
   const formId = uuidv4();
@@ -83,10 +84,10 @@ export const createExampleForm = async () => {
         id: exampleForm.id,
         name: exampleForm.name,
         description: exampleForm.description,
-        fields: exampleForm.fields,
+        fields: exampleForm.fields as unknown as Json,
         public_url: exampleForm.public_url,
         is_active: exampleForm.is_active,
-        projectmetadata: exampleForm.projectMetadata,
+        projectmetadata: exampleForm.projectMetadata as unknown as Json,
         created_at: exampleForm.created_at,
         updated_at: exampleForm.updated_at
       });

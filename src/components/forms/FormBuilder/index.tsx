@@ -10,6 +10,7 @@ import { FieldsList } from './FieldsList';
 import { AddFieldSection } from './AddFieldSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export function FormBuilder() {
   const { toast } = useToast();
@@ -76,11 +77,10 @@ export function FormBuilder() {
           id: template.id,
           name: template.name,
           description: template.description || null,
-          // The issue was here - we need to use JSON.stringify on the fields array
-          fields: template.fields,
+          fields: template.fields as unknown as Json,
           public_url: publicUrl,
           is_active: true,
-          projectmetadata: template.projectMetadata // Use lowercase 'projectmetadata' for DB column
+          projectmetadata: template.projectMetadata as unknown as Json
         });
       
       if (error) {
