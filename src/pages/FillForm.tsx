@@ -1,11 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { FormTemplate, FormSubmission } from '@/types/forms';
+import { FormTemplate, FormSubmission, FormField } from '@/types/forms';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { FormViewer } from '@/components/forms/FormViewer';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -70,25 +71,59 @@ export default function FillForm() {
           }
         } else {
           // Process fields if they're stored as a JSON string
-          let fields = data.fields;
+          let fields: FormField[] = [];
           
           // Check if fields is a string (JSON) and parse it
-          if (typeof fields === 'string') {
+          if (typeof data.fields === 'string') {
             try {
-              fields = JSON.parse(fields);
+              const parsedFields = JSON.parse(data.fields);
+              if (Array.isArray(parsedFields)) {
+                // Ensure each field conforms to FormField type
+                fields = parsedFields.map(field => ({
+                  id: String(field.id || ''),
+                  name: String(field.name || ''),
+                  label: String(field.label || ''),
+                  type: (field.type as FormField['type']) || 'text',
+                  required: Boolean(field.required),
+                  options: Array.isArray(field.options) ? field.options.map(String) : undefined,
+                  isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
+                  field_order: Number(field.field_order || 0)
+                }));
+              }
             } catch (e) {
               console.error("Error parsing fields:", e);
-              fields = [];
             }
-          } else if (!Array.isArray(fields)) {
-            // If fields is not an array (and not a string we could parse), set to empty array
-            console.error("Fields is not an array:", fields);
-            fields = [];
+          } else if (Array.isArray(data.fields)) {
+            // If fields is already an array, map it to ensure type safety
+            fields = (data.fields as Json[]).map(field => {
+              if (typeof field === 'object' && field !== null) {
+                return {
+                  id: String(field.id || ''),
+                  name: String(field.name || ''),
+                  label: String(field.label || ''),
+                  type: (field.type as FormField['type']) || 'text',
+                  required: Boolean(field.required),
+                  options: Array.isArray(field.options) ? field.options.map(String) : undefined,
+                  isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
+                  field_order: Number(field.field_order || 0)
+                };
+              }
+              // Return a default field if invalid data
+              console.warn("Invalid field data, using default:", field);
+              return {
+                id: '',
+                name: '',
+                label: '',
+                type: 'text',
+                required: false,
+                field_order: 0
+              };
+            });
           }
           
           setTemplate({
             ...data,
-            fields: Array.isArray(fields) ? fields : []
+            fields: fields
           });
         }
       } catch (err) {
