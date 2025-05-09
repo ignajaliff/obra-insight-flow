@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FormTemplate, FormField } from '@/types/forms';
@@ -27,104 +26,83 @@ export default function MyForms() {
       try {
         setLoading(true);
         
-        // Get templates from localStorage
-        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        // Get templates from Supabase without any user filtering
+        const { data: supabaseTemplates, error } = await supabase
+          .from('form_templates')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          throw error;
+        }
         
-        // Try to get from Supabase as well
-        try {
-          const { data: supabaseTemplates, error } = await supabase
-            .from('form_templates')
-            .select('*')
-            .order('created_at', { ascending: false });
-            
-          if (error) {
-            throw error;
+        // Process Supabase templates to ensure they match our FormTemplate type
+        const processedTemplates = supabaseTemplates.map((template: any) => {
+          // Process fields if they're stored as a JSON string
+          let fields: FormField[] = [];
+          
+          // Check if fields is a string (JSON) and parse it
+          if (typeof template.fields === 'string') {
+            try {
+              const parsedFields = JSON.parse(template.fields);
+              if (Array.isArray(parsedFields)) {
+                // Ensure each field conforms to FormField type
+                fields = parsedFields.map(field => ({
+                  id: String(field.id || ''),
+                  name: String(field.name || ''),
+                  label: String(field.label || ''),
+                  type: (field.type as FormField['type']) || 'text',
+                  required: Boolean(field.required),
+                  options: Array.isArray(field.options) ? field.options.map(String) : undefined,
+                  isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
+                  field_order: Number(field.field_order || 0)
+                }));
+              }
+            } catch (e) {
+              console.error("Error parsing fields for template:", template.id, e);
+            }
+          } else if (Array.isArray(template.fields)) {
+            // If fields is already an array, map it to ensure type safety
+            fields = template.fields.map((field: any) => {
+              if (typeof field === 'object' && field !== null) {
+                return {
+                  id: String(field.id || ''),
+                  name: String(field.name || ''),
+                  label: String(field.label || ''),
+                  type: (field.type as FormField['type']) || 'text',
+                  required: Boolean(field.required),
+                  options: Array.isArray(field.options) ? field.options.map(String) : undefined,
+                  isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
+                  field_order: Number(field.field_order || 0)
+                };
+              }
+              // Return a default field if invalid data
+              console.warn("Invalid field data, using default:", field);
+              return {
+                id: '',
+                name: '',
+                label: '',
+                type: 'text',
+                required: false,
+                field_order: 0
+              };
+            });
           }
           
-          // Process Supabase templates to ensure they match our FormTemplate type
-          const processedTemplates = supabaseTemplates.map((template: any) => {
-            // Process fields if they're stored as a JSON string
-            let fields: FormField[] = [];
-            
-            // Check if fields is a string (JSON) and parse it
-            if (typeof template.fields === 'string') {
-              try {
-                const parsedFields = JSON.parse(template.fields);
-                if (Array.isArray(parsedFields)) {
-                  // Ensure each field conforms to FormField type
-                  fields = parsedFields.map(field => ({
-                    id: String(field.id || ''),
-                    name: String(field.name || ''),
-                    label: String(field.label || ''),
-                    type: (field.type as FormField['type']) || 'text',
-                    required: Boolean(field.required),
-                    options: Array.isArray(field.options) ? field.options.map(String) : undefined,
-                    isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
-                    field_order: Number(field.field_order || 0)
-                  }));
-                }
-              } catch (e) {
-                console.error("Error parsing fields for template:", template.id, e);
-              }
-            } else if (Array.isArray(template.fields)) {
-              // If fields is already an array, map it to ensure type safety
-              fields = template.fields.map((field: any) => {
-                if (typeof field === 'object' && field !== null) {
-                  return {
-                    id: String(field.id || ''),
-                    name: String(field.name || ''),
-                    label: String(field.label || ''),
-                    type: (field.type as FormField['type']) || 'text',
-                    required: Boolean(field.required),
-                    options: Array.isArray(field.options) ? field.options.map(String) : undefined,
-                    isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
-                    field_order: Number(field.field_order || 0)
-                  };
-                }
-                // Return a default field if invalid data
-                console.warn("Invalid field data, using default:", field);
-                return {
-                  id: '',
-                  name: '',
-                  label: '',
-                  type: 'text',
-                  required: false,
-                  field_order: 0
-                };
-              });
-            }
-            
-            return {
-              id: template.id,
-              name: template.name,
-              description: template.description || '',
-              fields: fields,
-              created_at: template.created_at,
-              updated_at: template.updated_at,
-              public_url: template.public_url,
-              is_active: template.is_active
-            };
-          });
-          
-          // Combine templates from both sources, with Supabase taking precedence for duplicates
-          const combinedTemplates = [...storedTemplates];
-          
-          // Add templates from Supabase, replacing any with the same ID
-          processedTemplates.forEach(supaTemplate => {
-            const existingIndex = combinedTemplates.findIndex(t => t.id === supaTemplate.id);
-            if (existingIndex >= 0) {
-              combinedTemplates[existingIndex] = supaTemplate;
-            } else {
-              combinedTemplates.push(supaTemplate);
-            }
-          });
-          
-          setTemplates(combinedTemplates);
-        } catch (err) {
-          console.error("Error loading templates from Supabase:", err);
-          // Fall back to just localStorage templates
-          setTemplates(storedTemplates);
-        }
+          return {
+            id: template.id,
+            name: template.name,
+            description: template.description || '',
+            fields: fields,
+            created_at: template.created_at,
+            updated_at: template.updated_at,
+            public_url: template.public_url,
+            is_active: template.is_active,
+            projectMetadata: template.projectMetadata // Ensure project metadata is included
+          };
+        });
+        
+        setTemplates(processedTemplates);
       } catch (err) {
         console.error("Error loading templates:", err);
         setTemplates([]);
@@ -179,7 +157,7 @@ export default function MyForms() {
         <Card className="text-center p-8">
           <div className="flex flex-col items-center">
             <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">No tienes formularios</h3>
+            <h3 className="text-xl font-medium mb-2">No hay formularios</h3>
             <p className="text-muted-foreground mb-6">
               Crea tu primer formulario para empezar a recolectar datos
             </p>
@@ -208,6 +186,12 @@ export default function MyForms() {
                 <p className="text-sm text-muted-foreground">
                   {template.fields.length} campos
                 </p>
+                {/* Display project info summary if available */}
+                {template.projectMetadata && template.projectMetadata.projectName && (
+                  <p className="text-sm mt-1">
+                    <span className="font-medium">Proyecto:</span> {template.projectMetadata.projectName}
+                  </p>
+                )}
               </CardContent>
               <CardFooter className="flex flex-col space-y-2">
                 <div className="flex gap-2 w-full">
