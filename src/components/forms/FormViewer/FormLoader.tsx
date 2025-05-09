@@ -57,15 +57,8 @@ export function FormLoader({
                 fields = [];
               }
             } else if (Array.isArray(formData.fields)) {
-              fields = formData.fields;
-            }
-            
-            // Create a complete form template
-            const formWithFields: FormTemplate = {
-              id: formData.id,
-              name: formData.name,
-              description: formData.description || undefined,
-              fields: fields.map(field => ({
+              // Properly cast the fields from Json to FormField[]
+              fields = (formData.fields as any[]).map(field => ({
                 id: String(field.id || ''),
                 name: String(field.name || ''),
                 label: String(field.label || ''),
@@ -74,12 +67,21 @@ export function FormLoader({
                 options: Array.isArray(field.options) ? field.options.map(String) : undefined,
                 isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
                 field_order: Number(field.field_order || 0)
-              })),
+              }));
+            }
+            
+            // Create a complete form template
+            const formWithFields: FormTemplate = {
+              id: formData.id,
+              name: formData.name,
+              description: formData.description || undefined,
+              fields: fields,
               created_at: formData.created_at,
               updated_at: formData.updated_at,
               is_active: formData.is_active,
               public_url: formData.public_url,
-              projectMetadata: formData.projectMetadata
+              // Fix the property name mismatch - use projectmetadata from the database
+              projectMetadata: formData.projectmetadata || undefined
             };
             
             console.log("Processed form:", formWithFields);
