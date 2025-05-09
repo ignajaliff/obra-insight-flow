@@ -66,11 +66,11 @@ export function FormLoader({
               }
             ];
             
-            // Fixed TypeScript error: Explicitly cast to FormTemplate with fields
+            // Explicitly cast to FormTemplate with fields
             const formWithFields: FormTemplate = {
               ...formData,
               // Add fields array, either from formData.fields or use default if undefined
-              fields: (formData as any).fields || defaultFields
+              fields: Array.isArray((formData as any).fields) ? (formData as any).fields : defaultFields
             };
             
             console.log("Form with fields:", formWithFields);
@@ -87,17 +87,32 @@ export function FormLoader({
           console.log("Form not found in Supabase, trying localStorage");
           
           try {
-            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-            console.log("Local storage templates:", storedTemplates);
+            const storedTemplates = localStorage.getItem('formTemplates');
+            if (!storedTemplates) {
+              console.log("No templates found in localStorage");
+              onError('No se encontraron formularios guardados');
+              onLoadingChange(false);
+              return;
+            }
             
-            const localTemplate = storedTemplates.find((t: any) => t.id === templateId);
+            const parsedTemplates = JSON.parse(storedTemplates);
+            console.log("Local storage templates:", parsedTemplates);
+            
+            if (!Array.isArray(parsedTemplates)) {
+              console.log("Stored templates is not an array");
+              onError('Formato de formularios guardados no válido');
+              onLoadingChange(false);
+              return;
+            }
+            
+            const localTemplate = parsedTemplates.find((t: any) => t.id === templateId);
             console.log("Found local template:", localTemplate);
             
             if (localTemplate) {
               // Ensure fields exist
               const templateWithFields: FormTemplate = {
                 ...localTemplate,
-                fields: localTemplate.fields || []
+                fields: Array.isArray(localTemplate.fields) ? localTemplate.fields : []
               };
               
               onLoaded(templateWithFields);

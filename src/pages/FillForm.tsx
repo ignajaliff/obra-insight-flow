@@ -45,27 +45,33 @@ export default function FillForm() {
     setSubmissionComplete(false);
     setSubmissionData(null);
     setError(null);
+    setLoading(true); // Asegurarse de que comienza en estado de carga
   }, [templateId]);
 
   // Handle successful template loading
   const handleTemplateLoaded = (loadedTemplate: FormTemplate) => {
+    console.log("Template loaded successfully:", loadedTemplate);
     setTemplate(loadedTemplate);
     setError(null);
+    setLoading(false);
   };
 
   // Handle template loading error
   const handleTemplateError = (errorMessage: string) => {
+    console.error("Error loading template:", errorMessage);
     setError(errorMessage);
     setTemplate(null);
+    setLoading(false);
   };
 
   // Handle loading state changes
   const handleLoadingChange = (isLoading: boolean) => {
+    console.log("Loading state changed to:", isLoading);
     setLoading(isLoading);
   };
 
   if (loading) {
-    return <LoadingState />;
+    return <LoadingState message="Cargando formulario..." />;
   }
   
   if (error) {
