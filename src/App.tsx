@@ -6,23 +6,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import FormsList from "./pages/FormsList";
 import ImportData from "./pages/ImportData";
 import NotFound from "./pages/NotFound";
 import FormAdmin from "./pages/FormAdmin";
+import AvailableForms from "./pages/AvailableForms";
+import FormFillPage from "./pages/FormFillPage";
 import Login from "./pages/Login";
 import UsersManagement from "./pages/UsersManagement";
 import Index from "./pages/Index";
 import MyForms from "./pages/MyForms";
+import CreateForm from "./pages/CreateForm";
 import FillForm from "./pages/FillForm";
+import ViewForm from "./pages/ViewForm";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,16 +32,20 @@ const App = () => (
           {/* Authentication Routes */}
           <Route path="/login" element={<Login />} />
           
-          {/* Public Form Route - Must be outside the AppLayout to be fully public */}
+          {/* Public Form Route */}
           <Route path="/formularios/rellenar/:templateId" element={<FillForm />} />
 
           {/* Protected Routes */}
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/formularios" element={<MyForms />} />
+            <Route path="/formularios" element={<FormsList />} />
             <Route path="/formularios/mis-formularios" element={<MyForms />} />
-            <Route path="/formularios/ver/:templateId" element={<FormAdmin />} />
+            <Route path="/formularios/crear" element={<CreateForm />} />
+            <Route path="/formularios/ver/:templateId" element={<ViewForm />} />
+            <Route path="/formularios/disponibles" element={<AvailableForms />} />
+            <Route path="/formularios/rellenar/:templateId" element={<FormFillPage />} />
+            <Route path="/formularios/admin" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<UsersManagement />} />
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}

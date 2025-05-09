@@ -13,12 +13,11 @@ export interface FormResponse {
 export interface FormTemplate {
   id: string;
   name: string;
-  description?: string; 
+  description?: string; // Adding the description property as optional
   fields: FormField[];
   created_at: string;
   updated_at: string;
   public_url?: string;
-  is_active?: boolean;  // Adding the is_active property to track form status
   projectMetadata?: ProjectMetadata;
 }
 

@@ -19,22 +19,10 @@ interface FormFieldsProps {
   formValues: Record<string, any>;
   handleChange: (field: FormField, value: any) => void;
   readOnly?: boolean;
-  isMobile?: boolean;
 }
 
-export function FormFields({ 
-  fields, 
-  formValues, 
-  handleChange, 
-  readOnly = false,
-  isMobile = false
-}: FormFieldsProps) {
-  console.log("FormFields rendering with isMobile:", isMobile);
-  console.log("Fields count:", fields.length);
-  
+export function FormFields({ fields, formValues, handleChange, readOnly = false }: FormFieldsProps) {
   const renderField = (field: FormField) => {
-    console.log(`Rendering field: ${field.name}, type: ${field.type}, isMobile: ${isMobile}`);
-    
     switch (field.type) {
       case 'text':
         return (
@@ -44,8 +32,6 @@ export function FormFields({
             onChange={(e) => handleChange(field, e.target.value)}
             disabled={readOnly}
             required={field.required}
-            className="w-full"
-            placeholder={isMobile ? "Escriba aquí..." : ""}
           />
         );
         
@@ -58,8 +44,6 @@ export function FormFields({
             disabled={readOnly}
             required={field.required}
             rows={3}
-            className="w-full"
-            placeholder={isMobile ? "Escriba aquí..." : ""}
           />
         );
         
@@ -70,18 +54,10 @@ export function FormFields({
             onValueChange={(value) => handleChange(field, value)}
             disabled={readOnly}
           >
-            <SelectTrigger id={field.id} className="w-full">
+            <SelectTrigger id={field.id}>
               <SelectValue placeholder="Seleccionar..." />
             </SelectTrigger>
-            <SelectContent 
-              position={isMobile ? "popper" : "item-aligned"}
-              side={isMobile ? "bottom" : undefined}
-              align={isMobile ? "center" : undefined}
-              avoidCollisions={true}
-              className={cn(
-                isMobile ? "w-[calc(100vw-24px)] max-w-[calc(100vw-24px)]" : undefined
-              )}
-            >
+            <SelectContent>
               {field.options?.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
@@ -112,22 +88,13 @@ export function FormFields({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent 
-              className={cn(
-                "p-0",
-                isMobile ? "w-[calc(100vw-24px)] max-w-[calc(100vw-24px)]" : "w-auto"
-              )}
-              align={isMobile ? "center" : "start"}
-              sideOffset={isMobile ? 5 : 10}
-              side={isMobile ? "bottom" : "bottom"}
-              avoidCollisions={true}
-            >
+            <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
                 selected={formValues[field.name] ? new Date(formValues[field.name]) : undefined}
                 onSelect={(date) => handleChange(field, date?.toISOString())}
                 initialFocus
-                className={cn("p-3")}
+                className={cn("p-3 pointer-events-auto")} 
               />
             </PopoverContent>
           </Popover>
@@ -144,28 +111,21 @@ export function FormFields({
         );
         
       default:
-        console.log(`Unknown field type: ${field.type}`);
         return null;
     }
   };
   
   return (
     <div className="space-y-4">
-      {fields.length > 0 ? (
-        fields.map((field) => (
-          <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id} className="block text-base font-medium">
-              {field.label}
-              {field.required && <span className="text-destructive ml-1">*</span>}
-            </Label>
-            {renderField(field)}
-          </div>
-        ))
-      ) : (
-        <div className="text-center py-4 text-muted-foreground">
-          Este formulario no contiene campos.
+      {fields.map((field) => (
+        <div key={field.id} className="space-y-2">
+          <Label htmlFor={field.id}>
+            {field.label}
+            {field.required && <span className="text-destructive ml-1">*</span>}
+          </Label>
+          {renderField(field)}
         </div>
-      )}
+      ))}
     </div>
   );
 }

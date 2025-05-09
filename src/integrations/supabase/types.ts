@@ -15,6 +15,7 @@ export type Database = {
           date: string
           document_link: string | null
           form_type: string
+          form_type_id: string | null
           id: string
           ID_documento: string | null
           proyecto: string | null
@@ -26,6 +27,7 @@ export type Database = {
           date?: string
           document_link?: string | null
           form_type: string
+          form_type_id?: string | null
           id?: string
           ID_documento?: string | null
           proyecto?: string | null
@@ -37,47 +39,12 @@ export type Database = {
           date?: string
           document_link?: string | null
           form_type?: string
+          form_type_id?: string | null
           id?: string
           ID_documento?: string | null
           proyecto?: string | null
           status?: string
           worker_name?: string
-        }
-        Relationships: []
-      }
-      form_templates: {
-        Row: {
-          created_at: string
-          description: string | null
-          fields: Json
-          id: string
-          is_active: boolean
-          name: string
-          projectmetadata: Json | null
-          public_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          fields: Json
-          id: string
-          is_active?: boolean
-          name: string
-          projectmetadata?: Json | null
-          public_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          fields?: Json
-          id?: string
-          is_active?: boolean
-          name?: string
-          projectmetadata?: Json | null
-          public_url?: string | null
-          updated_at?: string
         }
         Relationships: []
       }

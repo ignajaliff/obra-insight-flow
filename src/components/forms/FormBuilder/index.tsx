@@ -1,50 +1,87 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { FormBasicInfo } from './FormBasicInfo';
 import { FieldsList } from './FieldsList';
 import { AddFieldSection } from './AddFieldSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { SaveSection } from './SaveSection';
-import { useFormValidation } from './useFormValidation';
 
-interface FormBuilderProps {
-  onFormCreated?: () => void;
-  initialTemplate?: FormTemplate;
-}
-
-export function FormBuilder({ onFormCreated, initialTemplate }: FormBuilderProps) {
+export function FormBuilder() {
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const [template, setTemplate] = useState<FormTemplate>(
-    initialTemplate || {
-      id: uuidv4(),
-      name: '',
-      fields: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      projectMetadata: {
-        projectName: '',
-        companyName: '',
-        location: ''
-      },
-    }
-  );
+  const [template, setTemplate] = useState<FormTemplate>({
+    id: uuidv4(),
+    name: '',
+    fields: [],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    projectMetadata: {
+      projectName: '',
+      companyName: '',
+      location: ''
+    },
+  });
   
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("fields");
-  const [formSaved, setFormSaved] = useState(false);
   
-  // Use the validation hook
-  const { validateForm } = useFormValidation(template);
-  
-  // Use effect to update form if initialTemplate changes
-  useEffect(() => {
-    if (initialTemplate) {
-      setTemplate(initialTemplate);
+  const saveTemplate = async () => {
+    // Validate form
+    if (!template.name.trim()) {
+      toast({
+        title: "Campo requerido",
+        description: "Por favor ingresa un nombre para el formulario",
+        variant: "destructive"
+      });
+      return;
     }
-  }, [initialTemplate]);
+    
+    if (template.fields.length === 0) {
+      toast({
+        title: "Campos requeridos",
+        description: "Por favor agrega al menos un campo al formulario",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      
+      // Generate a public URL for the form
+      const publicUrl = `/formularios/rellenar/${template.id}`;
+      const templateToSave = {
+        ...template,
+        public_url: publicUrl,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Save to localStorage for now (would be to Supabase in production)
+      const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+      localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
+      
+      toast({
+        title: "Formulario guardado",
+        description: "Tu formulario ha sido guardado correctamente."
+      });
+      
+      // Navigate to the form view page
+      navigate(`/formularios/ver/${template.id}`);
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el formulario. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -74,16 +111,12 @@ export function FormBuilder({ onFormCreated, initialTemplate }: FormBuilderProps
       </div>
       
       <div className="border-t pt-6 flex justify-end">
-        <SaveSection
-          template={template}
-          initialTemplate={initialTemplate}
-          onFormCreated={onFormCreated}
-          isSaving={isSaving}
-          setIsSaving={setIsSaving}
-          formSaved={formSaved}
-          setFormSaved={setFormSaved}
-          validateForm={validateForm}
-        />
+        <Button 
+          onClick={saveTemplate}
+          disabled={isSaving || template.name.trim() === '' || template.fields.length === 0}
+        >
+          Guardar formulario
+        </Button>
       </div>
     </div>
   );

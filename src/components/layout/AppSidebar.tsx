@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -7,7 +6,8 @@ import {
   Upload, 
   Users, 
   Settings,
-  List
+  List,
+  PlusSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,9 +36,19 @@ const navItems = [
     icon: FileText,
     children: [
       {
-        title: "Mis formularios",
+        title: "Lista de formularios",
         path: "/formularios",
+        icon: List
+      },
+      {
+        title: "Mis formularios",
+        path: "/formularios/mis-formularios",
         icon: FileText
+      },
+      {
+        title: "Crear formulario",
+        path: "/formularios/crear",
+        icon: PlusSquare
       }
     ]
   },

@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { v4 as uuidv4 } from 'uuid';
 import { FormFields } from './FormFields';
-import { SubmitterInfoSection } from './SubmitterInfoSection';
-import { AdditionalInfoSection } from './AdditionalInfoSection';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { SignatureField } from '../SignatureField';
 
 interface FormSubmissionFormProps {
   template: FormTemplate;
@@ -17,7 +22,6 @@ interface FormSubmissionFormProps {
   webhookUrl?: string;
   setSubmissionComplete: React.Dispatch<React.SetStateAction<boolean>>;
   setSubmissionData: React.Dispatch<React.SetStateAction<FormSubmission | null>>;
-  isMobile?: boolean;
 }
 
 export function FormSubmissionForm({ 
@@ -25,8 +29,7 @@ export function FormSubmissionForm({
   readOnly = false, 
   webhookUrl, 
   setSubmissionComplete, 
-  setSubmissionData,
-  isMobile = false
+  setSubmissionData 
 }: FormSubmissionFormProps) {
   const { toast } = useToast();
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -95,7 +98,7 @@ export function FormSubmissionForm({
         submissionDate: submissionDate.toISOString(),
         submitter_name: submitterName,
         template_name: template.name,
-        projectMetadata: template.projectMetadata // Include project metadata
+        projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
       };
       
       // Send to webhook with the new numbered format as plain text
@@ -163,7 +166,7 @@ export function FormSubmissionForm({
             firmaimg: firma || ""
           });
           
-          // Add the signature as a separate field at the end of the text
+          // Añadir la firma como un campo separado al final del texto
           webhookContent += `\n\nfirmaimg: ${firma || ""}`;
           
           // Send webhook content as text/plain
@@ -217,41 +220,57 @@ export function FormSubmissionForm({
   
   return (
     <>
-      <CardHeader className={cn("px-3 sm:px-6", isMobile && "p-4")}>
+      <CardHeader className="px-4 sm:px-6">
         <CardTitle className="text-xl md:text-2xl">{template.name}</CardTitle>
         {template.description && (
           <CardDescription>{template.description}</CardDescription>
         )}
-        
-        {/* Display project information if it exists */}
-        {template.projectMetadata && Object.keys(template.projectMetadata).some(key => !!template.projectMetadata?.[key]) && (
-          <div className="mt-4 pt-4 border-t text-sm">
-            <h4 className="font-medium mb-2">Información del Proyecto</h4>
-            <div className="space-y-1">
-              {template.projectMetadata.projectName && (
-                <p><span className="font-medium">Proyecto:</span> {template.projectMetadata.projectName}</p>
-              )}
-              {template.projectMetadata.companyName && (
-                <p><span className="font-medium">Empresa:</span> {template.projectMetadata.companyName}</p>
-              )}
-              {template.projectMetadata.location && (
-                <p><span className="font-medium">Ubicación:</span> {template.projectMetadata.location}</p>
-              )}
-            </div>
-          </div>
-        )}
       </CardHeader>
-      <CardContent className={cn("px-3 sm:px-6", isMobile && "p-4")}>
+      <CardContent className="px-4 sm:px-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Submitter info */}
-          <SubmitterInfoSection
-            submitterName={submitterName}
-            setSubmitterName={setSubmitterName}
-            submissionDate={submissionDate}
-            setSubmissionDate={setSubmissionDate}
-            readOnly={readOnly}
-            isMobile={isMobile}
-          />
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="submitter-name">Tu nombre</Label>
+              <Input
+                id="submitter-name"
+                value={submitterName}
+                onChange={(e) => setSubmitterName(e.target.value)}
+                placeholder="Escribe tu nombre completo"
+                required
+                disabled={readOnly}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="submission-date">Fecha de envío</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="submission-date"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !submissionDate && "text-muted-foreground"
+                    )}
+                    disabled={readOnly}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {submissionDate ? format(submissionDate, 'dd/MM/yyyy', { locale: es }) : "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={submissionDate}
+                    onSelect={(date) => setSubmissionDate(date || new Date())}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
           
           <div className="border-t my-4"></div>
           
@@ -261,25 +280,86 @@ export function FormSubmissionForm({
             formValues={formValues}
             handleChange={handleChange}
             readOnly={readOnly}
-            isMobile={isMobile}
           />
           
           {/* Standard form section with predefined fields */}
-          <AdditionalInfoSection
-            elaboradoPor={elaboradoPor}
-            setElaboradoPor={setElaboradoPor}
-            supervisor={supervisor}
-            setSupervisor={setSupervisor}
-            supervisorSSMA={supervisorSSMA}
-            setSupervisorSSMA={setSupervisorSSMA}
-            observaciones={observaciones}
-            setObservaciones={setObservaciones}
-            firma={firma}
-            setFirma={setFirma}
-            cargo={cargo}
-            setCargo={setCargo}
-            readOnly={readOnly}
-          />
+          <div className="mt-8">
+            <h3 className="text-lg font-medium mb-4">Información adicional</h3>
+            
+            <div className="space-y-4">
+              {/* Elaborado por */}
+              <div>
+                <Label htmlFor="elaborado-por">Elaborado por</Label>
+                <Input
+                  id="elaborado-por"
+                  value={elaboradoPor}
+                  onChange={(e) => setElaboradoPor(e.target.value)}
+                  placeholder="Nombre de quien elaboró"
+                  disabled={readOnly}
+                />
+              </div>
+              
+              {/* Supervisor/Capataz */}
+              <div>
+                <Label htmlFor="supervisor">Supervisor/Capataz</Label>
+                <Input
+                  id="supervisor"
+                  value={supervisor}
+                  onChange={(e) => setSupervisor(e.target.value)}
+                  placeholder="Nombre del supervisor o capataz"
+                  disabled={readOnly}
+                />
+              </div>
+              
+              {/* Supervisor de SSMA */}
+              <div>
+                <Label htmlFor="supervisor-ssma">Supervisor de SSMA</Label>
+                <Input
+                  id="supervisor-ssma"
+                  value={supervisorSSMA}
+                  onChange={(e) => setSupervisorSSMA(e.target.value)}
+                  placeholder="Nombre del supervisor de SSMA"
+                  disabled={readOnly}
+                />
+              </div>
+              
+              {/* Observaciones */}
+              <div>
+                <Label htmlFor="observaciones">Observaciones</Label>
+                <Textarea
+                  id="observaciones"
+                  value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  placeholder="Ingrese sus observaciones"
+                  disabled={readOnly}
+                  rows={3}
+                />
+              </div>
+              
+              {/* Firma */}
+              <div>
+                <Label htmlFor="firma">Firma</Label>
+                <SignatureField
+                  id="firma"
+                  value={firma}
+                  onChange={setFirma}
+                  readOnly={readOnly}
+                />
+              </div>
+              
+              {/* Cargo */}
+              <div>
+                <Label htmlFor="cargo">Cargo</Label>
+                <Input
+                  id="cargo"
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                  placeholder="Ingrese su cargo"
+                  disabled={readOnly}
+                />
+              </div>
+            </div>
+          </div>
           
           {/* Submit button */}
           {!readOnly && (
