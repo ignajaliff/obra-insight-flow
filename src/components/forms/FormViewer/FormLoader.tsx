@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { FormTemplate, FormField, FieldType } from '@/types/forms';
+import { FormTemplate, FormField, FieldType, ProjectMetadata } from '@/types/forms';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FormLoaderProps {
@@ -56,13 +56,25 @@ export function FormLoader({
               }))
             : [];
             
-          // Handle project metadata safely by creating a new object to avoid type issues
-          const rawMetadata = formData.projectmetadata || {};
-          const projectMetadata = {
-            projectName: rawMetadata.projectName as string | undefined,
-            companyName: rawMetadata.companyName as string | undefined,
-            location: rawMetadata.location as string | undefined
-          };
+          // Handle project metadata safely with proper type checking
+          let projectMetadata: ProjectMetadata = {};
+          
+          if (formData.projectmetadata) {
+            const raw = formData.projectmetadata;
+            
+            // Check if raw is an object and not null
+            if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+              // Now TypeScript knows raw is an object, safely extract properties
+              projectMetadata = {
+                projectName: 'projectName' in raw ? String(raw.projectName || '') : undefined,
+                companyName: 'companyName' in raw ? String(raw.companyName || '') : undefined,
+                location: 'location' in raw ? String(raw.location || '') : undefined
+              };
+              console.log("Processed metadata:", projectMetadata);
+            } else {
+              console.log("projectmetadata is not a valid object:", raw);
+            }
+          }
           
           const formWithFields: FormTemplate = {
             id: formData.id,
