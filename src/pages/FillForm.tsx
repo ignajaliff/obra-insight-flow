@@ -1,13 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
-import { Loader2, ArrowLeft } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
+import { FormLoader } from '@/components/forms/FormViewer/FormLoader';
+import { LoadingState } from '@/components/forms/FormViewer/LoadingState';
+import { ErrorState } from '@/components/forms/FormViewer/ErrorState';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -17,7 +17,6 @@ export default function FillForm() {
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
   
   // Simple mobile detection based on screen width
   const [isMobile, setIsMobile] = useState(false);
@@ -41,117 +40,6 @@ export default function FillForm() {
     };
   }, []);
   
-  useEffect(() => {
-    // Load the template
-    const loadTemplate = async () => {
-      try {
-        setLoading(true);
-        
-        if (!templateId) {
-          console.log("No template ID provided");
-          setError('ID de formulario no proporcionado');
-          setLoading(false);
-          return;
-        }
-
-        console.log("Loading template with ID:", templateId);
-        
-        // Try to load from Supabase first
-        let formFound = false;
-        
-        try {
-          // Try to get the form from Supabase
-          const { data: formData, error: supabaseError } = await supabase
-            .from('form_templates')
-            .select('*')
-            .eq('id', templateId)
-            .single();
-          
-          console.log("Supabase form data:", formData);
-          console.log("Supabase error:", supabaseError);
-          
-          if (formData && !supabaseError) {
-            // Add default fields if none are present
-            const defaultFields = [
-              {
-                id: "1",
-                name: "worker_name",
-                label: "Nombre del Trabajador",
-                type: "text",
-                required: true,
-                field_order: 0
-              },
-              {
-                id: "2",
-                name: "proyecto",
-                label: "Proyecto",
-                type: "text",
-                required: true,
-                field_order: 1
-              }
-            ];
-            
-            // Fixed TypeScript error: Explicitly cast to FormTemplate with fields
-            const formWithFields: FormTemplate = {
-              ...formData,
-              // Add fields array, either from formData.fields or use default if undefined
-              fields: (formData as any).fields || defaultFields
-            };
-            
-            console.log("Form with fields:", formWithFields);
-            setTemplate(formWithFields);
-            formFound = true;
-          }
-        } catch (e) {
-          // Continue to localStorage fallback
-          console.error("Error al obtener formulario de Supabase:", e);
-        }
-        
-        // If we didn't find the form in Supabase, try localStorage
-        if (!formFound) {
-          console.log("Form not found in Supabase, trying localStorage");
-          
-          try {
-            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-            console.log("Local storage templates:", storedTemplates);
-            
-            const localTemplate = storedTemplates.find((t: any) => t.id === templateId);
-            console.log("Found local template:", localTemplate);
-            
-            if (localTemplate) {
-              // Ensure fields exist
-              const templateWithFields: FormTemplate = {
-                ...localTemplate,
-                fields: localTemplate.fields || []
-              };
-              
-              setTemplate(templateWithFields);
-              formFound = true;
-            } else {
-              console.log("Form not found in localStorage either");
-              setError('Formulario no encontrado');
-            }
-          } catch (localStorageError) {
-            console.error("Error accessing localStorage:", localStorageError);
-            setError('Error al buscar el formulario');
-          }
-        }
-        
-        if (!formFound) {
-          console.log("Form not found anywhere");
-          setError('Formulario no encontrado');
-        }
-      } catch (err) {
-        console.error('Error loading template:', err);
-        setError('Error al cargar el formulario');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadTemplate();
-  }, [templateId]);
-
   // Reset form state when the template ID changes
   useEffect(() => {
     setSubmissionComplete(false);
@@ -159,40 +47,29 @@ export default function FillForm() {
     setError(null);
   }, [templateId]);
 
+  // Handle successful template loading
+  const handleTemplateLoaded = (loadedTemplate: FormTemplate) => {
+    setTemplate(loadedTemplate);
+    setError(null);
+  };
+
+  // Handle template loading error
+  const handleTemplateError = (errorMessage: string) => {
+    setError(errorMessage);
+    setTemplate(null);
+  };
+
+  // Handle loading state changes
+  const handleLoadingChange = (isLoading: boolean) => {
+    setLoading(isLoading);
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-12 h-12 text-[#2980b9] animate-spin" />
-          <p className="text-lg font-medium text-[#2980b9]">Cargando formulario...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
   
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-4 md:p-8 text-center">
-        <img 
-          src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
-          alt="Sepcon Logo" 
-          className="h-12 md:h-16 mb-6"
-        />
-        <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
-          <div className="text-destructive text-xl font-medium mb-4">{error}</div>
-          <p className="text-gray-600 mb-6">
-            Es posible que este formulario ya no esté disponible o haya sido respondido anteriormente. Por favor verifica la URL o contacta a la persona que compartió el enlace.
-          </p>
-          
-          <Button 
-            className="w-full bg-[#5DADE2] hover:bg-[#3498DB]" 
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver
-          </Button>
-        </div>
-      </div>
-    );
+    return <ErrorState errorMessage={error} />;
   }
   
   return (
@@ -205,6 +82,14 @@ export default function FillForm() {
             className="h-10 sm:h-12 md:h-16"
           />
         </div>
+        
+        {/* Form Loader Component */}
+        <FormLoader
+          templateId={templateId}
+          onLoaded={handleTemplateLoaded}
+          onError={handleTemplateError}
+          onLoadingChange={handleLoadingChange}
+        />
         
         {template && (
           <Card className="mx-auto overflow-hidden">
