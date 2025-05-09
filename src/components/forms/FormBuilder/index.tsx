@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -13,27 +14,37 @@ import { Json } from '@/integrations/supabase/types';
 
 interface FormBuilderProps {
   onFormCreated?: () => void;
+  initialTemplate?: FormTemplate;
 }
 
-export function FormBuilder({ onFormCreated }: FormBuilderProps) {
+export function FormBuilder({ onFormCreated, initialTemplate }: FormBuilderProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [template, setTemplate] = useState<FormTemplate>({
-    id: uuidv4(),
-    name: '',
-    fields: [],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    projectMetadata: {
-      projectName: '',
-      companyName: '',
-      location: ''
-    },
-  });
+  const [template, setTemplate] = useState<FormTemplate>(
+    initialTemplate || {
+      id: uuidv4(),
+      name: '',
+      fields: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      projectMetadata: {
+        projectName: '',
+        companyName: '',
+        location: ''
+      },
+    }
+  );
   
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("fields");
   const [formSaved, setFormSaved] = useState(false);
+  
+  // Use effect to update form if initialTemplate changes
+  useEffect(() => {
+    if (initialTemplate) {
+      setTemplate(initialTemplate);
+    }
+  }, [initialTemplate]);
   
   const saveTemplate = async () => {
     // Validate form
@@ -63,36 +74,71 @@ export function FormBuilder({ onFormCreated }: FormBuilderProps) {
       
       console.log("Guardando formulario en Supabase:", template);
       
-      // Save to Supabase - with explicit type casting for fields and projectMetadata
-      const { error } = await supabase
-        .from('form_templates')
-        .insert({
-          id: template.id,
-          name: template.name,
-          description: template.description || null,
-          fields: template.fields as unknown as Json,
-          public_url: publicUrl,
-          is_active: true,
-          projectmetadata: template.projectMetadata as unknown as Json
-        });
+      // Check if we're updating an existing template or creating a new one
+      const isUpdate = initialTemplate !== undefined;
       
-      if (error) {
-        console.error("Error guardando en Supabase:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo guardar el formulario. Error: " + error.message,
-          variant: "destructive"
-        });
-        setIsSaving(false);
-        return;
+      if (isUpdate) {
+        // Update existing template
+        const { error } = await supabase
+          .from('form_templates')
+          .update({
+            name: template.name,
+            description: template.description || null,
+            fields: template.fields as unknown as Json,
+            public_url: publicUrl,
+            is_active: true,
+            projectmetadata: template.projectMetadata as unknown as Json,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', template.id);
+        
+        if (error) {
+          console.error("Error actualizando en Supabase:", error);
+          toast({
+            title: "Error",
+            description: "No se pudo actualizar el formulario. Error: " + error.message,
+            variant: "destructive"
+          });
+          setIsSaving(false);
+          return;
+        }
+        
+        console.log("Formulario actualizado exitosamente en Supabase");
+      } else {
+        // Insert new template
+        const { error } = await supabase
+          .from('form_templates')
+          .insert({
+            id: template.id,
+            name: template.name,
+            description: template.description || null,
+            fields: template.fields as unknown as Json,
+            public_url: publicUrl,
+            is_active: true,
+            projectmetadata: template.projectMetadata as unknown as Json
+          });
+        
+        if (error) {
+          console.error("Error guardando en Supabase:", error);
+          toast({
+            title: "Error",
+            description: "No se pudo guardar el formulario. Error: " + error.message,
+            variant: "destructive"
+          });
+          setIsSaving(false);
+          return;
+        }
+        
+        console.log("Formulario guardado exitosamente en Supabase");
       }
       
-      console.log("Formulario guardado exitosamente en Supabase");
       setFormSaved(true);
       
       toast({
-        title: "Formulario guardado",
-        description: "Tu formulario ha sido guardado correctamente."
+        title: isUpdate ? "Formulario actualizado" : "Formulario guardado",
+        description: isUpdate ? 
+          "Tu formulario ha sido actualizado correctamente." : 
+          "Tu formulario ha sido guardado correctamente."
       });
       
       // If callback provided, call it
@@ -174,7 +220,7 @@ export function FormBuilder({ onFormCreated }: FormBuilderProps) {
             onClick={saveTemplate}
             disabled={isSaving || template.name.trim() === '' || template.fields.length === 0}
           >
-            {isSaving ? "Guardando..." : "Guardar formulario"}
+            {isSaving ? "Guardando..." : initialTemplate ? "Actualizar formulario" : "Guardar formulario"}
           </Button>
         )}
       </div>
