@@ -97,6 +97,7 @@ export default function FormAdmin() {
           description: updatedTemplate.description,
           fields: JSON.stringify(updatedTemplate.fields),
           updated_at: new Date().toISOString(),
+          projectMetadata: updatedTemplate.projectMetadata
         })
         .eq('id', updatedTemplate.id);
       

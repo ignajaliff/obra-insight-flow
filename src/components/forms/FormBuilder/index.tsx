@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -75,7 +76,8 @@ export function FormBuilder() {
           // Stringify the fields array to make it compatible with Supabase's JSON type
           fields: JSON.stringify(template.fields),
           public_url: publicUrl,
-          is_active: true
+          is_active: true,
+          projectMetadata: template.projectMetadata
         });
       
       if (error) {

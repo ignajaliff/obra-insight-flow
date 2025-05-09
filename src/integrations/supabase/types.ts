@@ -49,30 +49,33 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
-          fields: Json | null
+          fields: Json
           id: string
           is_active: boolean
           name: string
+          projectmetadata: Json | null
           public_url: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
-          fields?: Json | null
-          id?: string
+          fields: Json
+          id: string
           is_active?: boolean
           name: string
+          projectmetadata?: Json | null
           public_url?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
-          fields?: Json | null
+          fields?: Json
           id?: string
           is_active?: boolean
           name?: string
+          projectmetadata?: Json | null
           public_url?: string | null
           updated_at?: string
         }

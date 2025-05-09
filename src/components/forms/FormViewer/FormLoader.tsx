@@ -45,84 +45,47 @@ export function FormLoader({
           
           if (formData && !supabaseError) {
             // Check if fields exist and are in the right format
-            if (!formData.fields || !Array.isArray(formData.fields)) {
-              console.log("Form found but fields are missing or invalid");
-              
-              // Add default fields if none are present
-              const defaultFields: FormField[] = [
-                {
-                  id: "1",
-                  name: "worker_name",
-                  label: "Nombre del Trabajador",
-                  type: "text" as FieldType,
-                  required: true,
-                  field_order: 0
-                },
-                {
-                  id: "2",
-                  name: "proyecto",
-                  label: "Proyecto",
-                  type: "text" as FieldType,
-                  required: true,
-                  field_order: 1
-                }
-              ];
-              
-              // Extract project metadata if available
-              const projectMetadata = {}; // Default to empty object
-              
-              // Create a complete form template with default fields
-              const formWithFields: FormTemplate = {
-                id: formData.id,
-                name: formData.name,
-                description: formData.description || undefined,
-                fields: defaultFields,
-                created_at: formData.created_at,
-                updated_at: formData.updated_at,
-                is_active: formData.is_active,
-                public_url: formData.public_url,
-                projectMetadata: projectMetadata
-              };
-              
-              console.log("Created form with default fields:", formWithFields);
-              onLoaded(formWithFields);
-            } else {
-              // If fields exist and are valid, use the form as is
-              console.log("Form found with valid fields:", formData);
-              
-              // Ensure each field has the correct type by properly casting
-              const typedFields: FormField[] = formData.fields.map((field: any) => ({
-                id: String(field.id),
-                name: String(field.name),
-                label: String(field.label),
-                type: field.type as FieldType,
-                required: Boolean(field.required),
-                field_order: Number(field.field_order),
-                options: Array.isArray(field.options) ? field.options.map(String) : undefined,
-                isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined
-              }));
-              
-              // Extract project metadata (with a safe default)
-              const projectMetadata = {}; // Default to empty object
-              
-              // Ensure the form data matches our FormTemplate type
-              const validForm: FormTemplate = {
-                id: formData.id,
-                name: formData.name,
-                description: formData.description || undefined,
-                fields: typedFields,
-                created_at: formData.created_at,
-                updated_at: formData.updated_at,
-                is_active: formData.is_active,
-                public_url: formData.public_url,
-                projectMetadata: projectMetadata
-              };
-              
-              onLoaded(validForm);
+            let fields: FormField[] = [];
+            
+            // Parse fields if they're stored as a string
+            if (typeof formData.fields === 'string') {
+              try {
+                fields = JSON.parse(formData.fields);
+                console.log("Parsed fields:", fields);
+              } catch (e) {
+                console.error("Error parsing fields:", e);
+                fields = [];
+              }
+            } else if (Array.isArray(formData.fields)) {
+              fields = formData.fields;
             }
+            
+            // Create a complete form template
+            const formWithFields: FormTemplate = {
+              id: formData.id,
+              name: formData.name,
+              description: formData.description || undefined,
+              fields: fields.map(field => ({
+                id: String(field.id || ''),
+                name: String(field.name || ''),
+                label: String(field.label || ''),
+                type: (field.type as FieldType) || 'text',
+                required: Boolean(field.required),
+                options: Array.isArray(field.options) ? field.options.map(String) : undefined,
+                isNegativeIndicator: field.isNegativeIndicator ? Boolean(field.isNegativeIndicator) : undefined,
+                field_order: Number(field.field_order || 0)
+              })),
+              created_at: formData.created_at,
+              updated_at: formData.updated_at,
+              is_active: formData.is_active,
+              public_url: formData.public_url,
+              projectMetadata: formData.projectMetadata
+            };
+            
+            console.log("Processed form:", formWithFields);
+            onLoaded(formWithFields);
+            onLoadingChange(false);
             return;
-          } else if (supabaseError) {
-            console.error("Error fetching form from Supabase:", supabaseError);
           }
         } catch (supabaseError) {
           console.error("Exception while fetching form from Supabase:", supabaseError);
