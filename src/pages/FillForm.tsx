@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -16,6 +17,7 @@ export default function FillForm() {
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     // Load the template from localStorage
@@ -38,6 +40,12 @@ export default function FillForm() {
     };
     
     loadTemplate();
+  }, [templateId]);
+
+  // Reset form state when the template ID changes
+  useEffect(() => {
+    setSubmissionComplete(false);
+    setSubmissionData(null);
   }, [templateId]);
 
   if (loading) {
@@ -63,18 +71,18 @@ export default function FillForm() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex justify-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-6 md:py-12 px-3 md:px-4">
+      <div className="w-full max-w-3xl mx-auto">
+        <div className="flex justify-center mb-6 md:mb-8">
           <img 
             src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
             alt="Sepcon Logo" 
-            className="h-16"
+            className="h-12 md:h-16"
           />
         </div>
         
         {template && (
-          <Card>
+          <Card className="mx-auto">
             <FormSubmissionForm 
               template={template}
               readOnly={submissionComplete}

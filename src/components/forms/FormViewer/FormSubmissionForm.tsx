@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -101,8 +100,6 @@ export function FormSubmissionForm({
         template_name: template.name,
         projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
       };
-      
-      // Eliminamos el almacenamiento en localStorage
       
       // Send to webhook with the new numbered format as plain text
       if (webhookUrl) {
@@ -223,13 +220,13 @@ export function FormSubmissionForm({
   
   return (
     <>
-      <CardHeader>
-        <CardTitle>{template.name}</CardTitle>
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-xl md:text-2xl">{template.name}</CardTitle>
         {template.description && (
           <CardDescription>{template.description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 sm:px-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Submitter info */}
           <div className="space-y-4">
@@ -367,7 +364,7 @@ export function FormSubmissionForm({
           {/* Submit button */}
           {!readOnly && (
             <div className="pt-4 flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                 {isSubmitting ? "Enviando..." : "Enviar formulario"}
               </Button>
             </div>
