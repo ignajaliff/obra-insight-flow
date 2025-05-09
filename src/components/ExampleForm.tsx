@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FormTemplate, FieldType } from '@/types/forms';
@@ -77,7 +76,9 @@ export const createExampleForm = async () => {
   };
   
   try {
-    // Save the form to Supabase
+    console.log("Creando formulario de ejemplo...", exampleForm);
+    
+    // Save the form to Supabase with proper type casting
     const { error } = await supabase
       .from('form_templates')
       .insert({

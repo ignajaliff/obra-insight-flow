@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -63,14 +62,9 @@ export function FormBuilder() {
         updated_at: new Date().toISOString()
       };
       
-      // Save to localStorage for compatibility
-      const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-      localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
-      
-      // Save to Supabase
       console.log("Guardando formulario en Supabase:", templateToSave);
       
-      // Convert template fields to JSON compatible format for Supabase
+      // Save to Supabase - with explicit type casting for fields and projectMetadata
       const { error } = await supabase
         .from('form_templates')
         .insert({
@@ -92,10 +86,9 @@ export function FormBuilder() {
         });
         setIsSaving(false);
         return;
-      } else {
-        console.log("Formulario guardado exitosamente en Supabase");
       }
       
+      console.log("Formulario guardado exitosamente en Supabase");
       setFormSaved(true);
       
       toast({
