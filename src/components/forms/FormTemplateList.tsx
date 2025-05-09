@@ -28,6 +28,7 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
   const { toast } = useToast();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const copyFormLink = (template: FormTemplate) => {
     const url = `${window.location.origin}/formularios/rellenar/${template.id}`;
@@ -47,6 +48,10 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
   const confirmDelete = async () => {
     if (templateToDelete) {
       try {
+        setIsDeleting(true);
+        
+        console.log("Eliminando formulario con ID:", templateToDelete);
+        
         // Delete from Supabase
         const { error } = await supabase
           .from('form_templates')
@@ -61,8 +66,11 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
             variant: "destructive"
           });
         } else {
+          console.log("Formulario eliminado correctamente en Supabase");
+          
           // Call the onDelete callback to update the UI
           onDelete(templateToDelete);
+          
           toast({
             title: "Formulario eliminado",
             description: "El formulario ha sido eliminado correctamente."
@@ -75,11 +83,14 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
           description: "Ha ocurrido un error al eliminar el formulario.",
           variant: "destructive"
         });
+      } finally {
+        setIsDeleting(false);
+        
+        // Close the dialog and reset the template to delete
+        setIsDeleteDialogOpen(false);
+        setTemplateToDelete(null);
       }
     }
-    // Close the dialog and reset the template to delete
-    setIsDeleteDialogOpen(false);
-    setTemplateToDelete(null);
   };
   
   if (templates.length === 0) {
@@ -155,9 +166,13 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>
-              Eliminar
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Eliminando..." : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

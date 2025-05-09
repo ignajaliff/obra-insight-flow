@@ -118,8 +118,11 @@ export default function MyForms() {
   };
   
   const handleDeleteTemplate = (templateId: string) => {
+    console.log("Eliminando template de la UI con ID:", templateId);
     // Update the local state to remove the deleted template
-    setTemplates(templates.filter(template => template.id !== templateId));
+    setTemplates((prevTemplates) => 
+      prevTemplates.filter((template) => template.id !== templateId)
+    );
   };
   
   if (loading) {
@@ -171,7 +174,7 @@ export default function MyForms() {
         </div>
         <FormBuilder 
           onFormCreated={handleFormCreated}
-          initialTemplate={templateToEdit}
+          initialTemplate={templateToEdit || undefined}
         />
       </div>
     );
