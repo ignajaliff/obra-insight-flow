@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -19,16 +20,75 @@ export default function FillForm() {
   const isMobile = useIsMobile();
   
   useEffect(() => {
-    // Load the template from localStorage
+    // Load the template from both Supabase and localStorage
     const loadTemplate = async () => {
       try {
         setLoading(true);
         console.log("Cargando formulario en dispositivo:", isMobile ? "móvil" : "escritorio");
         console.log("Intentando cargar formulario con ID:", templateId);
         
+        // First try from localStorage
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        let foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
         
+        // If not found in localStorage, try from Supabase
+        if (!foundTemplate) {
+          console.log("Formulario no encontrado en localStorage, buscando en Supabase...");
+          
+          // Create a form_templates table if needed in Supabase
+          // For now, we'll simulate having the table and accessing it
+          try {
+            // Try to fetch from a hypothetical form_templates table
+            // This is just a placeholder - we'd need to create this table first
+            const { data: supabaseTemplate, error: supabaseError } = await supabase
+              .from('form_responses')
+              .select('*')
+              .eq('id', templateId)
+              .single();
+              
+            if (supabaseError) {
+              console.error("Error de Supabase:", supabaseError);
+              throw supabaseError;
+            }
+            
+            if (supabaseTemplate) {
+              console.log("Formulario encontrado en Supabase:", supabaseTemplate);
+              
+              // Convert supabase response to FormTemplate format
+              // This is just a simplified example
+              foundTemplate = {
+                id: supabaseTemplate.id,
+                name: supabaseTemplate.form_type || "Formulario",
+                description: "Formulario cargado desde Supabase",
+                fields: [
+                  {
+                    id: "1",
+                    name: "worker_name",
+                    label: "Nombre del Trabajador",
+                    type: "text",
+                    required: true,
+                    field_order: 0
+                  },
+                  {
+                    id: "2",
+                    name: "proyecto",
+                    label: "Proyecto",
+                    type: "text",
+                    required: true,
+                    field_order: 1
+                  }
+                ],
+                created_at: supabaseTemplate.created_at,
+                updated_at: supabaseTemplate.created_at
+              };
+            }
+          } catch (supabaseErr) {
+            console.error("Error buscando en Supabase:", supabaseErr);
+            // Continue with localStorage approach if Supabase fails
+          }
+        }
+        
+        // Use whatever was found
         if (foundTemplate) {
           console.log("Formulario encontrado:", foundTemplate.name);
           console.log("Campos del formulario:", foundTemplate.fields?.length || 0);

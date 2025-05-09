@@ -33,7 +33,7 @@ export function FormFields({
   console.log("Fields count:", fields.length);
   
   const renderField = (field: FormField) => {
-    console.log(`Rendering field: ${field.name}, type: ${field.type}`);
+    console.log(`Rendering field: ${field.name}, type: ${field.type}, isMobile: ${isMobile}`);
     
     switch (field.type) {
       case 'text':
@@ -71,7 +71,13 @@ export function FormFields({
             <SelectTrigger id={field.id} className="w-full">
               <SelectValue placeholder="Seleccionar..." />
             </SelectTrigger>
-            <SelectContent position={isMobile ? "popper" : "item-aligned"}>
+            <SelectContent 
+              position={isMobile ? "popper" : "item-aligned"}
+              side={isMobile ? "bottom" : undefined}
+              align={isMobile ? "center" : undefined}
+              avoidCollisions={true}
+              className={isMobile ? "max-w-[90vw]" : undefined}
+            >
               {field.options?.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
@@ -141,7 +147,7 @@ export function FormFields({
       {fields.length > 0 ? (
         fields.map((field) => (
           <div key={field.id} className="space-y-2">
-            <Label htmlFor={field.id}>
+            <Label htmlFor={field.id} className="block text-base font-medium">
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
