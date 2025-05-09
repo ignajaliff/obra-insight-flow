@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { FormTemplate, FormField, FieldType, ProjectMetadata } from '@/types/forms';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface FormLoaderProps {
   templateId: string | undefined;
@@ -16,6 +17,8 @@ export function FormLoader({
   onError, 
   onLoadingChange 
 }: FormLoaderProps) {
+  const { toast } = useToast();
+  
   useEffect(() => {
     // Load the template
     const loadTemplate = async () => {
@@ -39,9 +42,15 @@ export function FormLoader({
           .single();
         
         console.log("Supabase form data:", formData);
-        console.log("Supabase error:", supabaseError);
         
-        if (formData && !supabaseError) {
+        if (supabaseError) {
+          console.error("Supabase error:", supabaseError);
+          onError('Error al cargar el formulario: ' + supabaseError.message);
+          onLoadingChange(false);
+          return;
+        }
+        
+        if (formData) {
           // Create a complete form template with proper types
           const fields: FormField[] = Array.isArray(formData.fields) 
             ? formData.fields.map((field: any) => ({
@@ -91,8 +100,8 @@ export function FormLoader({
           console.log("Processed form template:", formWithFields);
           onLoaded(formWithFields);
         } else {
-          console.log("Form not found or error:", supabaseError);
-          onError('Formulario no encontrado o error al cargar');
+          console.log("Form not found");
+          onError('Formulario no encontrado');
         }
       } catch (err) {
         console.error('Error loading template:', err);
@@ -103,7 +112,7 @@ export function FormLoader({
     };
     
     loadTemplate();
-  }, [templateId, onLoaded, onError, onLoadingChange]);
+  }, [templateId, onLoaded, onError, onLoadingChange, toast]);
   
   return null;
 }

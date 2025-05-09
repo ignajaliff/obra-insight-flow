@@ -44,6 +44,7 @@ export function FormViewer({
   const isMobile = externalIsMobile !== undefined ? externalIsMobile : detectedIsMobile;
   
   console.log("FormViewer rendering with isMobile:", isMobile);
+  console.log("Template:", template.id, template.name);
   
   if (submissionComplete && submissionData) {
     return (

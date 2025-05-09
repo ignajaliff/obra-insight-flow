@@ -10,7 +10,7 @@ import { LoadingState } from '@/components/forms/FormViewer/LoadingState';
 import { ErrorState } from '@/components/forms/FormViewer/ErrorState';
 
 export default function FillForm() {
-  const { templateId } = useParams();
+  const { templateId } = useParams<{ templateId: string }>();
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,6 @@ export default function FillForm() {
     setLoading(isLoading);
   };
   
-  // Use FormLoader component to handle the template loading logic
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-3 px-2 sm:py-6 sm:px-3 overflow-y-auto">
       <div className="w-full max-w-3xl mx-auto">
