@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { FormTemplate } from '@/types/forms';
+import { FormTemplate, FormField, FieldType } from '@/types/forms';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FormLoaderProps {
@@ -49,12 +49,12 @@ export function FormLoader({
               console.log("Form found but fields are missing or invalid");
               
               // Add default fields if none are present
-              const defaultFields = [
+              const defaultFields: FormField[] = [
                 {
                   id: "1",
                   name: "worker_name",
                   label: "Nombre del Trabajador",
-                  type: "text",
+                  type: "text" as FieldType,
                   required: true,
                   field_order: 0
                 },
@@ -62,11 +62,14 @@ export function FormLoader({
                   id: "2",
                   name: "proyecto",
                   label: "Proyecto",
-                  type: "text",
+                  type: "text" as FieldType,
                   required: true,
                   field_order: 1
                 }
               ];
+              
+              // Extract metadata from fields_metadata if available
+              const projectMetadata = formData.fields_metadata?.projectMetadata || {};
               
               // Create a complete form template with default fields
               const formWithFields: FormTemplate = {
@@ -78,7 +81,7 @@ export function FormLoader({
                 updated_at: formData.updated_at,
                 is_active: formData.is_active,
                 public_url: formData.public_url,
-                projectMetadata: formData.projectMetadata || {}
+                projectMetadata: projectMetadata
               };
               
               console.log("Created form with default fields:", formWithFields);
@@ -87,17 +90,26 @@ export function FormLoader({
               // If fields exist and are valid, use the form as is
               console.log("Form found with valid fields:", formData);
               
+              // Ensure each field has the correct type by casting
+              const typedFields = formData.fields.map((field: any) => ({
+                ...field,
+                type: field.type as FieldType
+              }));
+              
+              // Extract metadata from fields_metadata if available
+              const projectMetadata = formData.fields_metadata?.projectMetadata || {};
+              
               // Ensure the form data matches our FormTemplate type
               const validForm: FormTemplate = {
                 id: formData.id,
                 name: formData.name,
                 description: formData.description || undefined,
-                fields: formData.fields,
+                fields: typedFields,
                 created_at: formData.created_at,
                 updated_at: formData.updated_at,
                 is_active: formData.is_active,
                 public_url: formData.public_url,
-                projectMetadata: formData.projectMetadata || {}
+                projectMetadata: projectMetadata
               };
               
               onLoaded(validForm);
@@ -136,10 +148,14 @@ export function FormLoader({
           console.log("Found local template:", localTemplate);
           
           if (localTemplate) {
-            // Ensure fields exist
+            // Ensure fields exist and have the correct type
             const templateWithFields: FormTemplate = {
               ...localTemplate,
-              fields: Array.isArray(localTemplate.fields) ? localTemplate.fields : []
+              fields: Array.isArray(localTemplate.fields) ? 
+                localTemplate.fields.map((field: any) => ({
+                  ...field,
+                  type: field.type as FieldType
+                })) : []
             };
             
             onLoaded(templateWithFields);
