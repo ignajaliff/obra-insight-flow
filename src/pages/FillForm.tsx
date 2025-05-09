@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { FormViewer } from '@/components/forms/FormViewer';
 import { supabase } from '@/integrations/supabase/client';
-import { Json } from '@/integrations/supabase/types';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -17,19 +16,16 @@ export default function FillForm() {
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   const { toast } = useToast();
   
-  // Simple mobile detection based on screen width
+  // Mobile detection
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
-    // Simple mobile detection function
+    // Check if device is mobile
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
     
-    // Check immediately
     checkMobile();
-    
-    // Add listeners for resize
     window.addEventListener('resize', checkMobile);
     window.addEventListener('orientationchange', checkMobile);
     
@@ -78,7 +74,6 @@ export default function FillForm() {
             try {
               const parsedFields = JSON.parse(data.fields);
               if (Array.isArray(parsedFields)) {
-                // Ensure each field conforms to FormField type
                 fields = parsedFields.map(field => ({
                   id: String(field.id || ''),
                   name: String(field.name || ''),
@@ -94,7 +89,6 @@ export default function FillForm() {
               console.error("Error parsing fields:", e);
             }
           } else if (Array.isArray(data.fields)) {
-            // If fields is already an array, map it to ensure type safety
             fields = data.fields.map((field: any) => {
               if (typeof field === 'object' && field !== null) {
                 return {
@@ -108,8 +102,6 @@ export default function FillForm() {
                   field_order: Number(field.field_order || 0)
                 };
               }
-              // Return a default field if invalid data
-              console.warn("Invalid field data, using default:", field);
               return {
                 id: '',
                 name: '',
@@ -205,6 +197,7 @@ export default function FillForm() {
               submissionData={submissionData}
               setSubmissionComplete={setSubmissionComplete}
               setSubmissionData={setSubmissionData}
+              isMobile={isMobile}
             />
           </Card>
         )}

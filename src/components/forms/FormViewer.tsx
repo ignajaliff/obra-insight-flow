@@ -13,6 +13,7 @@ interface FormViewerProps {
   submissionData?: FormSubmission | null;
   setSubmissionComplete?: (value: boolean) => void;
   setSubmissionData?: (data: FormSubmission) => void;
+  isMobile?: boolean;
 }
 
 export function FormViewer({ 
@@ -22,7 +23,8 @@ export function FormViewer({
   submissionComplete: externalSubmissionComplete,
   submissionData: externalSubmissionData,
   setSubmissionComplete: externalSetSubmissionComplete,
-  setSubmissionData: externalSetSubmissionData
+  setSubmissionData: externalSetSubmissionData,
+  isMobile = false
 }: FormViewerProps) {
   // Use external state if provided, otherwise use local state
   const [internalSubmissionComplete, setInternalSubmissionComplete] = React.useState(false);
@@ -52,6 +54,7 @@ export function FormViewer({
         webhookUrl={webhookUrl}
         setSubmissionComplete={setSubmissionComplete}
         setSubmissionData={setSubmissionData}
+        isMobile={isMobile}
       />
     </Card>
   );

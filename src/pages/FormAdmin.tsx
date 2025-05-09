@@ -1,201 +1,316 @@
-import React, { useState, useEffect } from 'react';
-import { FormTemplate, FormField, FieldType } from '@/types/forms';
-import { FormTemplateList } from '@/components/forms/FormTemplateList';
-import { FormTemplateEditor } from '@/components/forms/FormTemplateEditor';
+
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
+import { FormTemplate } from '@/types/forms';
+import { FormTemplateEditor } from '@/components/forms/FormTemplateEditor';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProjectInfoDetail } from '@/components/forms/FormBuilder/ProjectInfoDetail';
+import { ArrowLeft, Share, Pencil, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { FormViewer } from '@/components/forms/FormViewer';
 
-// Exportar interfaces para ser utilizadas en otros componentes
-export type { FormTemplate, FormField };
-
-const FormAdmin = () => {
-  const [templates, setTemplates] = useState<FormTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null);
+export default function FormAdmin() {
+  const { templateId } = useParams<{ templateId: string }>();
+  const navigate = useNavigate();
+  const [template, setTemplate] = useState<FormTemplate | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('details');
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchTemplates();
-  }, []);
-
-  const fetchTemplates = async () => {
-    try {
-      // Aquí estaría la lógica de obtención de datos si estuviéramos usando las tablas form_templates
-      // Como hemos eliminado esa tabla, usamos datos ficticios para que no falle la aplicación
-      setTemplates([
-        {
-          id: '1',
-          name: 'Inspección de Seguridad',
-          description: 'Formulario para inspección diaria de seguridad',
-          fields: [
-            {
-              id: '1',
-              name: 'nombre_trabajador',
-              label: 'Nombre del Trabajador',
-              type: 'text',
-              required: true,
-              field_order: 0
-            },
-            {
-              id: '2',
-              name: 'empresa',
-              label: 'Empresa',
-              type: 'text',
-              required: true,
-              field_order: 1
-            }
-          ],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ]);
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudieron cargar las plantillas de formularios"
-      });
-    }
-  };
-
-  const handleCreateTemplate = () => {
-    setSelectedTemplate({
-      id: '',
-      name: '',
-      description: '',
-      fields: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    });
-    setIsCreating(true);
-    setIsEditing(false);
-  };
-
-  const handleEditTemplate = (template: FormTemplate) => {
-    setSelectedTemplate(template);
-    setIsEditing(true);
-    setIsCreating(false);
-  };
-
-  const handleSaveTemplate = async (template: FormTemplate) => {
-    try {
-      let updatedTemplates;
+    const loadTemplate = async () => {
+      setLoading(true);
+      setError(null);
       
-      if (isCreating) {
-        // Simular la creación de una nueva plantilla
-        const newTemplate = {
-          ...template,
-          id: Date.now().toString(), // Generar un ID único
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        updatedTemplates = [...templates, newTemplate];
-        toast({
-          title: "Plantilla creada",
-          description: `La plantilla ${template.name} ha sido creada correctamente`
-        });
-      } else {
-        // Simular la actualización de una plantilla existente
-        updatedTemplates = templates.map(t => 
-          t.id === template.id ? {...template, updated_at: new Date().toISOString()} : t
-        );
-        toast({
-          title: "Plantilla actualizada",
-          description: `La plantilla ${template.name} ha sido actualizada correctamente`
-        });
+      try {
+        if (!templateId) {
+          throw new Error("ID del formulario no proporcionado");
+        }
+        
+        // Try to get from Supabase first
+        const { data, error } = await supabase
+          .from('form_templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
+        
+        if (error) {
+          console.error("Error fetching from Supabase:", error);
+          
+          // Fallback to localStorage
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (localTemplate) {
+            setTemplate(localTemplate);
+          } else {
+            throw new Error("Formulario no encontrado");
+          }
+        } else {
+          // Process fields if they're stored as JSON
+          let fields = [];
+          try {
+            fields = typeof data.fields === 'string' ? JSON.parse(data.fields) : data.fields;
+          } catch (parseError) {
+            console.error("Error parsing fields:", parseError);
+            fields = [];
+          }
+          
+          setTemplate({
+            ...data,
+            fields: Array.isArray(fields) ? fields : []
+          });
+        }
+      } catch (err) {
+        console.error("Error loading template:", err);
+        setError(err instanceof Error ? err.message : "Error desconocido");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadTemplate();
+  }, [templateId]);
+
+  const handleSave = async (updatedTemplate: FormTemplate) => {
+    try {
+      // Update local state
+      setTemplate(updatedTemplate);
+      
+      // Update localStorage
+      const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+      const updatedTemplates = storedTemplates.map((t: FormTemplate) => 
+        t.id === updatedTemplate.id ? updatedTemplate : t
+      );
+      localStorage.setItem('formTemplates', JSON.stringify(updatedTemplates));
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('form_templates')
+        .update({
+          name: updatedTemplate.name,
+          description: updatedTemplate.description,
+          fields: JSON.stringify(updatedTemplate.fields),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', updatedTemplate.id);
+      
+      if (error) {
+        console.error("Error updating in Supabase:", error);
+        // We don't throw here to avoid disrupting the user experience
+        // since localStorage update succeeded
       }
       
-      setTemplates(updatedTemplates);
-      setSelectedTemplate(null);
       setIsEditing(false);
-      setIsCreating(false);
-    } catch (error) {
-      console.error('Error saving template:', error);
       toast({
-        variant: "destructive",
+        title: "Formulario actualizado",
+        description: "Los cambios se guardaron correctamente."
+      });
+      
+    } catch (err) {
+      console.error("Error saving template:", err);
+      toast({
         title: "Error",
-        description: "No se pudo guardar la plantilla de formulario"
+        description: "No se pudo guardar el formulario.",
+        variant: "destructive"
       });
     }
   };
 
-  const handleCancelEdit = () => {
-    setSelectedTemplate(null);
-    setIsEditing(false);
-    setIsCreating(false);
-  };
-
-  const handleDeleteTemplate = async (templateId: string) => {
-    try {
-      // Simulación de eliminación
-      const updatedTemplates = templates.filter(t => t.id !== templateId);
-      setTemplates(updatedTemplates);
-      
+  const handleCopyLink = () => {
+    if (template) {
+      const url = `${window.location.origin}/formularios/rellenar/${template.id}`;
+      navigator.clipboard.writeText(url);
       toast({
-        title: "Plantilla eliminada",
-        description: "La plantilla ha sido eliminada correctamente"
-      });
-    } catch (error) {
-      console.error('Error deleting template:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo eliminar la plantilla de formulario"
+        title: "Enlace copiado",
+        description: "El enlace se ha copiado al portapapeles."
       });
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Administración de Formularios</h1>
-          <p className="text-muted-foreground">Crea y gestiona plantillas de formularios</p>
-        </div>
-        <Button onClick={handleCreateTemplate} className="flex items-center gap-1">
-          <Plus className="h-4 w-4" />
-          Nueva Plantilla
-        </Button>
-      </div>
-      
-      <div className="grid md:grid-cols-12 gap-6">
-        <div className={`md:col-span-${isEditing || isCreating ? '4' : '12'}`}>
-          <Card>
-            <CardContent className="p-4">
-              <h2 className="text-xl font-semibold mb-4">Plantillas disponibles</h2>
-              <FormTemplateList
-                templates={templates}
-                onEdit={handleEditTemplate}
-                onDelete={handleDeleteTemplate}
-              />
-            </CardContent>
-          </Card>
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/formularios">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold">Cargando formulario...</h1>
         </div>
         
-        {(isEditing || isCreating) && selectedTemplate && (
-          <div className="md:col-span-8">
-            <Card>
-              <CardContent className="p-4">
-                <h2 className="text-xl font-semibold mb-4">
-                  {isCreating ? 'Nueva Plantilla' : 'Editar Plantilla'}
-                </h2>
-                <FormTemplateEditor
-                  template={selectedTemplate}
-                  onSave={handleSaveTemplate}
-                  onCancel={handleCancelEdit}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/formularios">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold text-red-600">Error</h1>
+        </div>
+        
+        <Card>
+          <CardContent className="p-6">
+            <p>{error}</p>
+            <Button 
+              onClick={() => navigate('/formularios')} 
+              className="mt-4"
+            >
+              Volver a mis formularios
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isEditing && template) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsEditing(false)}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Cancelar edición
+          </Button>
+          <h1 className="text-2xl font-bold">Editando formulario</h1>
+        </div>
+        
+        <FormTemplateEditor 
+          template={template} 
+          onSave={handleSave}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/formularios">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold">{template?.name || 'Formulario'}</h1>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleCopyLink}>
+            <Share className="mr-2 h-4 w-4" /> Compartir
+          </Button>
+          <Button onClick={() => setIsEditing(true)}>
+            <Pencil className="mr-2 h-4 w-4" /> Editar
+          </Button>
+        </div>
+      </div>
+      
+      {template && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{template.name}</CardTitle>
+          </CardHeader>
+          
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="details">Detalles</TabsTrigger>
+                <TabsTrigger value="preview">Vista Previa</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="details">
+                <div className="space-y-4">
+                  {template.description && (
+                    <div>
+                      <h3 className="font-medium mb-1">Descripción</h3>
+                      <p className="text-muted-foreground">{template.description}</p>
+                    </div>
+                  )}
+                  
+                  {/* Project Information Section */}
+                  <ProjectInfoDetail template={template} />
+                  
+                  <div className="mt-6">
+                    <h3 className="font-medium mb-3">Campos del formulario</h3>
+                    {template.fields.length === 0 ? (
+                      <p className="text-muted-foreground">No hay campos definidos en este formulario.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {template.fields.map((field, index) => (
+                          <Card key={field.id} className="p-3">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium">{field.label}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Tipo: {field.type} {field.required ? "• Obligatorio" : ""}
+                                </p>
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                #{index + 1}
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="font-medium mb-3">Enlace público</h3>
+                    <div className="flex items-center gap-2">
+                      <div className="bg-muted p-2 rounded flex-1 text-sm overflow-hidden overflow-ellipsis">
+                        {window.location.origin}/formularios/rellenar/{template.id}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                        Copiar
+                      </Button>
+                    </div>
+                    <Button 
+                      className="mt-4" 
+                      variant="outline"
+                      onClick={() => window.open(`/formularios/rellenar/${template.id}`, '_blank')}
+                    >
+                      <Eye className="mr-2 h-4 w-4" /> Ver formulario
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="preview">
+                {template && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Esta es una vista previa de cómo se ve su formulario. Los datos ingresados aquí no serán enviados.
+                    </p>
+                    <FormViewer template={template} readOnly={false} />
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
-};
-
-export default FormAdmin;
+}

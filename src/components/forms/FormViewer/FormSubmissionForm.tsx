@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -222,6 +221,24 @@ export function FormSubmissionForm({
         <CardTitle className="text-xl md:text-2xl">{template.name}</CardTitle>
         {template.description && (
           <CardDescription>{template.description}</CardDescription>
+        )}
+        
+        {/* Display project information if it exists */}
+        {template.projectMetadata && Object.keys(template.projectMetadata).some(key => !!template.projectMetadata?.[key]) && (
+          <div className="mt-4 pt-4 border-t text-sm">
+            <h4 className="font-medium mb-2">Información del Proyecto</h4>
+            <div className="space-y-1">
+              {template.projectMetadata.projectName && (
+                <p><span className="font-medium">Proyecto:</span> {template.projectMetadata.projectName}</p>
+              )}
+              {template.projectMetadata.companyName && (
+                <p><span className="font-medium">Empresa:</span> {template.projectMetadata.companyName}</p>
+              )}
+              {template.projectMetadata.location && (
+                <p><span className="font-medium">Ubicación:</span> {template.projectMetadata.location}</p>
+              )}
+            </div>
+          </div>
         )}
       </CardHeader>
       <CardContent className={cn("px-3 sm:px-6", isMobile && "p-4")}>
