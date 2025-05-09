@@ -66,7 +66,9 @@ export function FormBuilder() {
       const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
       localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
       
-      // Save to Supabase - Convert fields to JSON format
+      // Save to Supabase
+      console.log("Guardando formulario en Supabase:", templateToSave);
+      
       const { error } = await supabase
         .from('form_templates')
         .insert({
@@ -74,17 +76,23 @@ export function FormBuilder() {
           name: template.name,
           description: template.description || null,
           // Stringify the fields array to make it compatible with Supabase's JSON type
-          fields: JSON.stringify(template.fields),
+          fields: template.fields,
           public_url: publicUrl,
           is_active: true,
-          projectMetadata: template.projectMetadata
+          projectmetadata: template.projectMetadata // Usar "projectmetadata" (minúscula) para coincidir con la columna de la BD
         });
       
       if (error) {
-        console.error("Error saving to Supabase:", error);
-        // Continue even if Supabase save fails, as we have localStorage backup
+        console.error("Error guardando en Supabase:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo guardar el formulario. Error: " + error.message,
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
       } else {
-        console.log("Form successfully saved to Supabase");
+        console.log("Formulario guardado exitosamente en Supabase");
       }
       
       setFormSaved(true);
@@ -95,7 +103,7 @@ export function FormBuilder() {
       });
       
     } catch (error) {
-      console.error("Error saving template:", error);
+      console.error("Error guardando formulario:", error);
       toast({
         title: "Error",
         description: "No se pudo guardar el formulario. Inténtalo de nuevo.",
@@ -108,7 +116,7 @@ export function FormBuilder() {
   
   // Function to handle navigation back to forms list
   const goToFormsList = () => {
-    navigate('/formularios');  // Changed to redirect to /formularios
+    navigate('/formularios');
   };
   
   return (

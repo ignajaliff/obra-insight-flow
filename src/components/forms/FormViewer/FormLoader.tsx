@@ -81,7 +81,7 @@ export function FormLoader({
               is_active: formData.is_active,
               public_url: formData.public_url,
               // Fix the property name and ensure proper type conversion
-              projectMetadata: formData.projectmetadata && typeof formData.projectmetadata === 'object'
+              projectMetadata: formData.projectmetadata && typeof formData.projectmetadata === 'object' 
                 ? formData.projectmetadata as ProjectMetadata 
                 : undefined
             };
@@ -90,6 +90,8 @@ export function FormLoader({
             onLoaded(formWithFields);
             onLoadingChange(false);
             return;
+          } else {
+            console.log("Form not found in Supabase or error:", supabaseError);
           }
         } catch (supabaseError) {
           console.error("Exception while fetching form from Supabase:", supabaseError);

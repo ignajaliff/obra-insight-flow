@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FormTemplate, FormField } from '@/types/forms';
@@ -25,6 +26,7 @@ export default function MyForms() {
     const loadTemplates = async () => {
       try {
         setLoading(true);
+        console.log("Cargando formularios desde Supabase...");
         
         // Get templates from Supabase without any user filtering
         const { data: supabaseTemplates, error } = await supabase
@@ -33,11 +35,23 @@ export default function MyForms() {
           .order('created_at', { ascending: false });
           
         if (error) {
+          console.error("Error cargando formularios:", error);
           throw error;
+        }
+        
+        console.log("Formularios recibidos de Supabase:", supabaseTemplates);
+        
+        if (!supabaseTemplates || supabaseTemplates.length === 0) {
+          console.log("No se encontraron formularios en Supabase");
+          setTemplates([]);
+          setLoading(false);
+          return;
         }
         
         // Process Supabase templates to ensure they match our FormTemplate type
         const processedTemplates = supabaseTemplates.map((template: any) => {
+          console.log("Procesando formulario:", template.id);
+          
           // Process fields if they're stored as a JSON string
           let fields: FormField[] = [];
           
@@ -89,6 +103,12 @@ export default function MyForms() {
             });
           }
           
+          // Ensure projectMetadata is properly handled
+          let projectMetadata;
+          if (template.projectmetadata && typeof template.projectmetadata === 'object') {
+            projectMetadata = template.projectmetadata;
+          }
+          
           return {
             id: template.id,
             name: template.name,
@@ -98,13 +118,14 @@ export default function MyForms() {
             updated_at: template.updated_at,
             public_url: template.public_url,
             is_active: template.is_active,
-            projectMetadata: template.projectMetadata // Ensure project metadata is included
+            projectMetadata: projectMetadata // Ensure project metadata is included
           };
         });
         
+        console.log("Formularios procesados:", processedTemplates);
         setTemplates(processedTemplates);
       } catch (err) {
-        console.error("Error loading templates:", err);
+        console.error("Error cargando formularios:", err);
         setTemplates([]);
       } finally {
         setLoading(false);
