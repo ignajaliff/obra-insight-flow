@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
-import { FormViewer } from '@/components/forms/FormViewer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -39,11 +39,6 @@ export default function FillForm() {
     
     loadTemplate();
   }, [templateId]);
-  
-  const handleSubmissionComplete = (submission: FormSubmission) => {
-    setSubmissionData(submission);
-    setSubmissionComplete(true);
-  };
 
   if (loading) {
     return (
@@ -80,12 +75,10 @@ export default function FillForm() {
         
         {template && (
           <Card>
-            <FormViewer 
+            <FormSubmissionForm 
               template={template}
               readOnly={submissionComplete}
               webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850"
-              submissionComplete={submissionComplete}
-              submissionData={submissionData}
               setSubmissionComplete={setSubmissionComplete}
               setSubmissionData={setSubmissionData}
             />

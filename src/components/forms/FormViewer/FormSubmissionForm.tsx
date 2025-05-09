@@ -120,7 +120,7 @@ export function FormSubmissionForm({
           
           // Add project metadata if available
           if (template.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
-            webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
+            webhookContent += `== INFORMACIÓN DEL PROYECTO ==\n`;
             
             Object.entries(template.projectMetadata).forEach(([key, value]) => {
               if (value) {
@@ -169,13 +169,16 @@ export function FormSubmissionForm({
             firmaimg: firma || ""
           });
           
-          // Send webhook content as text/plain and signature as PNG in base64
+          // Añadir la firma como un campo separado al final del texto
+          webhookContent += `\n\nfirmaimg: ${firma || ""}`;
+          
+          // Send webhook content as text/plain
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
             },
-            body: webhookContent + `\n\nfirmaimg: ${firma || ""}`
+            body: webhookContent
           });
           
           if (!response.ok) {
