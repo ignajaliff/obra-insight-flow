@@ -57,7 +57,7 @@ export function FormTemplateList({ templates, onEdit, onDelete }: FormTemplateLi
           <CardFooter className="flex flex-col gap-2">
             <div className="flex justify-between w-full">
               <Button variant="outline" size="sm" asChild>
-                <Link to={`/formularios/ver/${template.id}`}>
+                <Link to={`/formularios/rellenar/${template.id}`}>
                   <Eye size={16} className="mr-2" />
                   Ver
                 </Link>
