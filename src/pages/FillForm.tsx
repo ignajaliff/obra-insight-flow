@@ -23,18 +23,22 @@ export default function FillForm() {
     const loadTemplate = async () => {
       try {
         setLoading(true);
+        console.log("Cargando formulario en dispositivo:", isMobile ? "móvil" : "escritorio");
         console.log("Intentando cargar formulario con ID:", templateId);
-        console.log("Dispositivo móvil:", isMobile);
         
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
         const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
         
         if (foundTemplate) {
           console.log("Formulario encontrado:", foundTemplate.name);
+          console.log("Campos del formulario:", foundTemplate.fields?.length || 0);
           setTemplate(foundTemplate);
         } else {
+          console.error(`Formulario con ID ${templateId} no encontrado`, { 
+            storedTemplates,
+            templateIds: storedTemplates.map((t: FormTemplate) => t.id)
+          });
           setError('Formulario no encontrado');
-          console.error(`Formulario con ID ${templateId} no encontrado`, { storedTemplates });
         }
       } catch (err) {
         console.error('Error loading template:', err);
@@ -45,7 +49,7 @@ export default function FillForm() {
     };
     
     loadTemplate();
-  }, [templateId, toast]);
+  }, [templateId, toast, isMobile]);
 
   // Reset form state when the template ID changes
   useEffect(() => {
@@ -84,13 +88,13 @@ export default function FillForm() {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-6 px-3 overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-3 px-2 sm:py-6 sm:px-3 overflow-y-auto">
       <div className="w-full max-w-3xl mx-auto">
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4 sm:mb-6">
           <img 
             src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
             alt="Sepcon Logo" 
-            className="h-12 md:h-16"
+            className="h-10 sm:h-12 md:h-16"
           />
         </div>
         

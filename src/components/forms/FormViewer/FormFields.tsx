@@ -29,7 +29,12 @@ export function FormFields({
   readOnly = false,
   isMobile = false
 }: FormFieldsProps) {
+  console.log("FormFields rendering with isMobile:", isMobile);
+  console.log("Fields count:", fields.length);
+  
   const renderField = (field: FormField) => {
+    console.log(`Rendering field: ${field.name}, type: ${field.type}`);
+    
     switch (field.type) {
       case 'text':
         return (
@@ -66,7 +71,7 @@ export function FormFields({
             <SelectTrigger id={field.id} className="w-full">
               <SelectValue placeholder="Seleccionar..." />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position={isMobile ? "popper" : "item-aligned"}>
               {field.options?.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
@@ -100,7 +105,9 @@ export function FormFields({
             <PopoverContent 
               className="w-auto p-0" 
               align={isMobile ? "center" : "start"}
+              sideOffset={isMobile ? 5 : 10}
               side={isMobile ? "bottom" : "right"}
+              avoidCollisions={true}
             >
               <Calendar
                 mode="single"
@@ -124,21 +131,28 @@ export function FormFields({
         );
         
       default:
+        console.log(`Unknown field type: ${field.type}`);
         return null;
     }
   };
   
   return (
     <div className="space-y-4">
-      {fields.map((field) => (
-        <div key={field.id} className="space-y-2">
-          <Label htmlFor={field.id}>
-            {field.label}
-            {field.required && <span className="text-destructive ml-1">*</span>}
-          </Label>
-          {renderField(field)}
+      {fields.length > 0 ? (
+        fields.map((field) => (
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id}>
+              {field.label}
+              {field.required && <span className="text-destructive ml-1">*</span>}
+            </Label>
+            {renderField(field)}
+          </div>
+        ))
+      ) : (
+        <div className="text-center py-4 text-muted-foreground">
+          Este formulario no contiene campos.
         </div>
-      ))}
+      )}
     </div>
   );
 }

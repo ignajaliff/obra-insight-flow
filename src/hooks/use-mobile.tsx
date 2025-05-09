@@ -12,9 +12,12 @@ export function useIsMobile() {
       if (typeof window !== 'undefined') {
         // Utilizamos tanto el ancho de pantalla como userAgent para mejor detección
         const isMobileByWidth = window.innerWidth < MOBILE_BREAKPOINT;
-        const isMobileByAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        console.log("Detección móvil:", { 
+        // Mejorar la detección de dispositivos móviles con regex más completa
+        const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+        const isMobileByAgent = mobileRegex.test(navigator.userAgent);
+        
+        console.log("Detección móvil mejorada:", { 
           isMobileByWidth, 
           isMobileByAgent, 
           width: window.innerWidth, 
