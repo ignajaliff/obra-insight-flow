@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -169,7 +168,7 @@ export function FormSubmissionForm({
             firmaimg: firma || ""
           });
           
-          // Añadir la firma como un campo separado al final del texto
+          // Add the signature as a separate field at the end of the text
           webhookContent += `\n\nfirmaimg: ${firma || ""}`;
           
           // Send webhook content as text/plain

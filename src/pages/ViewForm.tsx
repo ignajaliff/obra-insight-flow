@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormTemplate } from '@/types/forms';
@@ -47,11 +46,7 @@ export default function ViewForm() {
     // Cargar el template desde localStorage y Supabase
     const loadTemplate = async () => {
       try {
-        // Load from localStorage for form content
-        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        let foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-        
-        // Check Supabase for active status
+        // Try Supabase first for status and basic info
         try {
           const { data: supabaseTemplate, error } = await supabase
             .from('form_templates')
@@ -64,12 +59,22 @@ export default function ViewForm() {
           } else if (supabaseTemplate) {
             console.log("Datos del formulario en Supabase:", supabaseTemplate);
             
-            // If found in Supabase, get the active status
+            // Get the active status
             setIsActive(supabaseTemplate.is_active !== false);
             
-            // If not found in localStorage but found in Supabase, create minimal template
-            if (!foundTemplate) {
-              foundTemplate = {
+            // Load from localStorage for form content
+            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+            let foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+            
+            if (foundTemplate) {
+              // Merge Supabase status with localStorage content
+              setTemplate({
+                ...foundTemplate,
+                is_active: supabaseTemplate.is_active
+              });
+            } else {
+              // Create minimal template from Supabase info
+              setTemplate({
                 id: supabaseTemplate.id,
                 name: supabaseTemplate.name,
                 description: supabaseTemplate.description,
@@ -77,18 +82,19 @@ export default function ViewForm() {
                 created_at: supabaseTemplate.created_at,
                 updated_at: supabaseTemplate.updated_at,
                 is_active: supabaseTemplate.is_active
-              };
-            } else {
-              // Update foundTemplate with Supabase status
-              foundTemplate = {
-                ...foundTemplate,
-                is_active: supabaseTemplate.is_active
-              };
+              });
             }
+            
+            setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+            return;
           }
         } catch (supabaseErr) {
           console.error("Error al verificar el estado en Supabase:", supabaseErr);
         }
+        
+        // Fallback to localStorage only
+        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        let foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
         
         if (foundTemplate) {
           setTemplate(foundTemplate);
