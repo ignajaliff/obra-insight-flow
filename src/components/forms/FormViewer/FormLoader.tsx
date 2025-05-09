@@ -73,7 +73,6 @@ export function FormLoader({
             
             // Check if raw is an object and not null
             if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-              // Now TypeScript knows raw is an object, safely extract properties
               projectMetadata = {
                 projectName: 'projectName' in raw ? String(raw.projectName || '') : undefined,
                 companyName: 'companyName' in raw ? String(raw.companyName || '') : undefined,
