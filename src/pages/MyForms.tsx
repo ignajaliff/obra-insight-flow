@@ -1,17 +1,19 @@
+
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { FormTemplate, FormField } from '@/types/forms';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ClipboardCopy, Calendar, FileText } from 'lucide-react';
+import { PlusCircle, ClipboardCopy, Calendar, FileText, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ExampleFormButton, CreateExampleFormOnLoad } from '@/components/ExampleForm';
 import { Json } from '@/integrations/supabase/types';
+import { FormBuilder } from '@/components/forms/FormBuilder';
 
 export default function MyForms() {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFormBuilder, setShowFormBuilder] = useState(false);
   const { toast } = useToast();
   
   const copyToClipboard = (url: string) => {
@@ -22,88 +24,98 @@ export default function MyForms() {
     });
   };
   
-  useEffect(() => {
-    const loadTemplates = async () => {
-      try {
-        setLoading(true);
-        console.log("Cargando formularios desde Supabase...");
+  const loadTemplates = async () => {
+    try {
+      setLoading(true);
+      console.log("Cargando formularios desde Supabase...");
+      
+      const { data: supabaseTemplates, error } = await supabase
+        .from('form_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
         
-        const { data: supabaseTemplates, error } = await supabase
-          .from('form_templates')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error("Error cargando formularios:", error);
-          throw error;
-        }
-        
-        console.log("Formularios recibidos de Supabase:", supabaseTemplates);
-        
-        if (!supabaseTemplates || supabaseTemplates.length === 0) {
-          console.log("No se encontraron formularios en Supabase");
-          setTemplates([]);
-          setLoading(false);
-          return;
-        }
-        
-        // Process Supabase templates to ensure they match our FormTemplate type
-        const processedTemplates = supabaseTemplates.map((template: any) => {
-          console.log("Procesando formulario:", template);
-          
-          // Process fields from Json to FormField[]
-          let fields: FormField[] = [];
-          
-          if (template.fields) {
-            if (typeof template.fields === 'string') {
-              try {
-                fields = JSON.parse(template.fields);
-              } catch (e) {
-                console.error("Error parsing fields:", e);
-              }
-            } else if (Array.isArray(template.fields)) {
-              fields = template.fields.map((field: any) => ({
-                id: String(field.id || ''),
-                name: String(field.name || ''),
-                label: String(field.label || ''),
-                type: field.type as FormField['type'],
-                required: Boolean(field.required),
-                options: field.options,
-                isNegativeIndicator: field.isNegativeIndicator,
-                field_order: Number(field.field_order || 0)
-              }));
-            }
-          }
-          
-          // Ensure projectMetadata is properly handled
-          const projectMetadata = template.projectmetadata || {};
-          
-          // Create a properly formatted FormTemplate object
-          return {
-            id: template.id,
-            name: template.name,
-            description: template.description || '',
-            fields: fields,
-            created_at: template.created_at,
-            updated_at: template.updated_at,
-            public_url: template.public_url,
-            is_active: template.is_active,
-            projectMetadata: projectMetadata
-          };
-        });
-        
-        console.log("Formularios procesados:", processedTemplates);
-        setTemplates(processedTemplates);
-      } catch (err) {
-        console.error("Error cargando formularios:", err);
-        setTemplates([]);
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error("Error cargando formularios:", error);
+        throw error;
       }
-    };
-    
+      
+      console.log("Formularios recibidos de Supabase:", supabaseTemplates);
+      
+      if (!supabaseTemplates || supabaseTemplates.length === 0) {
+        console.log("No se encontraron formularios en Supabase");
+        setTemplates([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Process Supabase templates to ensure they match our FormTemplate type
+      const processedTemplates = supabaseTemplates.map((template: any) => {
+        console.log("Procesando formulario:", template);
+        
+        // Process fields from Json to FormField[]
+        let fields: FormField[] = [];
+        
+        if (template.fields) {
+          if (typeof template.fields === 'string') {
+            try {
+              fields = JSON.parse(template.fields);
+            } catch (e) {
+              console.error("Error parsing fields:", e);
+            }
+          } else if (Array.isArray(template.fields)) {
+            fields = template.fields.map((field: any) => ({
+              id: String(field.id || ''),
+              name: String(field.name || ''),
+              label: String(field.label || ''),
+              type: field.type as FormField['type'],
+              required: Boolean(field.required),
+              options: field.options,
+              isNegativeIndicator: field.isNegativeIndicator,
+              field_order: Number(field.field_order || 0)
+            }));
+          }
+        }
+        
+        // Ensure projectMetadata is properly handled
+        const projectMetadata = template.projectmetadata || {};
+        
+        // Create a properly formatted FormTemplate object
+        return {
+          id: template.id,
+          name: template.name,
+          description: template.description || '',
+          fields: fields,
+          created_at: template.created_at,
+          updated_at: template.updated_at,
+          public_url: template.public_url,
+          is_active: template.is_active,
+          projectMetadata: projectMetadata
+        };
+      });
+      
+      console.log("Formularios procesados:", processedTemplates);
+      setTemplates(processedTemplates);
+    } catch (err) {
+      console.error("Error cargando formularios:", err);
+      setTemplates([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     loadTemplates();
   }, []);
+  
+  const handleFormCreated = () => {
+    // Refresh the forms list and hide the form builder
+    loadTemplates();
+    setShowFormBuilder(false);
+    toast({
+      title: "Formulario creado",
+      description: "Tu formulario ha sido creado exitosamente."
+    });
+  };
   
   if (loading) {
     return (
@@ -132,6 +144,26 @@ export default function MyForms() {
     );
   }
   
+  // Show form builder if requested
+  if (showFormBuilder) {
+    return (
+      <div className="container py-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Crear Formulario</h1>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowFormBuilder(false)}
+            className="flex items-center"
+          >
+            <X className="mr-2 h-4 w-4" /> Cancelar
+          </Button>
+        </div>
+        <FormBuilder onFormCreated={handleFormCreated} />
+      </div>
+    );
+  }
+  
   return (
     <div className="container py-6">
       {/* This component will create an example form if none exist */}
@@ -139,11 +171,9 @@ export default function MyForms() {
       
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Mis Formularios</h1>
-        <Button asChild>
-          <Link to="/formularios/crear" className="flex items-center">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Crear Formulario
-          </Link>
+        <Button onClick={() => setShowFormBuilder(true)} className="flex items-center">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Crear Formulario
         </Button>
       </div>
       
@@ -156,11 +186,9 @@ export default function MyForms() {
               Crea tu primer formulario para empezar a recolectar datos
             </p>
             <div className="space-y-4">
-              <Button asChild className="w-full">
-                <Link to="/formularios/crear" className="flex items-center justify-center">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Crear Formulario
-                </Link>
+              <Button onClick={() => setShowFormBuilder(true)} className="w-full flex items-center justify-center">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Crear Formulario
               </Button>
               <div>
                 <p className="text-sm text-muted-foreground mb-2">¿Prefieres empezar con un ejemplo?</p>
@@ -209,9 +237,9 @@ export default function MyForms() {
                     size="sm"
                     className="flex-1"
                   >
-                    <Link to={`/formularios/rellenar/${template.id}`}>
+                    <a href={`/formularios/rellenar/${template.id}`} target="_blank" rel="noopener noreferrer">
                       Ver
-                    </Link>
+                    </a>
                   </Button>
                 </div>
               </CardFooter>

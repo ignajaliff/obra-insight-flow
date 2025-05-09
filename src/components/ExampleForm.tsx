@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FormTemplate, FieldType } from '@/types/forms';
@@ -117,6 +118,8 @@ export const ExampleFormButton = () => {
           title: "Formulario de ejemplo creado",
           description: "Se ha creado un formulario de ejemplo para que puedas probarlo."
         });
+        // Refresh the page to show the new form
+        window.location.reload();
       } else {
         toast({
           title: "Error",

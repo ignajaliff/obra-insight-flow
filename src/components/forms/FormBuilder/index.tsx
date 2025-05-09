@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 
-export function FormBuilder() {
+interface FormBuilderProps {
+  onFormCreated?: () => void;
+}
+
+export function FormBuilder({ onFormCreated }: FormBuilderProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [template, setTemplate] = useState<FormTemplate>({
@@ -96,6 +101,11 @@ export function FormBuilder() {
         description: "Tu formulario ha sido guardado correctamente."
       });
       
+      // If callback provided, call it
+      if (onFormCreated) {
+        onFormCreated();
+      }
+      
     } catch (error) {
       console.error("Error guardando formulario:", error);
       toast({
@@ -160,7 +170,7 @@ export function FormBuilder() {
               }}>
                 Copiar enlace
               </Button>
-              <Button onClick={goToFormsList}>
+              <Button onClick={onFormCreated || goToFormsList}>
                 Ver mis formularios
               </Button>
             </div>

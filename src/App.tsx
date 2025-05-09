@@ -13,7 +13,6 @@ import Login from "./pages/Login";
 import UsersManagement from "./pages/UsersManagement";
 import Index from "./pages/Index";
 import MyForms from "./pages/MyForms";
-import CreateForm from "./pages/CreateForm";
 import FillForm from "./pages/FillForm";
 
 const queryClient = new QueryClient();
@@ -37,7 +36,6 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/formularios" element={<MyForms />} />
             <Route path="/formularios/mis-formularios" element={<MyForms />} />
-            <Route path="/formularios/crear" element={<CreateForm />} />
             <Route path="/formularios/ver/:templateId" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<UsersManagement />} />
