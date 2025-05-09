@@ -5,7 +5,6 @@ import { FormTemplate, FormSubmission } from '@/types/forms';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -18,140 +17,94 @@ export default function FillForm() {
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
   
+  // Simple mobile detection based on screen width
+  const [isMobile, setIsMobile] = useState(false);
+  
   useEffect(() => {
-    // Load the template from Supabase, improved for mobile and shared links
+    // Simple mobile detection function
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Check immediately
+    checkMobile();
+    
+    // Add listeners for resize
+    window.addEventListener('resize', checkMobile);
+    window.addEventListener('orientationchange', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('orientationchange', checkMobile);
+    };
+  }, []);
+  
+  useEffect(() => {
+    // Load the template
     const loadTemplate = async () => {
       try {
         setLoading(true);
-        console.log("Cargando formulario en dispositivo:", isMobile ? "móvil" : "escritorio");
-        console.log("Intentando cargar formulario con ID:", templateId);
         
         if (!templateId) {
-          console.error("No se proporcionó ID de formulario");
           setError('ID de formulario no proporcionado');
           setLoading(false);
           return;
         }
+
+        // Try to load from Supabase first
+        let formFound = false;
         
         try {
-          // Fetch form from Supabase with more detailed error logging
-          console.log("Intentando obtener formulario desde Supabase con ID:", templateId);
-          const { data: supabaseForm, error: supabaseError } = await supabase
+          // Try to get the form from Supabase
+          const { data: form, error } = await supabase
             .from('form_templates')
             .select('*')
             .eq('id', templateId)
             .single();
           
-          if (supabaseError) {
-            console.warn("Error al cargar desde Supabase:", supabaseError);
+          if (form && !error) {
+            // We have the basic form info, but we need to ensure it has fields
+            const formWithFields = {
+              ...form,
+              fields: form.fields || [
+                {
+                  id: "1",
+                  name: "worker_name",
+                  label: "Nombre del Trabajador",
+                  type: "text",
+                  required: true,
+                  field_order: 0
+                },
+                {
+                  id: "2",
+                  name: "proyecto",
+                  label: "Proyecto",
+                  type: "text",
+                  required: true,
+                  field_order: 1
+                }
+              ]
+            };
             
-            // Try loading from localStorage as a fallback
-            console.log("Intentando cargar desde localStorage");
-            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-            const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-            
-            if (localTemplate) {
-              console.log("Formulario encontrado en localStorage:", localTemplate);
-              setTemplate(localTemplate);
-            } else {
-              // Create a minimal template with default fields as a last resort
-              console.log("Intentando obtener información básica del formulario");
-              const { data: basicTemplateInfo } = await supabase
-                .from('form_templates')
-                .select('id, name, description')
-                .eq('id', templateId)
-                .single();
-                
-              if (basicTemplateInfo) {
-                console.log("Creando formulario mínimo a partir de información en Supabase");
-                setTemplate({
-                  id: basicTemplateInfo.id,
-                  name: basicTemplateInfo.name,
-                  description: basicTemplateInfo.description || "Formulario",
-                  fields: [
-                    {
-                      id: "1",
-                      name: "worker_name",
-                      label: "Nombre del Trabajador",
-                      type: "text",
-                      required: true,
-                      field_order: 0
-                    },
-                    {
-                      id: "2",
-                      name: "proyecto",
-                      label: "Proyecto",
-                      type: "text",
-                      required: true,
-                      field_order: 1
-                    }
-                  ],
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                });
-              } else {
-                console.error("No se pudo encontrar información básica del formulario");
-                setError('Formulario no encontrado');
-              }
-            }
-          } else if (supabaseForm) {
-            console.log("Formulario encontrado en Supabase:", supabaseForm);
-            
-            // Get fields from localStorage if needed
-            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-            const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-            
-            if (localTemplate && localTemplate.fields) {
-              console.log("Combinando datos de Supabase con campos de localStorage");
-              // Merge fields from localStorage with Supabase data
-              setTemplate({
-                ...supabaseForm,
-                fields: localTemplate.fields,
-                projectMetadata: localTemplate.projectMetadata
-              });
-            } else {
-              console.log("Usando datos de Supabase con campos por defecto");
-              // If we have the form from Supabase but no fields data,
-              // we need to create a default fields array
-              setTemplate({
-                ...supabaseForm,
-                fields: [
-                  {
-                    id: "1",
-                    name: "worker_name",
-                    label: "Nombre del Trabajador",
-                    type: "text",
-                    required: true,
-                    field_order: 0
-                  },
-                  {
-                    id: "2",
-                    name: "proyecto",
-                    label: "Proyecto",
-                    type: "text",
-                    required: true,
-                    field_order: 1
-                  }
-                ]
-              });
-            }
+            setTemplate(formWithFields);
+            formFound = true;
           }
-        } catch (supabaseErr) {
-          console.error("Error de conexión con Supabase:", supabaseErr);
-          
-          // Fallback to localStorage
-          console.log("Intentando cargar desde localStorage como último recurso");
+        } catch (e) {
+          // Continue to localStorage fallback
+          console.error("Error al obtener formulario de Supabase:", e);
+        }
+        
+        // If we didn't find the form in Supabase, try localStorage
+        if (!formFound) {
           const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
           const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
           
           if (localTemplate) {
-            console.log("Formulario encontrado en localStorage (fallback):", localTemplate);
             setTemplate(localTemplate);
+            formFound = true;
           } else {
-            console.error("Formulario no encontrado en ninguna fuente");
             setError('Formulario no encontrado');
           }
         }
@@ -164,7 +117,7 @@ export default function FillForm() {
     };
     
     loadTemplate();
-  }, [templateId, isMobile]);
+  }, [templateId]);
 
   // Reset form state when the template ID changes
   useEffect(() => {
