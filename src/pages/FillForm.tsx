@@ -45,7 +45,7 @@ export default function FillForm() {
     setSubmissionComplete(false);
     setSubmissionData(null);
     setError(null);
-    setLoading(true); // Asegurarse de que comienza en estado de carga
+    setLoading(true);
   }, [templateId]);
 
   // Handle successful template loading
