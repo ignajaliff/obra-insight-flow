@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -107,7 +106,7 @@ export function FormBuilder() {
   
   // Function to handle navigation back to forms list
   const goToFormsList = () => {
-    navigate('/formularios');  // Changed to redirect to /formularios instead of /formularios/mis-formularios
+    navigate('/formularios');  // Changed to redirect to /formularios
   };
   
   return (

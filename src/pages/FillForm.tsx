@@ -71,6 +71,8 @@ export default function FillForm() {
         } else {
           // Process fields if they're stored as a JSON string
           let fields = data.fields;
+          
+          // Check if fields is a string (JSON) and parse it
           if (typeof fields === 'string') {
             try {
               fields = JSON.parse(fields);
@@ -78,11 +80,15 @@ export default function FillForm() {
               console.error("Error parsing fields:", e);
               fields = [];
             }
+          } else if (!Array.isArray(fields)) {
+            // If fields is not an array (and not a string we could parse), set to empty array
+            console.error("Fields is not an array:", fields);
+            fields = [];
           }
           
           setTemplate({
             ...data,
-            fields: fields || []
+            fields: Array.isArray(fields) ? fields : []
           });
         }
       } catch (err) {

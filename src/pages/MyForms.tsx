@@ -65,11 +65,28 @@ export default function MyForms() {
           
           // Process Supabase templates to ensure they match our FormTemplate type
           const processedTemplates = supabaseTemplates.map((template: any) => {
+            // Process fields if they're stored as a JSON string
+            let fields = template.fields;
+            
+            // Check if fields is a string (JSON) and parse it
+            if (typeof fields === 'string') {
+              try {
+                fields = JSON.parse(fields);
+              } catch (e) {
+                console.error("Error parsing fields for template:", template.id, e);
+                fields = [];
+              }
+            } else if (!Array.isArray(fields)) {
+              // If fields is not an array (and not a string we could parse), set to empty array
+              console.error("Fields is not an array for template:", template.id, fields);
+              fields = [];
+            }
+            
             return {
               id: template.id,
               name: template.name,
               description: template.description || '',
-              fields: Array.isArray(template.fields) ? template.fields : [],
+              fields: Array.isArray(fields) ? fields : [],
               created_at: template.created_at,
               updated_at: template.updated_at,
               public_url: template.public_url,
@@ -77,7 +94,20 @@ export default function MyForms() {
             };
           });
           
-          setTemplates(processedTemplates);
+          // Combine templates from both sources, with Supabase taking precedence for duplicates
+          const combinedTemplates = [...storedTemplates];
+          
+          // Add templates from Supabase, replacing any with the same ID
+          processedTemplates.forEach(supaTemplate => {
+            const existingIndex = combinedTemplates.findIndex(t => t.id === supaTemplate.id);
+            if (existingIndex >= 0) {
+              combinedTemplates[existingIndex] = supaTemplate;
+            } else {
+              combinedTemplates.push(supaTemplate);
+            }
+          });
+          
+          setTemplates(combinedTemplates);
         }
       } catch (err) {
         console.error("Error loading templates:", err);
