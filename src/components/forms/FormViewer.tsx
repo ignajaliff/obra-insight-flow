@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
@@ -103,9 +104,7 @@ export function FormViewer({
         template_name: template.name
       };
       
-      // For demo: save to localStorage
-      const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-      localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submission]));
+      // Eliminamos el almacenamiento local
       
       // Send to webhook
       if (webhookUrl) {
@@ -170,10 +169,7 @@ export function FormViewer({
             headers: {
               'Content-Type': 'text/plain',
             },
-            body: JSON.stringify({
-              contenido: webhookContent,
-              firmaimg: firma || ""
-            })
+            body: webhookContent + `\n\nfirmaimg: ${firma || ""}`
           });
           
           if (!response.ok) {
@@ -183,11 +179,19 @@ export function FormViewer({
           console.log('Webhook called successfully');
         } catch (webhookError) {
           console.error('Error sending data to webhook:', webhookError);
-          // Continue with local submission even if webhook fails
+          toast({
+            title: "Error",
+            description: "No se pudo enviar la información al servidor. Por favor intenta nuevamente.",
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
         }
+      } else {
+        console.warn('No webhook URL provided, submission will only be shown locally');
       }
       
-      // Store submission for potential download
+      // Store submission for display only (not persisted)
       setSubmissionData(submission);
       setSubmissionComplete(true);
       

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -101,9 +102,7 @@ export function FormSubmissionForm({
         projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
       };
       
-      // For demo: save to localStorage
-      const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-      localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submission]));
+      // Eliminamos el almacenamiento en localStorage
       
       // Send to webhook with the new numbered format as plain text
       if (webhookUrl) {
@@ -186,11 +185,19 @@ export function FormSubmissionForm({
           console.log('Webhook called successfully');
         } catch (webhookError) {
           console.error('Error sending data to webhook:', webhookError);
-          // Continue with local submission even if webhook fails
+          toast({
+            title: "Error",
+            description: "No se pudo enviar la información al servidor. Por favor intenta nuevamente.",
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
         }
+      } else {
+        console.warn('No webhook URL provided, submission will only be shown locally');
       }
       
-      // Store submission for potential download
+      // Store submission for display only (not persisted)
       setSubmissionData(submission);
       setSubmissionComplete(true);
       
