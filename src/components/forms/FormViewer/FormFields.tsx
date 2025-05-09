@@ -19,9 +19,16 @@ interface FormFieldsProps {
   formValues: Record<string, any>;
   handleChange: (field: FormField, value: any) => void;
   readOnly?: boolean;
+  isMobile?: boolean;
 }
 
-export function FormFields({ fields, formValues, handleChange, readOnly = false }: FormFieldsProps) {
+export function FormFields({ 
+  fields, 
+  formValues, 
+  handleChange, 
+  readOnly = false,
+  isMobile = false
+}: FormFieldsProps) {
   const renderField = (field: FormField) => {
     switch (field.type) {
       case 'text':
@@ -32,6 +39,7 @@ export function FormFields({ fields, formValues, handleChange, readOnly = false 
             onChange={(e) => handleChange(field, e.target.value)}
             disabled={readOnly}
             required={field.required}
+            className="w-full"
           />
         );
         
@@ -44,6 +52,7 @@ export function FormFields({ fields, formValues, handleChange, readOnly = false 
             disabled={readOnly}
             required={field.required}
             rows={3}
+            className="w-full"
           />
         );
         
@@ -54,7 +63,7 @@ export function FormFields({ fields, formValues, handleChange, readOnly = false 
             onValueChange={(value) => handleChange(field, value)}
             disabled={readOnly}
           >
-            <SelectTrigger id={field.id}>
+            <SelectTrigger id={field.id} className="w-full">
               <SelectValue placeholder="Seleccionar..." />
             </SelectTrigger>
             <SelectContent>
@@ -88,13 +97,17 @@ export function FormFields({ fields, formValues, handleChange, readOnly = false 
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent 
+              className="w-auto p-0" 
+              align={isMobile ? "center" : "start"}
+              side={isMobile ? "bottom" : "right"}
+            >
               <Calendar
                 mode="single"
                 selected={formValues[field.name] ? new Date(formValues[field.name]) : undefined}
                 onSelect={(date) => handleChange(field, date?.toISOString())}
                 initialFocus
-                className={cn("p-3 pointer-events-auto")} 
+                className={cn("p-3")} 
               />
             </PopoverContent>
           </Popover>

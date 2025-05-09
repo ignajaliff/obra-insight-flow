@@ -5,6 +5,8 @@ import { FormTemplate, FormSubmission } from '@/types/forms';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { FormSubmissionForm } from '@/components/forms/FormViewer/FormSubmissionForm';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Loader2 } from 'lucide-react';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -14,6 +16,7 @@ export default function FillForm() {
   const [submissionComplete, setSubmissionComplete] = useState(false);
   const [submissionData, setSubmissionData] = useState<FormSubmission | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     // Load the template from localStorage
@@ -21,6 +24,7 @@ export default function FillForm() {
       try {
         setLoading(true);
         console.log("Intentando cargar formulario con ID:", templateId);
+        console.log("Dispositivo móvil:", isMobile);
         
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
         const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
@@ -41,7 +45,7 @@ export default function FillForm() {
     };
     
     loadTemplate();
-  }, [templateId]);
+  }, [templateId, toast]);
 
   // Reset form state when the template ID changes
   useEffect(() => {
@@ -52,9 +56,9 @@ export default function FillForm() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc]">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-[#6EC1E4] border-t-transparent rounded-full animate-spin"></div>
+          <Loader2 className="w-12 h-12 text-[#2980b9] animate-spin" />
           <p className="text-lg font-medium text-[#2980b9]">Cargando formulario...</p>
         </div>
       </div>
@@ -63,7 +67,7 @@ export default function FillForm() {
   
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-4 md:p-8 text-center">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-4 md:p-8 text-center">
         <img 
           src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
           alt="Sepcon Logo" 
@@ -74,16 +78,15 @@ export default function FillForm() {
           <p className="text-gray-600 mb-6">
             Es posible que este formulario ya no esté disponible o haya sido respondido anteriormente.
           </p>
-          {/* Eliminamos el botón para evitar navegación no deseada */}
         </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-6 md:py-12 px-3 md:px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-6 px-3 overflow-y-auto">
       <div className="w-full max-w-3xl mx-auto">
-        <div className="flex justify-center mb-6 md:mb-8">
+        <div className="flex justify-center mb-6">
           <img 
             src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
             alt="Sepcon Logo" 
@@ -92,13 +95,14 @@ export default function FillForm() {
         </div>
         
         {template && (
-          <Card className="mx-auto">
+          <Card className="mx-auto overflow-hidden">
             <FormSubmissionForm 
               template={template}
               readOnly={submissionComplete}
               webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850"
               setSubmissionComplete={setSubmissionComplete}
               setSubmissionData={setSubmissionData}
+              isMobile={isMobile}
             />
           </Card>
         )}

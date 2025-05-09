@@ -23,6 +23,9 @@ export function useIsMobile() {
         
         // Si cualquiera de los dos indica que es móvil, lo consideramos móvil
         setIsMobile(isMobileByWidth || isMobileByAgent);
+      } else {
+        // Si window no está disponible, asumimos que es móvil por defecto para ser más precavidos
+        setIsMobile(true);
       }
     };
     

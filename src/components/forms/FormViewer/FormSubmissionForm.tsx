@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ interface FormSubmissionFormProps {
   webhookUrl?: string;
   setSubmissionComplete: React.Dispatch<React.SetStateAction<boolean>>;
   setSubmissionData: React.Dispatch<React.SetStateAction<FormSubmission | null>>;
+  isMobile?: boolean;
 }
 
 export function FormSubmissionForm({ 
@@ -29,7 +31,8 @@ export function FormSubmissionForm({
   readOnly = false, 
   webhookUrl, 
   setSubmissionComplete, 
-  setSubmissionData 
+  setSubmissionData,
+  isMobile = false
 }: FormSubmissionFormProps) {
   const { toast } = useToast();
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -220,13 +223,13 @@ export function FormSubmissionForm({
   
   return (
     <>
-      <CardHeader className="px-4 sm:px-6">
+      <CardHeader className={cn("px-3 sm:px-6", isMobile && "p-4")}>
         <CardTitle className="text-xl md:text-2xl">{template.name}</CardTitle>
         {template.description && (
           <CardDescription>{template.description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent className="px-4 sm:px-6">
+      <CardContent className={cn("px-3 sm:px-6", isMobile && "p-4")}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Submitter info */}
           <div className="space-y-4">
@@ -239,6 +242,7 @@ export function FormSubmissionForm({
                 placeholder="Escribe tu nombre completo"
                 required
                 disabled={readOnly}
+                className="w-full"
               />
             </div>
             
@@ -259,13 +263,13 @@ export function FormSubmissionForm({
                     {submissionDate ? format(submissionDate, 'dd/MM/yyyy', { locale: es }) : "Seleccionar fecha"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align={isMobile ? "center" : "start"} side={isMobile ? "bottom" : "right"}>
                   <Calendar
                     mode="single"
                     selected={submissionDate}
                     onSelect={(date) => setSubmissionDate(date || new Date())}
                     initialFocus
-                    className={cn("p-3 pointer-events-auto")}
+                    className="p-3"
                   />
                 </PopoverContent>
               </Popover>
@@ -280,6 +284,7 @@ export function FormSubmissionForm({
             formValues={formValues}
             handleChange={handleChange}
             readOnly={readOnly}
+            isMobile={isMobile}
           />
           
           {/* Standard form section with predefined fields */}
@@ -296,6 +301,7 @@ export function FormSubmissionForm({
                   onChange={(e) => setElaboradoPor(e.target.value)}
                   placeholder="Nombre de quien elaboró"
                   disabled={readOnly}
+                  className="w-full"
                 />
               </div>
               
@@ -308,6 +314,7 @@ export function FormSubmissionForm({
                   onChange={(e) => setSupervisor(e.target.value)}
                   placeholder="Nombre del supervisor o capataz"
                   disabled={readOnly}
+                  className="w-full"
                 />
               </div>
               
@@ -320,6 +327,7 @@ export function FormSubmissionForm({
                   onChange={(e) => setSupervisorSSMA(e.target.value)}
                   placeholder="Nombre del supervisor de SSMA"
                   disabled={readOnly}
+                  className="w-full"
                 />
               </div>
               
@@ -333,6 +341,7 @@ export function FormSubmissionForm({
                   placeholder="Ingrese sus observaciones"
                   disabled={readOnly}
                   rows={3}
+                  className="w-full"
                 />
               </div>
               
@@ -356,6 +365,7 @@ export function FormSubmissionForm({
                   onChange={(e) => setCargo(e.target.value)}
                   placeholder="Ingrese su cargo"
                   disabled={readOnly}
+                  className="w-full"
                 />
               </div>
             </div>
