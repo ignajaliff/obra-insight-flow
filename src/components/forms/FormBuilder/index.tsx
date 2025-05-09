@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { FormTemplate } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ export function FormBuilder() {
   
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("fields");
+  const [formSaved, setFormSaved] = useState(false);
   
   const saveTemplate = async () => {
     // Validate form
@@ -72,7 +74,7 @@ export function FormBuilder() {
           name: template.name,
           description: template.description || null,
           // Stringify the fields array to make it compatible with Supabase's JSON type
-          fields: JSON.parse(JSON.stringify(template.fields)),
+          fields: JSON.stringify(template.fields),
           public_url: publicUrl,
           is_active: true
         });
@@ -84,14 +86,13 @@ export function FormBuilder() {
         console.log("Form successfully saved to Supabase");
       }
       
+      setFormSaved(true);
+      
       toast({
         title: "Formulario guardado",
         description: "Tu formulario ha sido guardado correctamente."
       });
       
-      // Return to the previous behavior - allow for sharing by not redirecting immediately
-      // This will keep the user on the current page with the toast notification
-      // Instead of redirecting, we'll let them manually navigate back
     } catch (error) {
       console.error("Error saving template:", error);
       toast({
@@ -102,6 +103,11 @@ export function FormBuilder() {
     } finally {
       setIsSaving(false);
     }
+  };
+  
+  // Function to handle navigation back to forms list
+  const goToFormsList = () => {
+    navigate('/formularios/mis-formularios');
   };
   
   return (
@@ -132,12 +138,38 @@ export function FormBuilder() {
       </div>
       
       <div className="border-t pt-6 flex justify-end">
-        <Button 
-          onClick={saveTemplate}
-          disabled={isSaving || template.name.trim() === '' || template.fields.length === 0}
-        >
-          {isSaving ? "Guardando..." : "Guardar formulario"}
-        </Button>
+        {formSaved ? (
+          <div className="w-full flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="text-green-600 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Formulario guardado correctamente.</span>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => {
+                const url = `/formularios/rellenar/${template.id}`;
+                navigator.clipboard.writeText(`${window.location.origin}${url}`);
+                toast({
+                  title: "Enlace copiado",
+                  description: "El enlace del formulario ha sido copiado al portapapeles."
+                });
+              }}>
+                Copiar enlace
+              </Button>
+              <Button onClick={goToFormsList}>
+                Ver mis formularios
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button 
+            onClick={saveTemplate}
+            disabled={isSaving || template.name.trim() === '' || template.fields.length === 0}
+          >
+            {isSaving ? "Guardando..." : "Guardar formulario"}
+          </Button>
+        )}
       </div>
     </div>
   );

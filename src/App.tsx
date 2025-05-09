@@ -39,6 +39,7 @@ const App = () => (
             <Route path="/formularios" element={<FormsList />} />
             <Route path="/formularios/mis-formularios" element={<MyForms />} />
             <Route path="/formularios/crear" element={<CreateForm />} />
+            <Route path="/formularios/ver/:templateId" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<UsersManagement />} />
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
