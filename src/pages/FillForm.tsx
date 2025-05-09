@@ -48,46 +48,56 @@ export default function FillForm() {
         setLoading(true);
         
         if (!templateId) {
+          console.log("No template ID provided");
           setError('ID de formulario no proporcionado');
           setLoading(false);
           return;
         }
 
+        console.log("Loading template with ID:", templateId);
+        
         // Try to load from Supabase first
         let formFound = false;
         
         try {
           // Try to get the form from Supabase
-          const { data: form, error } = await supabase
+          const { data: formData, error: supabaseError } = await supabase
             .from('form_templates')
             .select('*')
             .eq('id', templateId)
             .single();
           
-          if (form && !error) {
+          console.log("Supabase form data:", formData);
+          console.log("Supabase error:", supabaseError);
+          
+          if (formData && !supabaseError) {
+            // Add default fields if none are present
+            const defaultFields = [
+              {
+                id: "1",
+                name: "worker_name",
+                label: "Nombre del Trabajador",
+                type: "text",
+                required: true,
+                field_order: 0
+              },
+              {
+                id: "2",
+                name: "proyecto",
+                label: "Proyecto",
+                type: "text",
+                required: true,
+                field_order: 1
+              }
+            ];
+            
             // We have the basic form info, but we need to ensure it has fields
-            const formWithFields = {
-              ...form,
-              fields: form.fields || [
-                {
-                  id: "1",
-                  name: "worker_name",
-                  label: "Nombre del Trabajador",
-                  type: "text",
-                  required: true,
-                  field_order: 0
-                },
-                {
-                  id: "2",
-                  name: "proyecto",
-                  label: "Proyecto",
-                  type: "text",
-                  required: true,
-                  field_order: 1
-                }
-              ]
+            const formWithFields: FormTemplate = {
+              ...formData,
+              fields: formData.fields || defaultFields
             };
             
+            console.log("Form with fields:", formWithFields);
             setTemplate(formWithFields);
             formFound = true;
           }
@@ -98,15 +108,37 @@ export default function FillForm() {
         
         // If we didn't find the form in Supabase, try localStorage
         if (!formFound) {
-          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-          const localTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          console.log("Form not found in Supabase, trying localStorage");
           
-          if (localTemplate) {
-            setTemplate(localTemplate);
-            formFound = true;
-          } else {
-            setError('Formulario no encontrado');
+          try {
+            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+            console.log("Local storage templates:", storedTemplates);
+            
+            const localTemplate = storedTemplates.find((t: any) => t.id === templateId);
+            console.log("Found local template:", localTemplate);
+            
+            if (localTemplate) {
+              // Ensure fields exist
+              const templateWithFields: FormTemplate = {
+                ...localTemplate,
+                fields: localTemplate.fields || []
+              };
+              
+              setTemplate(templateWithFields);
+              formFound = true;
+            } else {
+              console.log("Form not found in localStorage either");
+              setError('Formulario no encontrado');
+            }
+          } catch (localStorageError) {
+            console.error("Error accessing localStorage:", localStorageError);
+            setError('Error al buscar el formulario');
           }
+        }
+        
+        if (!formFound) {
+          console.log("Form not found anywhere");
+          setError('Formulario no encontrado');
         }
       } catch (err) {
         console.error('Error loading template:', err);
@@ -148,7 +180,7 @@ export default function FillForm() {
         <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
           <div className="text-destructive text-xl font-medium mb-4">{error}</div>
           <p className="text-gray-600 mb-6">
-            Es posible que este formulario ya no esté disponible o haya sido respondido anteriormente.
+            Es posible que este formulario ya no esté disponible o haya sido respondido anteriormente. Por favor verifica la URL o contacta a la persona que compartió el enlace.
           </p>
           
           <Button 
