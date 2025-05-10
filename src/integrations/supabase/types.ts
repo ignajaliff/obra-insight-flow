@@ -45,6 +45,36 @@ export type Database = {
         }
         Relationships: []
       }
+      form_templates: {
+        Row: {
+          created_at: string
+          fields: Json
+          id: string
+          name: string
+          projectmetadata: Json | null
+          public_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fields?: Json
+          id: string
+          name: string
+          projectmetadata?: Json | null
+          public_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fields?: Json
+          id?: string
+          name?: string
+          projectmetadata?: Json | null
+          public_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null

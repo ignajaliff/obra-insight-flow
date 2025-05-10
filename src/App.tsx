@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -17,8 +16,6 @@ import Index from "./pages/Index";
 import ImportData from "./pages/ImportData";
 import { supabase } from "./integrations/supabase/client";
 
-const queryClient = new QueryClient();
-
 const App = () => {
   const [initialized, setInitialized] = useState(false);
   
@@ -26,7 +23,7 @@ const App = () => {
     // Verificar la conexión a Supabase
     const checkSupabaseConnection = async () => {
       try {
-        const { data, error } = await supabase.from('form_templates').select('count').single();
+        const { data, error } = await supabase.from('form_responses').select('count').single();
         
         if (error && error.code !== 'PGRST116') {  // PGRST116 es "no hay filas devueltas" lo cual es normal
           console.error("Error conectando con Supabase:", error);
@@ -53,33 +50,31 @@ const App = () => {
   
   return (
     <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Authentication Routes */}
-              <Route path="/login" element={<Login />} />
-              
-              {/* Public Form Route - This must be outside the AppLayout */}
-              <Route path="/formularios/rellenar/:templateId" element={<FillForm />} />
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Authentication Routes */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Public Form Route - This must be outside the AppLayout */}
+            <Route path="/formularios/rellenar/:templateId" element={<FillForm />} />
 
-              {/* Protected Routes */}
-              <Route element={<AppLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/formularios/mis-formularios" element={<MyForms />} />
-                <Route path="/formularios/crear" element={<CreateForm />} />
-                <Route path="/importar" element={<ImportData />} />
-                <Route path="/usuarios" element={<UsersManagement />} />
-                <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
+            {/* Protected Routes */}
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/formularios/mis-formularios" element={<MyForms />} />
+              <Route path="/formularios/crear" element={<CreateForm />} />
+              <Route path="/importar" element={<ImportData />} />
+              <Route path="/usuarios" element={<UsersManagement />} />
+              <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </React.StrictMode>
   );
 };
