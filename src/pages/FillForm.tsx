@@ -69,7 +69,9 @@ export default function FillForm() {
           if (foundTemplate) {
             setTemplate(foundTemplate);
           } else {
+            // Si no se encuentra en localStorage y tampoco se encontró en Supabase
             setError('Formulario no encontrado');
+            console.error('Template not found in Supabase or localStorage:', templateId);
           }
         } catch (localStorageError) {
           console.error('Error loading template from localStorage:', localStorageError);
@@ -87,7 +89,7 @@ export default function FillForm() {
   }, [templateId]);
   
   const handleHome = () => {
-    navigate('/');
+    navigate('/formularios/mis-formularios');
   };
 
   if (loading) {
@@ -109,7 +111,7 @@ export default function FillForm() {
           El formulario que estás buscando no existe o ha sido eliminado.
         </p>
         <Button onClick={handleHome} variant="default" size="lg" className="px-8">
-          Volver al inicio
+          Volver a mis formularios
         </Button>
       </div>
     );

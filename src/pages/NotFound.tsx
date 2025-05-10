@@ -28,11 +28,11 @@ const NotFound = () => {
         
         <div className="space-y-4">
           <Button 
-            onClick={() => navigate('/')} 
+            onClick={() => navigate('/formularios/mis-formularios')} 
             className="w-full bg-brand-600 hover:bg-brand-700 flex items-center justify-center"
           >
             <Home className="mr-2 h-4 w-4" />
-            Volver al dashboard
+            Volver a mis formularios
           </Button>
           
           <p className="text-sm text-gray-500 mt-4">
