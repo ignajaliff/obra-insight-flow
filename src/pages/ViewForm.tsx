@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ViewForm() {
   const { templateId } = useParams();
@@ -38,17 +39,63 @@ export default function ViewForm() {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Cargar el template desde localStorage
-    const loadTemplate = () => {
+    // Cargar el template desde Supabase o localStorage como fallback
+    const loadTemplate = async () => {
       try {
-        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        console.info("Intentando cargar template con ID:", templateId);
+        setLoading(true);
         
-        if (foundTemplate) {
-          setTemplate(foundTemplate);
-          setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
-        } else {
-          setError('Formulario no encontrado');
+        // Primero intentar cargar desde Supabase
+        try {
+          const { data: templateData, error: supabaseError } = await supabase
+            .from('form_templates')
+            .select('*')
+            .eq('id', templateId)
+            .single();
+          
+          if (supabaseError) {
+            console.error("Error fetching template from Supabase:", supabaseError);
+            throw supabaseError;
+          }
+          
+          if (templateData) {
+            // Convertir los campos JSON a objetos
+            const parsedTemplate: FormTemplate = {
+              ...templateData,
+              fields: Array.isArray(templateData.fields) 
+                ? templateData.fields 
+                : JSON.parse(templateData.fields as unknown as string),
+              projectMetadata: templateData.project_metadata 
+                ? (typeof templateData.project_metadata === 'string' 
+                  ? JSON.parse(templateData.project_metadata) 
+                  : templateData.project_metadata)
+                : {}
+            };
+            
+            setTemplate(parsedTemplate);
+            setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+            setLoading(false);
+            return;
+          }
+        } catch (supabaseError) {
+          // Si hay un error en Supabase, continuamos con localStorage
+          console.error("Error loading template from Supabase:", supabaseError);
+        }
+        
+        // Fallback a localStorage
+        try {
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (foundTemplate) {
+            setTemplate(foundTemplate);
+            setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+          } else {
+            setError('Formulario no encontrado');
+          }
+        } catch (localStorageError) {
+          console.error('Error loading template from localStorage:', localStorageError);
+          setError('Error al cargar el formulario');
         }
       } catch (err) {
         console.error('Error loading template:', err);
@@ -95,14 +142,22 @@ export default function ViewForm() {
   };
   
   if (loading) {
-    return <div className="flex justify-center p-8">Cargando formulario...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-[60vh] p-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-t-4 border-[#6EC1E4] border-solid rounded-full animate-spin"></div>
+          <p className="text-lg">Cargando formulario...</p>
+        </div>
+      </div>
+    );
   }
   
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <div className="text-destructive text-lg font-medium">{error}</div>
-        <Button asChild>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 space-y-6">
+        <div className="text-destructive text-2xl font-medium text-center">{error}</div>
+        <p className="text-muted-foreground text-center">El formulario que estás buscando no existe o no está disponible.</p>
+        <Button asChild variant="default">
           <Link to="/formularios/mis-formularios">Volver a mis formularios</Link>
         </Button>
       </div>

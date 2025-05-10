@@ -6,6 +6,7 @@ import { FormViewer } from '@/components/forms/FormViewer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -18,16 +19,61 @@ export default function FillForm() {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Load the template from localStorage
-    const loadTemplate = () => {
+    // Cargar el template desde Supabase o localStorage como fallback
+    const loadTemplate = async () => {
       try {
-        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        console.info("Intentando cargar template con ID:", templateId);
+        setLoading(true);
         
-        if (foundTemplate) {
-          setTemplate(foundTemplate);
-        } else {
-          setError('Formulario no encontrado');
+        // Primero intentar cargar desde Supabase
+        try {
+          const { data: templateData, error: supabaseError } = await supabase
+            .from('form_templates')
+            .select('*')
+            .eq('id', templateId)
+            .single();
+          
+          if (supabaseError) {
+            console.error("Error fetching template from Supabase:", supabaseError);
+            throw supabaseError;
+          }
+          
+          if (templateData) {
+            // Convertir los campos JSON a objetos
+            const parsedTemplate: FormTemplate = {
+              ...templateData,
+              fields: Array.isArray(templateData.fields) 
+                ? templateData.fields 
+                : JSON.parse(templateData.fields as unknown as string),
+              projectMetadata: templateData.project_metadata 
+                ? (typeof templateData.project_metadata === 'string' 
+                  ? JSON.parse(templateData.project_metadata) 
+                  : templateData.project_metadata)
+                : {}
+            };
+            
+            setTemplate(parsedTemplate);
+            setLoading(false);
+            return;
+          }
+        } catch (supabaseError) {
+          // Si hay un error en Supabase, continuamos con localStorage
+          console.error("Error loading template from Supabase:", supabaseError);
+        }
+        
+        // Fallback a localStorage
+        try {
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (foundTemplate) {
+            setTemplate(foundTemplate);
+          } else {
+            setError('Formulario no encontrado');
+          }
+        } catch (localStorageError) {
+          console.error('Error loading template from localStorage:', localStorageError);
+          setError('Error al cargar el formulario');
         }
       } catch (err) {
         console.error('Error loading template:', err);
@@ -40,9 +86,8 @@ export default function FillForm() {
     loadTemplate();
   }, [templateId]);
   
-  const handleSubmissionComplete = (submission: FormSubmission) => {
-    setSubmissionData(submission);
-    setSubmissionComplete(true);
+  const handleHome = () => {
+    navigate('/');
   };
 
   if (loading) {
@@ -58,9 +103,12 @@ export default function FillForm() {
   
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-8 space-y-4">
-        <div className="text-destructive text-xl font-medium">{error}</div>
-        <Button onClick={() => navigate('/')} variant="default">
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-8 space-y-6">
+        <div className="text-[#e74c3c] text-3xl font-bold mb-2">Formulario no encontrado</div>
+        <p className="text-[#34495e] text-center mb-6">
+          El formulario que estás buscando no existe o ha sido eliminado.
+        </p>
+        <Button onClick={handleHome} variant="default" size="lg" className="px-8">
           Volver al inicio
         </Button>
       </div>
