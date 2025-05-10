@@ -15,6 +15,7 @@ export type Database = {
           date: string
           document_link: string | null
           form_type: string
+          form_type_id: string | null
           id: string
           ID_documento: string | null
           proyecto: string | null
@@ -26,6 +27,7 @@ export type Database = {
           date?: string
           document_link?: string | null
           form_type: string
+          form_type_id?: string | null
           id?: string
           ID_documento?: string | null
           proyecto?: string | null
@@ -37,79 +39,12 @@ export type Database = {
           date?: string
           document_link?: string | null
           form_type?: string
+          form_type_id?: string | null
           id?: string
           ID_documento?: string | null
           proyecto?: string | null
           status?: string
           worker_name?: string
-        }
-        Relationships: []
-      }
-      form_submissions: {
-        Row: {
-          created_at: string | null
-          id: string
-          submitter_name: string | null
-          template_id: string | null
-          template_name: string | null
-          values: Json
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          submitter_name?: string | null
-          template_id?: string | null
-          template_name?: string | null
-          values?: Json
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          submitter_name?: string | null
-          template_id?: string | null
-          template_name?: string | null
-          values?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_submissions_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "form_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      form_templates: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          fields: Json
-          id: string
-          name: string
-          project_metadata: Json | null
-          public_url: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          fields?: Json
-          id?: string
-          name: string
-          project_metadata?: Json | null
-          public_url?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          fields?: Json
-          id?: string
-          name?: string
-          project_metadata?: Json | null
-          public_url?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }

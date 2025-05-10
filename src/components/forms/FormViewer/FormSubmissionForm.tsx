@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,6 @@ import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { SignatureField } from '../SignatureField';
-import { supabase } from "@/integrations/supabase/client";
 
 interface FormSubmissionFormProps {
   template: FormTemplate;
@@ -23,7 +23,6 @@ interface FormSubmissionFormProps {
   webhookUrl?: string;
   setSubmissionComplete: React.Dispatch<React.SetStateAction<boolean>>;
   setSubmissionData: React.Dispatch<React.SetStateAction<FormSubmission | null>>;
-  useSupabase?: boolean;
 }
 
 export function FormSubmissionForm({ 
@@ -31,8 +30,7 @@ export function FormSubmissionForm({
   readOnly = false, 
   webhookUrl, 
   setSubmissionComplete, 
-  setSubmissionData,
-  useSupabase = false
+  setSubmissionData 
 }: FormSubmissionFormProps) {
   const { toast } = useToast();
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -104,32 +102,7 @@ export function FormSubmissionForm({
         projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
       };
       
-      // Save to Supabase if enabled
-      if (useSupabase) {
-        try {
-          // Convert the complex fields to JSON strings for Supabase
-          const supabaseSubmission = {
-            template_id: template.id,
-            values: JSON.stringify(submission.values),
-            submitter_name: submitterName,
-            template_name: template.name
-          };
-          
-          const { data, error } = await supabase
-            .from('form_submissions')
-            .insert(supabaseSubmission);
-            
-          if (error) {
-            console.error('Error saving submission to Supabase:', error);
-            // Continue with webhook call even if Supabase save fails
-          } else {
-            console.log('Submission saved to Supabase successfully');
-          }
-        } catch (supabaseError) {
-          console.error('Exception saving to Supabase:', supabaseError);
-          // Continue with webhook call even if Supabase save fails
-        }
-      }
+      // Eliminamos el almacenamiento en localStorage
       
       // Send to webhook with the new numbered format as plain text
       if (webhookUrl) {
@@ -147,7 +120,7 @@ export function FormSubmissionForm({
           
           // Add project metadata if available
           if (template.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
-            webhookContent += `== INFORMACIÓN DEL PROYECTO ==\n`;
+            webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
             
             Object.entries(template.projectMetadata).forEach(([key, value]) => {
               if (value) {
@@ -196,16 +169,13 @@ export function FormSubmissionForm({
             firmaimg: firma || ""
           });
           
-          // Añadir la firma como un campo separado al final del texto
-          webhookContent += `\n\nfirmaimg: ${firma || ""}`;
-          
-          // Send webhook content as text/plain
+          // Send webhook content as text/plain and signature as PNG in base64
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
             },
-            body: webhookContent
+            body: webhookContent + `\n\nfirmaimg: ${firma || ""}`
           });
           
           if (!response.ok) {
