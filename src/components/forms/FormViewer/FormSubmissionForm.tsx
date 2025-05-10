@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -108,14 +107,17 @@ export function FormSubmissionForm({
       // Save to Supabase if enabled
       if (useSupabase) {
         try {
+          // Convert the complex fields to JSON strings for Supabase
+          const supabaseSubmission = {
+            template_id: template.id,
+            values: JSON.stringify(submission.values),
+            submitter_name: submitterName,
+            template_name: template.name
+          };
+          
           const { data, error } = await supabase
             .from('form_submissions')
-            .insert({
-              template_id: template.id,
-              values: submission.values,
-              submitter_name: submitterName,
-              template_name: template.name
-            });
+            .insert(supabaseSubmission);
             
           if (error) {
             console.error('Error saving submission to Supabase:', error);

@@ -10,6 +10,7 @@ import { FieldsList } from './FieldsList';
 import { AddFieldSection } from './AddFieldSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from "@/integrations/supabase/client";
+import { convertTemplateToSupabase } from '@/utils/supabaseConverters';
 
 export function FormBuilder() {
   const { toast } = useToast();
@@ -55,16 +56,20 @@ export function FormBuilder() {
       
       // Generate a public URL for the form
       const publicUrl = `/formularios/rellenar/${template.id}`;
-      const templateToSave = {
+      
+      const updatedTemplate = {
         ...template,
         public_url: publicUrl,
         updated_at: new Date().toISOString()
       };
       
+      // Convert to Supabase format
+      const supabaseTemplate = convertTemplateToSupabase(updatedTemplate);
+      
       // Save to Supabase
       const { data, error } = await supabase
         .from('form_templates')
-        .insert(templateToSave);
+        .insert(supabaseTemplate);
       
       if (error) {
         console.error("Error saving template to Supabase:", error);
@@ -74,7 +79,7 @@ export function FormBuilder() {
       // Also save to localStorage as fallback
       try {
         const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
+        localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, updatedTemplate]));
       } catch (localStorageError) {
         console.error("Error saving to localStorage:", localStorageError);
       }

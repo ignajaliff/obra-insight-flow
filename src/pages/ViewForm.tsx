@@ -33,6 +33,7 @@ import {
   AlertTitle
 } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import { convertSupabaseToTemplate, convertSupabaseTemplateList } from '@/utils/supabaseConverters';
 
 export default function ViewForm() {
   const { templateId } = useParams();
@@ -68,7 +69,8 @@ export default function ViewForm() {
         
         if (data) {
           console.log('Template encontrado:', data.name);
-          setTemplate(data);
+          const convertedTemplate = convertSupabaseToTemplate(data);
+          setTemplate(convertedTemplate);
           setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
         } else {
           console.error('Template no encontrado con ID:', templateId);
@@ -93,7 +95,15 @@ export default function ViewForm() {
           .limit(5);
         
         if (!availableError && availableData && availableData.length > 0) {
-          setAvailableTemplates(availableData);
+          // Create simplified template objects with required fields
+          const templates: FormTemplate[] = availableData.map(item => ({
+            id: item.id,
+            name: item.name,
+            fields: [],
+            created_at: '',
+            updated_at: ''
+          }));
+          setAvailableTemplates(templates);
         } else {
           // Fallback to localStorage
           const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
@@ -181,7 +191,8 @@ export default function ViewForm() {
       
       if (data) {
         console.log('Template encontrado en reintentar:', data.name);
-        setTemplate(data);
+        const convertedTemplate = convertSupabaseToTemplate(data);
+        setTemplate(convertedTemplate);
         setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
         setError(null);
       } else {

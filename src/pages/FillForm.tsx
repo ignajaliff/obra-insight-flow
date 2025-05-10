@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FormTemplate, FormSubmission } from '@/types/forms';
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/alert';
 import { RefreshCcw, AlertCircle, Home, Copy } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import { convertSupabaseToTemplate, convertSupabaseTemplateList } from '@/utils/supabaseConverters';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -46,7 +46,8 @@ export default function FillForm() {
         
         if (data) {
           console.log('Template encontrado:', data.name);
-          setTemplate(data);
+          const convertedTemplate = convertSupabaseToTemplate(data);
+          setTemplate(convertedTemplate);
         } else {
           console.error('Template no encontrado con ID:', templateId);
           setError('Formulario no encontrado');
@@ -97,7 +98,8 @@ export default function FillForm() {
       
       if (data) {
         console.log('Template encontrado en reintentar:', data.name);
-        setTemplate(data);
+        const convertedTemplate = convertSupabaseToTemplate(data);
+        setTemplate(convertedTemplate);
         setError(null);
       } else {
         console.error('Template no encontrado en reintentar con ID:', templateId);
@@ -160,7 +162,15 @@ export default function FillForm() {
             .limit(5);
           
           if (!error && data && data.length > 0) {
-            setAvailableTemplates(data);
+            // Create simplified template objects with required fields
+            const templates: FormTemplate[] = data.map(item => ({
+              id: item.id,
+              name: item.name,
+              fields: [],
+              created_at: '',
+              updated_at: ''
+            }));
+            setAvailableTemplates(templates);
             return;
           }
           
