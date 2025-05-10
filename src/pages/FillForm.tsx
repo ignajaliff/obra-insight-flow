@@ -17,6 +17,7 @@ import { CalendarIcon, Loader2, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SignatureCanvas from 'react-signature-canvas';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -53,16 +54,45 @@ export default function FillForm() {
       }
 
       try {
-        // Load from localStorage
-        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        // First try to load from Supabase
+        const { data: supabaseTemplates, error } = await supabase
+          .from('form_templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
         
-        if (foundTemplate) {
-          console.log("Template found:", foundTemplate);
-          setTemplate(foundTemplate);
+        if (error) {
+          console.error("Error fetching template from Supabase:", error);
+          
+          // If Supabase fails, try localStorage as fallback
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (foundTemplate) {
+            console.log("Template found in localStorage:", foundTemplate);
+            setTemplate(foundTemplate);
+          } else {
+            setError('Formulario no encontrado');
+            console.error('Template not found in localStorage:', templateId);
+          }
+        } else if (supabaseTemplates) {
+          console.log("Template found in Supabase:", supabaseTemplates);
+          
+          // Convert Supabase response to FormTemplate format
+          const convertedTemplate: FormTemplate = {
+            id: supabaseTemplates.id,
+            name: supabaseTemplates.name,
+            fields: supabaseTemplates.fields as unknown as FormTemplate['fields'],
+            created_at: supabaseTemplates.created_at,
+            updated_at: supabaseTemplates.updated_at,
+            public_url: supabaseTemplates.public_url || undefined,
+            projectMetadata: supabaseTemplates.projectmetadata as unknown as FormTemplate['projectMetadata']
+          };
+          
+          setTemplate(convertedTemplate);
         } else {
           setError('Formulario no encontrado');
-          console.error('Template not found:', templateId);
+          console.error('Template not found in Supabase:', templateId);
         }
       } catch (err) {
         console.error('Error loading template:', err);
