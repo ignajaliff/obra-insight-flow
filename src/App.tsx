@@ -32,7 +32,7 @@ const App = () => (
           {/* Authentication Routes */}
           <Route path="/login" element={<Login />} />
           
-          {/* Public Form Route */}
+          {/* Public Form Route - This must be outside the AppLayout */}
           <Route path="/formularios/rellenar/:templateId" element={<FillForm />} />
 
           {/* Protected Routes */}
@@ -44,8 +44,6 @@ const App = () => (
             <Route path="/formularios/crear" element={<CreateForm />} />
             <Route path="/formularios/ver/:templateId" element={<ViewForm />} />
             <Route path="/formularios/disponibles" element={<AvailableForms />} />
-            <Route path="/formularios/rellenar/:templateId" element={<FormFillPage />} />
-            <Route path="/formularios/admin" element={<FormAdmin />} />
             <Route path="/importar" element={<ImportData />} />
             <Route path="/usuarios" element={<UsersManagement />} />
             <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}

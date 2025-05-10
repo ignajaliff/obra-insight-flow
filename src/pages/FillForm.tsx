@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -21,40 +23,50 @@ export default function FillForm() {
   useEffect(() => {
     // Cargar el template desde Supabase o localStorage como fallback
     const loadTemplate = async () => {
+      if (!templateId) {
+        setError('ID de formulario no proporcionado');
+        setLoading(false);
+        return;
+      }
+
       try {
         console.info("Intentando cargar template con ID:", templateId);
         setLoading(true);
         
         // Primero intentar cargar desde Supabase
         try {
+          console.log("Fetching form template from Supabase with ID:", templateId);
           const { data: templateData, error: supabaseError } = await supabase
             .from('form_templates')
             .select('*')
-            .eq('id', templateId)
-            .single();
+            .eq('id', templateId);
           
           if (supabaseError) {
             console.error("Error fetching template from Supabase:", supabaseError);
             throw supabaseError;
           }
           
-          if (templateData) {
+          if (templateData && templateData.length > 0) {
+            console.log("Template found in Supabase:", templateData[0]);
             // Convertir los campos JSON a objetos
             const parsedTemplate: FormTemplate = {
-              ...templateData,
-              fields: Array.isArray(templateData.fields) 
-                ? templateData.fields 
-                : JSON.parse(templateData.fields as unknown as string),
-              projectMetadata: templateData.project_metadata 
-                ? (typeof templateData.project_metadata === 'string' 
-                  ? JSON.parse(templateData.project_metadata) 
-                  : templateData.project_metadata)
+              ...templateData[0],
+              fields: Array.isArray(templateData[0].fields) 
+                ? templateData[0].fields 
+                : JSON.parse(templateData[0].fields as unknown as string),
+              projectMetadata: templateData[0].project_metadata 
+                ? (typeof templateData[0].project_metadata === 'string' 
+                  ? JSON.parse(templateData[0].project_metadata) 
+                  : templateData[0].project_metadata)
                 : {}
             };
             
             setTemplate(parsedTemplate);
             setLoading(false);
             return;
+          } else {
+            console.error("No template found in Supabase with ID:", templateId);
+            throw new Error("Template not found in Supabase");
           }
         } catch (supabaseError) {
           // Si hay un error en Supabase, continuamos con localStorage
@@ -63,10 +75,12 @@ export default function FillForm() {
         
         // Fallback a localStorage
         try {
+          console.log("Attempting to load from localStorage as fallback");
           const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
           const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
           
           if (foundTemplate) {
+            console.log("Template found in localStorage:", foundTemplate);
             setTemplate(foundTemplate);
           } else {
             // Si no se encuentra en localStorage y tampoco se encontró en Supabase
@@ -96,7 +110,7 @@ export default function FillForm() {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-[#6EC1E4] border-t-transparent rounded-full animate-spin"></div>
+          <Loader2 className="h-12 w-12 text-[#2980b9] animate-spin" />
           <p className="text-lg font-medium text-[#2980b9]">Cargando formulario...</p>
         </div>
       </div>
@@ -110,6 +124,14 @@ export default function FillForm() {
         <p className="text-[#34495e] text-center mb-6">
           El formulario que estás buscando no existe o ha sido eliminado.
         </p>
+        <Alert variant="destructive" className="max-w-md">
+          <AlertTitle>Error al cargar el formulario</AlertTitle>
+          <AlertDescription>
+            ID de formulario: {templateId}
+            <br />
+            Por favor verifica que el enlace sea correcto o contacta con el administrador.
+          </AlertDescription>
+        </Alert>
         <Button onClick={handleHome} variant="default" size="lg" className="px-8">
           Volver a mis formularios
         </Button>
