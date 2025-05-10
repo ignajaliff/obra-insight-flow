@@ -19,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Copy, MoreVertical, Pen, Trash2, Eye, Link } from 'lucide-react';
+import { Plus, Copy, MoreVertical, Trash2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,7 @@ export default function MyForms() {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Load templates from localStorage (would be Supabase in production)
+    // Load templates from localStorage
     const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
     setTemplates(storedTemplates);
   }, []);
@@ -47,7 +47,6 @@ export default function MyForms() {
   };
   
   const deleteTemplate = (templateId: string) => {
-    // For demo purposes, just remove from local storage
     const updatedTemplates = templates.filter(t => t.id !== templateId);
     localStorage.setItem('formTemplates', JSON.stringify(updatedTemplates));
     setTemplates(updatedTemplates);
@@ -135,11 +134,8 @@ export default function MyForms() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/formularios/ver/${template.id}`)}>
-                            <Eye className="h-4 w-4 mr-2" /> Ver
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/formularios/editar/${template.id}`)}>
-                            <Pen className="h-4 w-4 mr-2" /> Editar
+                          <DropdownMenuItem onClick={() => navigate(`/formularios/rellenar/${template.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" /> Vista previa
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => deleteTemplate(template.id)}
