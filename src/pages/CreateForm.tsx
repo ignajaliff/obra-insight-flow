@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { FormTemplate, FormField } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Plus, ArrowLeft, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CreateForm() {
   const { toast } = useToast();
@@ -118,7 +118,16 @@ export default function CreateForm() {
         updated_at: new Date().toISOString()
       };
       
-      // Save to localStorage
+      // Save to Supabase
+      const { error } = await supabase
+        .from('form_templates')
+        .insert(templateToSave);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // También guardar en localStorage como respaldo
       const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
       localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
       
@@ -136,6 +145,27 @@ export default function CreateForm() {
         description: "No se pudo guardar el formulario. Inténtalo de nuevo.",
         variant: "destructive"
       });
+      
+      // Intentar guardar solo en localStorage como fallback
+      try {
+        const templateToSave = {
+          ...template,
+          public_url: `/formularios/rellenar/${template.id}`,
+          updated_at: new Date().toISOString()
+        };
+        
+        const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
+        
+        toast({
+          title: "Formulario guardado localmente",
+          description: "Tu formulario ha sido guardado en este dispositivo."
+        });
+        
+        navigate(`/formularios/mis-formularios`);
+      } catch {
+        // Si todo falla, no hacer nada más
+      }
     } finally {
       setIsSaving(false);
     }

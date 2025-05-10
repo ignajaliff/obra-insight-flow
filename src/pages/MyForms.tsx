@@ -23,17 +23,64 @@ import { Plus, Copy, MoreVertical, Trash2, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function MyForms() {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  const fetchTemplates = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Intentar obtener desde Supabase primero
+      const { data: supabaseTemplates, error } = await supabase
+        .from('form_templates')
+        .select('*');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (supabaseTemplates && supabaseTemplates.length > 0) {
+        // Si hay datos en Supabase, usarlos
+        setTemplates(supabaseTemplates as FormTemplate[]);
+      } else {
+        // Como fallback, cargar del localStorage
+        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        
+        // Si hay plantillas en localStorage pero no en Supabase, migrarlas a Supabase
+        if (storedTemplates.length > 0) {
+          for (const template of storedTemplates) {
+            await supabase
+              .from('form_templates')
+              .insert(template);
+          }
+          // Después de migrar, establecer los templates
+          setTemplates(storedTemplates);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      // Fallar en silencio y usar localStorage como respaldo
+      const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+      setTemplates(storedTemplates);
+      
+      toast({
+        variant: "destructive",
+        title: "Error al cargar formularios",
+        description: "Se utilizaron datos locales como respaldo."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   useEffect(() => {
-    // Load templates from localStorage
-    const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-    setTemplates(storedTemplates);
+    fetchTemplates();
   }, []);
   
   const copyFormLink = (template: FormTemplate) => {
@@ -46,20 +93,53 @@ export default function MyForms() {
     });
   };
   
-  const deleteTemplate = (templateId: string) => {
-    const updatedTemplates = templates.filter(t => t.id !== templateId);
-    localStorage.setItem('formTemplates', JSON.stringify(updatedTemplates));
-    setTemplates(updatedTemplates);
-    
-    toast({
-      title: "Formulario eliminado",
-      description: "El formulario ha sido eliminado correctamente."
-    });
+  const deleteTemplate = async (templateId: string) => {
+    try {
+      // Eliminar de Supabase
+      const { error } = await supabase
+        .from('form_templates')
+        .delete()
+        .eq('id', templateId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // También eliminar del localStorage como respaldo
+      const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+      const updatedTemplates = storedTemplates.filter((t: FormTemplate) => t.id !== templateId);
+      localStorage.setItem('formTemplates', JSON.stringify(updatedTemplates));
+      
+      // Actualizar el estado
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
+      
+      toast({
+        title: "Formulario eliminado",
+        description: "El formulario ha sido eliminado correctamente."
+      });
+    } catch (error) {
+      console.error('Error al eliminar formulario:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo eliminar el formulario. Inténtalo de nuevo."
+      });
+    }
   };
   
   const filteredTemplates = templates.filter(template => 
     template.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-muted-foreground">Cargando formularios...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">

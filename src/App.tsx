@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,10 +15,42 @@ import Login from "./pages/Login";
 import UsersManagement from "./pages/UsersManagement";
 import Index from "./pages/Index";
 import ImportData from "./pages/ImportData";
+import { supabase } from "./integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [initialized, setInitialized] = useState(false);
+  
+  useEffect(() => {
+    // Verificar la conexión a Supabase
+    const checkSupabaseConnection = async () => {
+      try {
+        const { data, error } = await supabase.from('form_templates').select('count').single();
+        
+        if (error && error.code !== 'PGRST116') {  // PGRST116 es "no hay filas devueltas" lo cual es normal
+          console.error("Error conectando con Supabase:", error);
+        } else {
+          console.log("Conexión a Supabase establecida correctamente");
+        }
+      } catch (err) {
+        console.error("Error verificando conexión a Supabase:", err);
+      } finally {
+        setInitialized(true);
+      }
+    };
+    
+    checkSupabaseConnection();
+  }, []);
+  
+  if (!initialized) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-muted-foreground">Inicializando...</p>
+      </div>
+    );
+  }
+  
   return (
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
