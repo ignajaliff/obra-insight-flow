@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormTemplate } from '@/types/forms';
@@ -33,6 +32,7 @@ import {
   AlertDescription,
   AlertTitle
 } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ViewForm() {
   const { templateId } = useParams();
@@ -41,33 +41,84 @@ export default function ViewForm() {
   const [error, setError] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [availableTemplates, setAvailableTemplates] = useState<FormTemplate[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
   
   useEffect(() => {
-    // Cargar el template desde localStorage
-    const loadTemplate = () => {
+    // Load the template from Supabase
+    const loadTemplate = async () => {
       try {
         setLoading(true);
         setError(null);
         
         console.log('Intentando cargar template con ID:', templateId);
-        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        console.log('Templates disponibles:', storedTemplates.length);
         
-        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        // Get template from Supabase
+        const { data, error } = await supabase
+          .from('form_templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
         
-        if (foundTemplate) {
-          console.log('Template encontrado:', foundTemplate.name);
-          setTemplate(foundTemplate);
+        if (error) {
+          console.error('Error fetching template from Supabase:', error);
+          throw error;
+        }
+        
+        if (data) {
+          console.log('Template encontrado:', data.name);
+          setTemplate(data);
           setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
         } else {
           console.error('Template no encontrado con ID:', templateId);
-          setError('Formulario no encontrado');
+          
+          // Check localStorage as fallback
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (foundTemplate) {
+            console.log('Template encontrado en localStorage:', foundTemplate.name);
+            setTemplate(foundTemplate);
+            setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+          } else {
+            setError('Formulario no encontrado');
+          }
         }
+        
+        // Load available templates for suggestions
+        const { data: availableData, error: availableError } = await supabase
+          .from('form_templates')
+          .select('id, name')
+          .limit(5);
+        
+        if (!availableError && availableData && availableData.length > 0) {
+          setAvailableTemplates(availableData);
+        } else {
+          // Fallback to localStorage
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          setAvailableTemplates(storedTemplates);
+        }
+        
       } catch (err) {
         console.error('Error loading template:', err);
         setError('Error al cargar el formulario');
+        
+        // Try fallback to localStorage
+        try {
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (foundTemplate) {
+            setTemplate(foundTemplate);
+            setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+            setError(null);
+          }
+          
+          setAvailableTemplates(storedTemplates);
+        } catch (localErr) {
+          console.error('Error with localStorage fallback:', localErr);
+        }
       } finally {
         setLoading(false);
       }
@@ -109,36 +160,63 @@ export default function ViewForm() {
     }
   };
   
-  const handleRetry = () => {
+  const handleRetry = async () => {
     setLoading(true);
     setError(null);
     
-    // Intentar cargar nuevamente el template
+    // Try to load the template again from Supabase
     try {
       console.log('Reintentando cargar template con ID:', templateId);
-      const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-      console.log('Templates disponibles para reintentar:', storedTemplates.length);
       
-      if (storedTemplates.length > 0) {
-        storedTemplates.forEach((t: FormTemplate, i: number) => {
-          console.log(`Template ${i+1}:`, t.id, t.name);
-        });
+      const { data, error } = await supabase
+        .from('form_templates')
+        .select('*')
+        .eq('id', templateId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching template from Supabase on retry:', error);
+        throw error;
       }
       
-      const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-      
-      if (foundTemplate) {
-        console.log('Template encontrado en reintentar:', foundTemplate.name);
-        setTemplate(foundTemplate);
+      if (data) {
+        console.log('Template encontrado en reintentar:', data.name);
+        setTemplate(data);
         setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
         setError(null);
       } else {
         console.error('Template no encontrado en reintentar con ID:', templateId);
-        setError('Formulario no encontrado');
+        
+        // Fallback to localStorage
+        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        
+        if (foundTemplate) {
+          console.log('Template encontrado en localStorage (reintentar):', foundTemplate.name);
+          setTemplate(foundTemplate);
+          setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+          setError(null);
+        } else {
+          setError('Formulario no encontrado');
+        }
       }
     } catch (err) {
       console.error('Error reintentando cargar template:', err);
       setError('Error al cargar el formulario');
+      
+      // Fallback to localStorage
+      try {
+        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        
+        if (foundTemplate) {
+          setTemplate(foundTemplate);
+          setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+          setError(null);
+        }
+      } catch (localErr) {
+        console.error('Error with localStorage fallback on retry:', localErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -156,9 +234,7 @@ export default function ViewForm() {
   }
   
   if (error) {
-    // Get all available form templates for suggestions
-    const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-    const hasOtherForms = storedTemplates.length > 0;
+    const hasOtherForms = availableTemplates.length > 0;
     
     return (
       <div className="max-w-3xl mx-auto py-8 px-4">
@@ -178,7 +254,7 @@ export default function ViewForm() {
               <div className="space-y-2">
                 <p className="font-medium">Formularios disponibles:</p>
                 <ul className="space-y-2">
-                  {storedTemplates.map((t: FormTemplate) => (
+                  {availableTemplates.map((t: FormTemplate) => (
                     <li key={t.id} className="border-b pb-2">
                       <div className="flex justify-between items-center">
                         <div>

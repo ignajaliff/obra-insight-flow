@@ -9,6 +9,7 @@ import { FormBasicInfo } from './FormBasicInfo';
 import { FieldsList } from './FieldsList';
 import { AddFieldSection } from './AddFieldSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from "@/integrations/supabase/client";
 
 export function FormBuilder() {
   const { toast } = useToast();
@@ -60,9 +61,23 @@ export function FormBuilder() {
         updated_at: new Date().toISOString()
       };
       
-      // Save to localStorage for now (would be to Supabase in production)
-      const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-      localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
+      // Save to Supabase
+      const { data, error } = await supabase
+        .from('form_templates')
+        .insert(templateToSave);
+      
+      if (error) {
+        console.error("Error saving template to Supabase:", error);
+        throw error;
+      }
+      
+      // Also save to localStorage as fallback
+      try {
+        const existingTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        localStorage.setItem('formTemplates', JSON.stringify([...existingTemplates, templateToSave]));
+      } catch (localStorageError) {
+        console.error("Error saving to localStorage:", localStorageError);
+      }
       
       toast({
         title: "Formulario guardado",

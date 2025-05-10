@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { SignatureField } from '../SignatureField';
+import { supabase } from "@/integrations/supabase/client";
 
 interface FormSubmissionFormProps {
   template: FormTemplate;
@@ -23,6 +24,7 @@ interface FormSubmissionFormProps {
   webhookUrl?: string;
   setSubmissionComplete: React.Dispatch<React.SetStateAction<boolean>>;
   setSubmissionData: React.Dispatch<React.SetStateAction<FormSubmission | null>>;
+  useSupabase?: boolean;
 }
 
 export function FormSubmissionForm({ 
@@ -30,7 +32,8 @@ export function FormSubmissionForm({
   readOnly = false, 
   webhookUrl, 
   setSubmissionComplete, 
-  setSubmissionData 
+  setSubmissionData,
+  useSupabase = false
 }: FormSubmissionFormProps) {
   const { toast } = useToast();
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -102,7 +105,29 @@ export function FormSubmissionForm({
         projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
       };
       
-      // Eliminamos el almacenamiento en localStorage
+      // Save to Supabase if enabled
+      if (useSupabase) {
+        try {
+          const { data, error } = await supabase
+            .from('form_submissions')
+            .insert({
+              template_id: template.id,
+              values: submission.values,
+              submitter_name: submitterName,
+              template_name: template.name
+            });
+            
+          if (error) {
+            console.error('Error saving submission to Supabase:', error);
+            // Continue with webhook call even if Supabase save fails
+          } else {
+            console.log('Submission saved to Supabase successfully');
+          }
+        } catch (supabaseError) {
+          console.error('Exception saving to Supabase:', supabaseError);
+          // Continue with webhook call even if Supabase save fails
+        }
+      }
       
       // Send to webhook with the new numbered format as plain text
       if (webhookUrl) {

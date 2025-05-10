@@ -12,6 +12,7 @@ import {
   AlertTitle
 } from '@/components/ui/alert';
 import { RefreshCcw, AlertCircle, Home, Copy } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -24,27 +25,28 @@ export default function FillForm() {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Load the template from localStorage
-    const loadTemplate = () => {
+    // Load the template from Supabase
+    const loadTemplate = async () => {
       try {
         setLoading(true);
         setError(null);
         console.log('Intentando cargar template con ID:', templateId);
         
-        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-        console.log('Templates disponibles:', storedTemplates.length);
+        // Get template from Supabase
+        const { data, error } = await supabase
+          .from('form_templates')
+          .select('*')
+          .eq('id', templateId)
+          .single();
         
-        if (storedTemplates.length > 0) {
-          storedTemplates.forEach((t: FormTemplate, i: number) => {
-            console.log(`Template ${i+1}:`, t.id, t.name);
-          });
+        if (error) {
+          console.error('Error fetching template from Supabase:', error);
+          throw error;
         }
         
-        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-        
-        if (foundTemplate) {
-          console.log('Template encontrado:', foundTemplate.name);
-          setTemplate(foundTemplate);
+        if (data) {
+          console.log('Template encontrado:', data.name);
+          setTemplate(data);
         } else {
           console.error('Template no encontrado con ID:', templateId);
           setError('Formulario no encontrado');
@@ -52,6 +54,20 @@ export default function FillForm() {
       } catch (err) {
         console.error('Error loading template:', err);
         setError('Error al cargar el formulario');
+        
+        // Check if template exists in localStorage as fallback
+        try {
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+          
+          if (foundTemplate) {
+            console.log('Template encontrado en localStorage:', foundTemplate.name);
+            setTemplate(foundTemplate);
+            setError(null);
+          }
+        } catch (localErr) {
+          console.error('Error checking localStorage templates:', localErr);
+        }
       } finally {
         setLoading(false);
       }
@@ -60,27 +76,28 @@ export default function FillForm() {
     loadTemplate();
   }, [templateId]);
 
-  const handleRetry = () => {
+  const handleRetry = async () => {
     setError(null);
     setLoading(true);
     
-    // Try to load the template again
+    // Try to load the template again from Supabase
     try {
       console.log('Reintentando cargar template con ID:', templateId);
-      const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-      console.log('Templates disponibles para reintentar:', storedTemplates.length);
       
-      if (storedTemplates.length > 0) {
-        storedTemplates.forEach((t: FormTemplate, i: number) => {
-          console.log(`Template ${i+1}:`, t.id, t.name);
-        });
+      const { data, error } = await supabase
+        .from('form_templates')
+        .select('*')
+        .eq('id', templateId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching template from Supabase on retry:', error);
+        throw error;
       }
       
-      const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-      
-      if (foundTemplate) {
-        console.log('Template encontrado en reintentar:', foundTemplate.name);
-        setTemplate(foundTemplate);
+      if (data) {
+        console.log('Template encontrado en reintentar:', data.name);
+        setTemplate(data);
         setError(null);
       } else {
         console.error('Template no encontrado en reintentar con ID:', templateId);
@@ -89,6 +106,20 @@ export default function FillForm() {
     } catch (err) {
       console.error('Error reintentando cargar template:', err);
       setError('Error al cargar el formulario');
+      
+      // Fallback to localStorage
+      try {
+        const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+        
+        if (foundTemplate) {
+          console.log('Template encontrado en localStorage (reintentar):', foundTemplate.name);
+          setTemplate(foundTemplate);
+          setError(null);
+        }
+      } catch (localErr) {
+        console.error('Error checking localStorage templates on retry:', localErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -117,8 +148,36 @@ export default function FillForm() {
   
   if (error) {
     // Get all available form templates for suggestions
-    const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-    const hasOtherForms = storedTemplates.length > 0;
+    const [availableTemplates, setAvailableTemplates] = useState<FormTemplate[]>([]);
+    
+    useEffect(() => {
+      const fetchAvailableTemplates = async () => {
+        try {
+          // Try to get templates from Supabase first
+          const { data, error } = await supabase
+            .from('form_templates')
+            .select('id, name')
+            .limit(5);
+          
+          if (!error && data && data.length > 0) {
+            setAvailableTemplates(data);
+            return;
+          }
+          
+          // Fallback to localStorage
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          setAvailableTemplates(storedTemplates);
+        } catch (e) {
+          console.error('Error fetching template suggestions:', e);
+          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+          setAvailableTemplates(storedTemplates);
+        }
+      };
+      
+      fetchAvailableTemplates();
+    }, []);
+    
+    const hasOtherForms = availableTemplates.length > 0;
     
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-8 space-y-6">
@@ -154,7 +213,7 @@ export default function FillForm() {
               <div className="space-y-2">
                 <p className="font-medium">Formularios disponibles:</p>
                 <ul className="space-y-2">
-                  {storedTemplates.map((t: FormTemplate) => (
+                  {availableTemplates.map((t: FormTemplate) => (
                     <li key={t.id} className="border-b pb-2">
                       <div className="flex justify-between items-center">
                         <div>
@@ -209,6 +268,7 @@ export default function FillForm() {
               webhookUrl="https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850"
               setSubmissionComplete={setSubmissionComplete}
               setSubmissionData={setSubmissionData}
+              useSupabase={true}
             />
           </Card>
         )}
