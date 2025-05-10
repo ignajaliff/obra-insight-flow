@@ -23,10 +23,22 @@ const App = () => {
     // Verificar la conexión a Supabase
     const checkSupabaseConnection = async () => {
       try {
-        const { data, error } = await supabase.from('form_responses').select('count').single();
-        
-        if (error && error.code !== 'PGRST116') {  // PGRST116 es "no hay filas devueltas" lo cual es normal
-          console.error("Error conectando con Supabase:", error);
+        // Intentar con form_templates primero, ya que es la tabla que sabemos que existe
+        const { data: templatesData, error: templatesError } = await supabase
+          .from('form_templates')
+          .select('count')
+          .limit(1)
+          .single();
+          
+        if (templatesError && templatesError.code !== 'PGRST116') {
+          // Si hay un error con form_templates, intentar con form_responses como fallback
+          const { data, error } = await supabase.from('form_responses').select('count').single();
+          
+          if (error && error.code !== 'PGRST116') {  // PGRST116 es "no hay filas devueltas" lo cual es normal
+            console.error("Error conectando con Supabase:", error);
+          } else {
+            console.log("Conexión a Supabase establecida correctamente");
+          }
         } else {
           console.log("Conexión a Supabase establecida correctamente");
         }

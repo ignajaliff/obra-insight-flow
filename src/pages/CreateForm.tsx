@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { FormTemplate, FormField } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -118,10 +119,21 @@ export default function CreateForm() {
         updated_at: new Date().toISOString()
       };
       
+      // Prepare the data for Supabase with the correct field names and types
+      const supabaseData = {
+        id: templateToSave.id,
+        name: templateToSave.name,
+        fields: templateToSave.fields as any,  // Cast to any to avoid TypeScript errors
+        created_at: templateToSave.created_at,
+        updated_at: templateToSave.updated_at,
+        public_url: templateToSave.public_url,
+        projectmetadata: templateToSave.projectMetadata as any  // Note lowercase 'm' in projectmetadata for DB compatibility
+      };
+      
       // Save to Supabase
       const { error } = await supabase
         .from('form_templates')
-        .insert(templateToSave);
+        .insert(supabaseData);
       
       if (error) {
         throw error;

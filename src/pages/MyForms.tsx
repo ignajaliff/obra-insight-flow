@@ -46,8 +46,18 @@ export default function MyForms() {
       }
       
       if (supabaseTemplates && supabaseTemplates.length > 0) {
-        // Si hay datos en Supabase, usarlos
-        setTemplates(supabaseTemplates as FormTemplate[]);
+        // Si hay datos en Supabase, convertirlos al formato FormTemplate
+        const convertedTemplates: FormTemplate[] = supabaseTemplates.map(template => ({
+          id: template.id,
+          name: template.name,
+          fields: template.fields as unknown as FormTemplate['fields'],
+          created_at: template.created_at,
+          updated_at: template.updated_at,
+          public_url: template.public_url || undefined,
+          projectMetadata: template.projectmetadata as unknown as FormTemplate['projectMetadata']
+        }));
+        
+        setTemplates(convertedTemplates);
       } else {
         // Como fallback, cargar del localStorage
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
@@ -55,9 +65,20 @@ export default function MyForms() {
         // Si hay plantillas en localStorage pero no en Supabase, migrarlas a Supabase
         if (storedTemplates.length > 0) {
           for (const template of storedTemplates) {
+            // Transformar la estructura para que coincida con la estructura de la tabla en Supabase
+            const supabaseData = {
+              id: template.id,
+              name: template.name,
+              fields: template.fields as any,
+              created_at: template.created_at,
+              updated_at: template.updated_at,
+              public_url: template.public_url,
+              projectmetadata: template.projectMetadata as any
+            };
+            
             await supabase
               .from('form_templates')
-              .insert(template);
+              .insert(supabaseData);
           }
           // Después de migrar, establecer los templates
           setTemplates(storedTemplates);
