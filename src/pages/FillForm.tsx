@@ -26,8 +26,18 @@ export default function FillForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitterName, setSubmitterName] = useState('');
+  
+  // States for standard section fields - Información adicional
+  const [elaboradoPor, setElaboradoPor] = useState('');
+  const [supervisor, setSupervisor] = useState('');
+  const [supervisorSSMA, setSupervisorSSMA] = useState('');
+  const [observaciones, setObservaciones] = useState('');
+  const [cargo, setCargo] = useState('');
+  
+  // Signature state
   const [signatureImg, setSignatureImg] = useState<string | null>(null);
   const [signatureRef, setSignatureRef] = useState<SignatureCanvas | null>(null);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -121,15 +131,23 @@ export default function FillForm() {
     setSubmitting(true);
     
     try {
-      // Create submission data
+      // Create submission data - include the standard fields
       const submissionData = {
         id: crypto.randomUUID(),
         templateId: template?.id,
         submissionDate: new Date().toISOString(),
         submitter_name: submitterName,
         template_name: template?.name,
-        values: formValues,
-        signatureImg: signatureImg,
+        values: {
+          ...formValues,
+          // Include the standard fields
+          elaboradoPor,
+          supervisor,
+          supervisorSSMA,
+          observaciones,
+          firma: signatureImg,
+          cargo
+        },
         projectMetadata: template?.projectMetadata
       };
       
@@ -138,23 +156,87 @@ export default function FillForm() {
       // Send data to webhook if provided
       if (webhookUrl) {
         try {
+          // Prepare data with numbered questions and answers
+          let webhookContent = ``;
+          
+          // Add submitter name as "pregunta 0"
+          webhookContent += `pregunta 0: Nombre del remitente\n`;
+          webhookContent += `Respuesta 0: ${submitterName}\n\n`;
+          
+          // Add submission date
+          webhookContent += `pregunta extra: Fecha de envío\n`;
+          webhookContent += `Respuesta extra: ${format(new Date(), 'dd/MM/yyyy', { locale: es })}\n\n`;
+          
+          // Add project metadata if available
+          if (template?.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
+            webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
+            
+            Object.entries(template.projectMetadata).forEach(([key, value]) => {
+              if (value) {
+                const readableKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                webhookContent += `${readableKey}: ${value}\n`;
+              }
+            });
+            
+            webhookContent += `\n`;
+          }
+          
+          // Add each field with its number
+          template?.fields.forEach((field, index) => {
+            const questionNumber = index + 1;
+            webhookContent += `pregunta ${questionNumber}: ${field.label}\n`;
+            
+            let responseValue = formValues[field.name];
+            
+            // Format the response value based on the field type
+            if (field.type === 'date' && responseValue) {
+              try {
+                responseValue = new Date(responseValue).toLocaleDateString();
+              } catch (e) {
+                // If date parsing fails, use the original value
+              }
+            } else if (responseValue === undefined || responseValue === null) {
+              responseValue = "";
+            }
+            
+            webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
+          });
+          
+          // Add additional information section as a separate block
+          webhookContent += `== INFORMACIÓN ADICIONAL ==\n`;
+          webhookContent += `Elaborado por: ${elaboradoPor || ""}\n`;
+          webhookContent += `Supervisor/Capataz: ${supervisor || ""}\n`;
+          webhookContent += `Supervisor de SSMA: ${supervisorSSMA || ""}\n`;
+          webhookContent += `Observaciones: ${observaciones || ""}\n`;
+          webhookContent += `Cargo: ${cargo || ""}\n`;
+          webhookContent += `Firma: ${signatureImg ? "[Firma adjunta]" : "[Sin firma]"}\n`;
+          
+          // Log the data being sent
+          console.log('Sending data to webhook:', webhookContent);
+          
+          // Send webhook content as text/plain and signature as PNG in base64
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'text/plain',
             },
-            body: JSON.stringify(submissionData),
+            body: webhookContent + `\n\nfirmaimg: ${signatureImg || ""}`
           });
           
           if (!response.ok) {
-            throw new Error(`Error: ${response.status}`);
+            throw new Error(`Error en la respuesta: ${response.status}`);
           }
           
-          const responseData = await response.json();
-          console.log("Webhook response:", responseData);
+          console.log('Webhook called successfully');
         } catch (webhookError) {
-          console.error("Webhook error:", webhookError);
-          // Continue even if webhook fails
+          console.error('Error sending data to webhook:', webhookError);
+          toast({
+            title: "Error",
+            description: "No se pudo enviar la información al servidor. Por favor intenta nuevamente.",
+            variant: "destructive"
+          });
+          setSubmitting(false);
+          return;
         }
       }
       
@@ -260,6 +342,16 @@ export default function FillForm() {
                         />
                       )}
                       
+                      {field.type === 'textarea' && (
+                        <Textarea
+                          id={field.id}
+                          value={formValues[field.name] || ''}
+                          onChange={(e) => handleFieldChange(field, e.target.value)}
+                          required={field.required}
+                          rows={3}
+                        />
+                      )}
+                      
                       {field.type === 'select' && (
                         <Select
                           value={formValues[field.name] || ''}
@@ -312,51 +404,115 @@ export default function FillForm() {
                   ))}
                 </div>
                 
-                <div className="space-y-2 border-t pt-4">
-                  <Label>Firma</Label>
-                  <div className="border rounded-md p-2">
-                    {signatureImg ? (
-                      <div className="text-center">
-                        <img src={signatureImg} alt="Firma" className="mx-auto max-h-40" />
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-2"
-                          onClick={() => setSignatureImg(null)}
-                        >
-                          Borrar firma
-                        </Button>
+                {/* Standard Information Section - Always present */}
+                <div className="mt-8 border-t pt-4">
+                  <h3 className="text-lg font-medium mb-4">Información adicional</h3>
+                  
+                  <div className="space-y-4">
+                    {/* Elaborado por */}
+                    <div>
+                      <Label htmlFor="elaborado-por">Elaborado por</Label>
+                      <Input
+                        id="elaborado-por"
+                        value={elaboradoPor}
+                        onChange={(e) => setElaboradoPor(e.target.value)}
+                        placeholder="Nombre de quien elaboró"
+                      />
+                    </div>
+                    
+                    {/* Supervisor/Capataz */}
+                    <div>
+                      <Label htmlFor="supervisor">Supervisor/Capataz</Label>
+                      <Input
+                        id="supervisor"
+                        value={supervisor}
+                        onChange={(e) => setSupervisor(e.target.value)}
+                        placeholder="Nombre del supervisor o capataz"
+                      />
+                    </div>
+                    
+                    {/* Supervisor de SSMA */}
+                    <div>
+                      <Label htmlFor="supervisor-ssma">Supervisor de SSMA</Label>
+                      <Input
+                        id="supervisor-ssma"
+                        value={supervisorSSMA}
+                        onChange={(e) => setSupervisorSSMA(e.target.value)}
+                        placeholder="Nombre del supervisor de SSMA"
+                      />
+                    </div>
+                    
+                    {/* Observaciones */}
+                    <div>
+                      <Label htmlFor="observaciones">Observaciones</Label>
+                      <Textarea
+                        id="observaciones"
+                        value={observaciones}
+                        onChange={(e) => setObservaciones(e.target.value)}
+                        placeholder="Ingrese sus observaciones"
+                        rows={3}
+                      />
+                    </div>
+                    
+                    {/* Cargo */}
+                    <div>
+                      <Label htmlFor="cargo">Cargo</Label>
+                      <Input
+                        id="cargo"
+                        value={cargo}
+                        onChange={(e) => setCargo(e.target.value)}
+                        placeholder="Ingrese su cargo"
+                      />
+                    </div>
+                    
+                    {/* Firma */}
+                    <div>
+                      <Label>Firma</Label>
+                      <div className="border rounded-md p-2">
+                        {signatureImg ? (
+                          <div className="text-center">
+                            <img src={signatureImg} alt="Firma" className="mx-auto max-h-40" />
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm" 
+                              className="mt-2"
+                              onClick={() => setSignatureImg(null)}
+                            >
+                              Borrar firma
+                            </Button>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="border rounded-md bg-white">
+                              <SignatureCanvas
+                                ref={(ref) => setSignatureRef(ref)}
+                                canvasProps={{
+                                  className: "w-full h-40"
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between mt-2">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="sm"
+                                onClick={clearSignature}
+                              >
+                                Borrar
+                              </Button>
+                              <Button 
+                                type="button" 
+                                size="sm"
+                                onClick={saveSignature}
+                              >
+                                Guardar firma
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div>
-                        <div className="border rounded-md bg-white">
-                          <SignatureCanvas
-                            ref={(ref) => setSignatureRef(ref)}
-                            canvasProps={{
-                              className: "w-full h-40"
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between mt-2">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm"
-                            onClick={clearSignature}
-                          >
-                            Borrar
-                          </Button>
-                          <Button 
-                            type="button" 
-                            size="sm"
-                            onClick={saveSignature}
-                          >
-                            Guardar firma
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
