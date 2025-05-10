@@ -17,14 +17,17 @@ export interface ProjectMetadata {
   [key: string]: string | undefined;
 }
 
+export type FieldType = 'text' | 'select' | 'date' | 'textarea' | 'signature' | 'checkbox' | 'number';
+
 export interface FormField {
   id: string;
   name: string;
   label: string;
-  type: 'text' | 'select' | 'date';
+  type: FieldType;
   required: boolean;
   options?: string[];
   field_order: number;
+  isNegativeIndicator?: boolean;
 }
 
 export interface FormSubmission {
@@ -36,4 +39,17 @@ export interface FormSubmission {
   template_name: string;
   signatureImg?: string | null;
   projectMetadata?: ProjectMetadata;
+  created_at?: string;
+}
+
+export interface FormResponse {
+  id: string;
+  form_type: string;
+  worker_name: string;
+  date: string;
+  proyecto: string;
+  status: string;
+  document_link: string;
+  ID_documento: string;
+  created_at: string;
 }
