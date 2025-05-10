@@ -12,7 +12,9 @@ import {
   ClipboardList, 
   FileText, 
   Eye, 
-  Share2 
+  Share2, 
+  RefreshCcw, 
+  AlertCircle 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +28,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle
+} from "@/components/ui/alert";
 
 export default function ViewForm() {
   const { templateId } = useParams();
@@ -41,13 +48,21 @@ export default function ViewForm() {
     // Cargar el template desde localStorage
     const loadTemplate = () => {
       try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Intentando cargar template con ID:', templateId);
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        console.log('Templates disponibles:', storedTemplates.length);
+        
         const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
         
         if (foundTemplate) {
+          console.log('Template encontrado:', foundTemplate.name);
           setTemplate(foundTemplate);
           setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
         } else {
+          console.error('Template no encontrado con ID:', templateId);
           setError('Formulario no encontrado');
         }
       } catch (err) {
@@ -94,17 +109,107 @@ export default function ViewForm() {
     }
   };
   
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    
+    // Intentar cargar nuevamente el template
+    try {
+      console.log('Reintentando cargar template con ID:', templateId);
+      const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+      console.log('Templates disponibles para reintentar:', storedTemplates.length);
+      
+      if (storedTemplates.length > 0) {
+        storedTemplates.forEach((t: FormTemplate, i: number) => {
+          console.log(`Template ${i+1}:`, t.id, t.name);
+        });
+      }
+      
+      const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+      
+      if (foundTemplate) {
+        console.log('Template encontrado en reintentar:', foundTemplate.name);
+        setTemplate(foundTemplate);
+        setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
+        setError(null);
+      } else {
+        console.error('Template no encontrado en reintentar con ID:', templateId);
+        setError('Formulario no encontrado');
+      }
+    } catch (err) {
+      console.error('Error reintentando cargar template:', err);
+      setError('Error al cargar el formulario');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   if (loading) {
-    return <div className="flex justify-center p-8">Cargando formulario...</div>;
+    return (
+      <div className="flex justify-center items-center p-8 min-h-[300px]">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-[#6EC1E4] border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-[#2980b9]">Cargando formulario...</p>
+        </div>
+      </div>
+    );
   }
   
   if (error) {
+    // Get all available form templates for suggestions
+    const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+    const hasOtherForms = storedTemplates.length > 0;
+    
     return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <div className="text-destructive text-lg font-medium">{error}</div>
-        <Button asChild>
-          <Link to="/formularios/mis-formularios">Volver a mis formularios</Link>
-        </Button>
+      <div className="max-w-3xl mx-auto py-8 px-4">
+        <Card className="p-6">
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          
+          <div className="space-y-4">
+            <p className="text-lg">
+              El formulario con ID <span className="font-mono text-sm bg-muted p-1 rounded">{templateId}</span> no se encontró en el sistema.
+            </p>
+            
+            {hasOtherForms && (
+              <div className="space-y-2">
+                <p className="font-medium">Formularios disponibles:</p>
+                <ul className="space-y-2">
+                  {storedTemplates.map((t: FormTemplate) => (
+                    <li key={t.id} className="border-b pb-2">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{t.name}</p>
+                          <p className="text-sm text-muted-foreground">{t.id}</p>
+                        </div>
+                        <Button asChild size="sm">
+                          <Link to={`/formularios/ver/${t.id}`}>
+                            Abrir
+                          </Link>
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Button onClick={handleRetry} className="w-full sm:w-auto">
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Reintentar cargar
+              </Button>
+              
+              <Button onClick={() => navigate('/formularios/mis-formularios')} variant="outline" className="w-full sm:w-auto">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver a mis formularios
+              </Button>
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }

@@ -11,7 +11,7 @@ import {
   AlertDescription,
   AlertTitle
 } from '@/components/ui/alert';
-import { RefreshCcw, AlertCircle, Home } from 'lucide-react';
+import { RefreshCcw, AlertCircle, Home, Copy } from 'lucide-react';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -27,14 +27,26 @@ export default function FillForm() {
     // Load the template from localStorage
     const loadTemplate = () => {
       try {
+        setLoading(true);
+        setError(null);
+        console.log('Intentando cargar template con ID:', templateId);
+        
         const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+        console.log('Templates disponibles:', storedTemplates.length);
+        
+        if (storedTemplates.length > 0) {
+          storedTemplates.forEach((t: FormTemplate, i: number) => {
+            console.log(`Template ${i+1}:`, t.id, t.name);
+          });
+        }
+        
         const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
         
         if (foundTemplate) {
-          console.log('Template found:', foundTemplate);
+          console.log('Template encontrado:', foundTemplate.name);
           setTemplate(foundTemplate);
         } else {
-          console.error('Template not found with ID:', templateId);
+          console.error('Template no encontrado con ID:', templateId);
           setError('Formulario no encontrado');
         }
       } catch (err) {
@@ -54,20 +66,41 @@ export default function FillForm() {
     
     // Try to load the template again
     try {
+      console.log('Reintentando cargar template con ID:', templateId);
       const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+      console.log('Templates disponibles para reintentar:', storedTemplates.length);
+      
+      if (storedTemplates.length > 0) {
+        storedTemplates.forEach((t: FormTemplate, i: number) => {
+          console.log(`Template ${i+1}:`, t.id, t.name);
+        });
+      }
+      
       const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
       
       if (foundTemplate) {
+        console.log('Template encontrado en reintentar:', foundTemplate.name);
         setTemplate(foundTemplate);
         setError(null);
       } else {
+        console.error('Template no encontrado en reintentar con ID:', templateId);
         setError('Formulario no encontrado');
       }
     } catch (err) {
-      console.error('Error retrying template load:', err);
+      console.error('Error reintentando cargar template:', err);
       setError('Error al cargar el formulario');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const copyTemplateId = () => {
+    if (templateId) {
+      navigator.clipboard.writeText(templateId);
+      toast({
+        title: "ID copiado",
+        description: "El ID del formulario ha sido copiado al portapapeles."
+      });
     }
   };
   
@@ -103,9 +136,19 @@ export default function FillForm() {
           </Alert>
           
           <div className="space-y-4">
-            <p className="text-lg">
-              El formulario con ID <span className="font-mono text-sm bg-muted p-1 rounded">{templateId}</span> no se encontró en el sistema.
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-lg">
+                El formulario con ID <span className="font-mono text-sm bg-muted p-1 rounded">{templateId}</span> no se encontró en el sistema.
+              </p>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={copyTemplateId}
+                className="ml-2 flex-shrink-0"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
             
             {hasOtherForms && (
               <div className="space-y-2">
@@ -131,12 +174,12 @@ export default function FillForm() {
             )}
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button onClick={handleRetry} variant="outline" className="w-full sm:w-auto">
+              <Button onClick={handleRetry} className="w-full sm:w-auto">
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Reintentar cargar
               </Button>
               
-              <Button onClick={() => navigate('/')} className="w-full sm:w-auto">
+              <Button onClick={() => navigate('/')} variant="outline" className="w-full sm:w-auto">
                 <Home className="mr-2 h-4 w-4" />
                 Volver al inicio
               </Button>
