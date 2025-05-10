@@ -27,8 +27,8 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
       
       // Set canvas dimensions to match container's CSS dimensions
       const rect = container.getBoundingClientRect();
-      canvas.width = 300; // Fixed width for consistency
-      canvas.height = 150; // Fixed height for consistency
+      canvas.width = 250; // Slightly smaller width for better proportions
+      canvas.height = 120; // Smaller height
       
       // Redraw signature after resize
       drawSignature();
@@ -189,14 +189,14 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
     <div className="flex flex-col space-y-2">
       <div 
         ref={containerRef}
-        className="border rounded-md bg-white relative"
-        style={{ touchAction: 'none', height: '150px', width: '300px', margin: '0 auto' }}
+        className="border rounded-md bg-white relative mx-auto"
+        style={{ touchAction: 'none', height: '120px', width: '250px' }}
       >
         <canvas
           ref={canvasRef}
           id={id}
-          width={300}
-          height={150}
+          width={250}
+          height={120}
           className="cursor-crosshair"
           onMouseDown={startDrawing}
           onMouseMove={draw}
@@ -209,10 +209,11 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
       </div>
       
       {!readOnly && (
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-center space-x-2 mt-2">
           <Button 
             type="button" 
             variant="outline" 
+            size="sm"
             onClick={clearSignature}
             disabled={!hasSignature}
             className="text-gray-600 hover:bg-gray-100"
@@ -221,6 +222,7 @@ export function SignatureField({ id, value, onChange, readOnly = false }: Signat
           </Button>
           <Button 
             type="button"
+            size="sm"
             onClick={saveSignature}
             disabled={!hasSignature}
             className="bg-primary hover:bg-primary/90"
