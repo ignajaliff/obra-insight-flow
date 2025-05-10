@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormTemplate } from '@/types/forms';
@@ -39,50 +38,13 @@ export default function ViewForm() {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Cargar el template desde Supabase o localStorage como fallback
+    // Load the template from localStorage
     const loadTemplate = async () => {
       try {
-        console.info("Intentando cargar template con ID:", templateId);
+        console.info("Attempting to load template with ID:", templateId);
         setLoading(true);
         
-        // Primero intentar cargar desde Supabase
-        try {
-          const { data: templateData, error: supabaseError } = await supabase
-            .from('form_templates')
-            .select('*')
-            .eq('id', templateId)
-            .single();
-          
-          if (supabaseError) {
-            console.error("Error fetching template from Supabase:", supabaseError);
-            throw supabaseError;
-          }
-          
-          if (templateData) {
-            // Convertir los campos JSON a objetos
-            const parsedTemplate: FormTemplate = {
-              ...templateData,
-              fields: Array.isArray(templateData.fields) 
-                ? templateData.fields 
-                : JSON.parse(templateData.fields as unknown as string),
-              projectMetadata: templateData.project_metadata 
-                ? (typeof templateData.project_metadata === 'string' 
-                  ? JSON.parse(templateData.project_metadata) 
-                  : templateData.project_metadata)
-                : {}
-            };
-            
-            setTemplate(parsedTemplate);
-            setShareUrl(`${window.location.origin}/formularios/rellenar/${templateId}`);
-            setLoading(false);
-            return;
-          }
-        } catch (supabaseError) {
-          // Si hay un error en Supabase, continuamos con localStorage
-          console.error("Error loading template from Supabase:", supabaseError);
-        }
-        
-        // Fallback a localStorage
+        // Try to load from localStorage (we won't use Supabase for now since the table doesn't exist)
         try {
           const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
           const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
