@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -8,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { FormResponse } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart } from '@/components/dashboard/BarChart';
-import { PieChart } from '@/components/dashboard/PieChart';
 import { ProjectsSection } from '@/components/dashboard/CompaniesSection';
 
 const Dashboard = () => {
@@ -20,9 +20,7 @@ const Dashboard = () => {
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
   const [projects, setProjects] = useState<string[]>(['Todos']);
   const [loading, setLoading] = useState(true);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [formStatsData, setFormStatsData] = useState<any[]>([]);
 
   // Cargar formularios
@@ -32,16 +30,19 @@ const Dashboard = () => {
         setLoading(true);
         console.log("Intentando cargar datos de formularios...");
 
-        // Obtener respuestas de formulario
-        const {
-          data: responsesData,
-          error: responsesError
-        } = await supabase.from('form_responses').select('*');
+        // Obtener respuestas de formulario - sin filtrar por fechas para asegurarnos de obtener todos los registros
+        const { data: responsesData, error: responsesError } = await supabase
+          .from('form_responses')
+          .select('*');
+
         if (responsesError) {
           console.error('Error al cargar respuestas:', responsesError);
           throw responsesError;
         }
+
         console.log("Datos cargados:", responsesData?.length || 0, "registros");
+        console.log("Registros cargados:", responsesData);
+
         if (!responsesData || responsesData.length === 0) {
           console.log("No se encontraron registros en form_responses");
           setFormResponses([]);
@@ -58,13 +59,26 @@ const Dashboard = () => {
 
         // Extraer todos los tipos de formularios únicos
         const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
+        console.log("Tipos de formularios encontrados:", uniqueFormTypes);
         setFormTypes(['Todos', ...uniqueFormTypes]);
 
         // Extraer todos los proyectos únicos
-        const uniqueProjects = Array.from(new Set(typedData.filter(form => form.proyecto) // Filter out undefined proyectos
-        .map(form => form.proyecto).filter(Boolean) as string[]));
+        const uniqueProjects = Array.from(
+          new Set(
+            typedData
+              .filter(form => form.proyecto) // Filter out undefined proyectos
+              .map(form => form.proyecto)
+              .filter(Boolean) as string[]
+          )
+        );
+        
+        console.log("Proyectos encontrados:", uniqueProjects);
         setProjects(['Todos', ...uniqueProjects]);
-        setSelectedProject('Todos'); // Set default selection to "Todos"
+        
+        // Si el proyecto seleccionado no está en la lista, resetear a 'Todos'
+        if (selectedProject !== 'Todos' && !uniqueProjects.includes(selectedProject)) {
+          setSelectedProject('Todos');
+        }
 
         // Crear datos para gráficos
         const projectStats = uniqueProjects.map(project => {
@@ -88,8 +102,17 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
+    
     fetchData();
-  }, [toast]);
+    
+    // Establecer un intervalo para actualizar los datos cada cierto tiempo (opcional)
+    const refreshInterval = setInterval(fetchData, 60000); // Actualizar cada minuto
+    
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, [toast, selectedProject]);
+
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     if (start) setStartDate(start);
     if (end) setEndDate(end);
@@ -146,7 +169,7 @@ const Dashboard = () => {
   // Lista de tipos de formulario relevantes
   const relevantFormTypes = getRelevantFormTypes();
 
-  // Datos para el gráfico de pastel
+  // Datos para el gráfico de pastel (ya no se usa pero mantenemos la variable por si se necesita en el futuro)
   const pieChartData = [{
     name: 'Positivos',
     value: stats.positivos
@@ -154,7 +177,9 @@ const Dashboard = () => {
     name: 'Negativos',
     value: stats.negativos
   }];
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <div className="flex justify-between flex-wrap gap-4">
         <div>
           <p className="text-muted-foreground">Resumen de los formularios recibidos</p>
@@ -164,9 +189,12 @@ const Dashboard = () => {
         </div>
       </div>
       
-      {loading ? <div className="flex justify-center py-8">
+      {loading ? (
+        <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div> : <div className="space-y-8">
+        </div>
+      ) : (
+        <div className="space-y-8">
           {/* Sección de Proyectos */}
           <ProjectsSection projects={projectsWithFormTypes} isLoading={loading} />
           
@@ -175,45 +203,85 @@ const Dashboard = () => {
               <h2 className="text-xl font-bold mb-4">Proyectos</h2>
               
               {/* Projects as Tabs with deeper blue styling */}
-              <Tabs defaultValue={projects[0] || 'Todos'} value={selectedProject} onValueChange={setSelectedProject}>
+              <Tabs 
+                defaultValue={projects[0] || 'Todos'} 
+                value={selectedProject} 
+                onValueChange={setSelectedProject}
+              >
                 <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
-                  {projects.map(project => <TabsTrigger key={project} value={project} className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#1A4B7C] data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200">
+                  {projects.map(project => (
+                    <TabsTrigger 
+                      key={project} 
+                      value={project} 
+                      className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#1A4B7C] data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
+                    >
                       {project}
-                    </TabsTrigger>)}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
               </Tabs>
               
               <h3 className="text-lg font-medium mb-4">Formularios por proyecto</h3>
             </div>
             
-            <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>
+            <Tabs 
+              defaultValue={relevantFormTypes[0]} 
+              value={selectedFormType} 
+              onValueChange={setSelectedFormType}
+            >
               <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
-                {relevantFormTypes.map(type => <TabsTrigger key={type} value={type} className="whitespace-nowrap">
+                {relevantFormTypes.map(type => (
+                  <TabsTrigger key={type} value={type} className="whitespace-nowrap">
                     {type}
-                  </TabsTrigger>)}
+                  </TabsTrigger>
+                ))}
               </TabsList>
 
               <TabsContent value={selectedFormType} className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <StatCard title="Total Formularios" value={stats.total} description="Último período" icon={<FileText />} />
-                  <StatCard title="Todo positivo" value={stats.positivos} description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`} icon={<CheckSquare className="text-green-500" />} />
-                  <StatCard title="Con items negativos" value={stats.negativos} description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`} icon={<AlertTriangle className="text-red-500" />} />
+                  <StatCard 
+                    title="Total Formularios" 
+                    value={stats.total} 
+                    description="Último período" 
+                    icon={<FileText />} 
+                  />
+                  <StatCard 
+                    title="Todo positivo" 
+                    value={stats.positivos} 
+                    description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`} 
+                    icon={<CheckSquare className="text-green-500" />} 
+                  />
+                  <StatCard 
+                    title="Con items negativos" 
+                    value={stats.negativos} 
+                    description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`} 
+                    icon={<AlertTriangle className="text-red-500" />} 
+                  />
                 </div>
                 
                 <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Lista de formularios {filteredData.length > 0 ? `(${filteredData.length})` : ''}</h2>
-                  {filteredData.length > 0 ? <FormsTable forms={filteredData} /> : <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                  <h2 className="text-xl font-semibold">
+                    Lista de formularios {filteredData.length > 0 ? `(${filteredData.length})` : ''}
+                  </h2>
+                  {filteredData.length > 0 ? (
+                    <FormsTable forms={filteredData} />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
                       <FileText className="h-12 w-12 text-muted-foreground mb-2" />
                       <h3 className="text-xl font-medium mb-1">No se encontraron formularios</h3>
                       <p className="text-muted-foreground">
                         No hay formularios que coincidan con los filtros seleccionados.
                       </p>
-                    </div>}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
           </div>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
+
 export default Dashboard;
