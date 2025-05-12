@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, CheckSquare, AlertTriangle, RefreshCw } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -24,16 +25,24 @@ const Dashboard = () => {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
-  // Función para cargar los datos
+  // Función para cargar los datos con mejor manejo de errores
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       console.log("Intentando cargar datos de formularios...");
 
-      // Obtener respuestas de formulario directamente sin usar .select('*')
+      // Configuración de fetch para evitar caché
+      const fetchOptions = {
+        cache: 'no-store' as RequestCache,
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      };
+
+      // Obtener respuestas de formulario con .select() explícito para garantizar todos los campos
       const { data: responsesData, error: responsesError } = await supabase
         .from('form_responses')
-        .select();
+        .select('*');
 
       if (responsesError) {
         console.error('Error al cargar respuestas:', responsesError);
@@ -46,11 +55,13 @@ const Dashboard = () => {
       if (!responsesData || responsesData.length === 0) {
         console.log("No se encontraron registros en form_responses");
         setFormResponses([]);
+        setFormTypes(['Todos']);
+        setProjects(['Todos']);
         setLoading(false);
         return;
       }
 
-      // Asegurar que los datos cumplen con el tipo FormResponse actualizado
+      // Asegurar que los datos cumplen con el tipo FormResponse
       const typedData: FormResponse[] = responsesData;
       
       // Guardar los datos en el estado
@@ -93,12 +104,17 @@ const Dashboard = () => {
       
       // Actualizar timestamp de última actualización
       setLastUpdated(new Date());
+
+      toast({
+        title: "Datos actualizados",
+        description: `Se han cargado ${responsesData.length} registros correctamente`
+      });
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar los datos"
+        description: "No se pudieron cargar los datos. Intente refrescar nuevamente."
       });
     } finally {
       setLoading(false);
@@ -107,10 +123,8 @@ const Dashboard = () => {
   
   // Cargar datos cuando cambie el refreshTrigger
   useEffect(() => {
+    console.log("Ejecutando fetchData...");
     fetchData();
-    
-    // No usamos intervalo automático para evitar problemas de rendimiento
-    // Dejamos que el usuario refresque manualmente
   }, [fetchData, refreshTrigger]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
@@ -120,6 +134,7 @@ const Dashboard = () => {
 
   // Función para refrescar datos manualmente
   const handleRefresh = () => {
+    console.log("Refrescando datos manualmente...");
     setRefreshTrigger(prev => prev + 1);
     toast({
       title: "Actualizando datos",
@@ -193,6 +208,7 @@ const Dashboard = () => {
         <div>
           <p className="text-muted-foreground">Resumen de los formularios recibidos</p>
           <p className="text-xs text-muted-foreground">Última actualización: {lastUpdated.toLocaleTimeString()}</p>
+          <p className="text-xs text-muted-foreground">Total registros disponibles: {formResponses.length}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button 
