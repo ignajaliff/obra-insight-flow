@@ -102,13 +102,14 @@ export function FormSubmissionForm({
         projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
       };
       
-      // Eliminamos el almacenamiento en localStorage
-      
       // Send to webhook with the new numbered format as plain text
       if (webhookUrl) {
         try {
           // Prepare data with numbered questions and answers
           let webhookContent = ``;
+          
+          // Agregar el nombre del formulario
+          webhookContent += `Nombre del formulario: ${template.name}\n\n`;
           
           // Add submitter name as "pregunta 0"
           webhookContent += `pregunta 0: Nombre del remitente\n`;

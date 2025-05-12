@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { FormBasicInfo } from './FormBasicInfo';
 import { FieldsList } from './FieldsList';
 import { AddFieldSection } from './AddFieldSection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function FormBuilder() {
   const { toast } = useToast();
@@ -27,7 +26,6 @@ export function FormBuilder() {
   });
   
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("fields");
   
   const saveTemplate = async () => {
     // Validate form
@@ -91,23 +89,17 @@ export function FormBuilder() {
       />
       
       <div className="border-t pt-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="fields">Campos del formulario</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="fields" className="space-y-6">
-            <FieldsList 
-              fields={template.fields}
-              setTemplate={setTemplate}
-            />
-            
-            <AddFieldSection 
-              template={template}
-              setTemplate={setTemplate}
-            />
-          </TabsContent>
-        </Tabs>
+        <h2 className="text-lg font-medium mb-4">Campos del formulario</h2>
+        
+        <FieldsList 
+          fields={template.fields}
+          setTemplate={setTemplate}
+        />
+        
+        <AddFieldSection 
+          template={template}
+          setTemplate={setTemplate}
+        />
       </div>
       
       <div className="border-t pt-6 flex justify-end">
