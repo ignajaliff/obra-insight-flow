@@ -8,17 +8,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { FormResponse } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
+import { BarChart } from '@/components/dashboard/BarChart';
+import { PieChart } from '@/components/dashboard/PieChart';
+import { ProjectsSection } from '@/components/dashboard/CompaniesSection';
 
 const Dashboard = () => {
-  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
+  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string>('Todos');
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
-  const [projects, setProjects] = useState<string[]>([]); // Initialize with empty array
+  const [projects, setProjects] = useState<string[]>(['Todos']); 
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  const [formStatsData, setFormStatsData] = useState<any[]>([]);
   
   // Cargar formularios
   useEffect(() => {
@@ -26,18 +31,32 @@ const Dashboard = () => {
       try {
         setLoading(true);
         
+        console.log("Intentando cargar datos de formularios...");
+        
         // Obtener respuestas de formulario
         const { data: responsesData, error: responsesError } = await supabase
           .from('form_responses')
           .select('*');
         
-        if (responsesError) throw responsesError;
+        if (responsesError) {
+          console.error('Error al cargar respuestas:', responsesError);
+          throw responsesError;
+        }
+        
+        console.log("Datos cargados:", responsesData?.length || 0, "registros");
+        
+        if (!responsesData || responsesData.length === 0) {
+          console.log("No se encontraron registros en form_responses");
+          setFormResponses([]);
+          setLoading(false);
+          return;
+        }
         
         // Asegurar que los datos cumplen con el tipo FormResponse
-        const typedData: FormResponse[] = responsesData ? responsesData.map(item => ({
+        const typedData: FormResponse[] = responsesData.map(item => ({
           ...item,
           status: item.status as 'Todo positivo' | 'Contiene item negativo'
-        })) : [];
+        }));
         
         setFormResponses(typedData);
         
@@ -55,6 +74,19 @@ const Dashboard = () => {
         
         setProjects(['Todos', ...uniqueProjects]);
         setSelectedProject('Todos'); // Set default selection to "Todos"
+        
+        // Crear datos para gráficos
+        const projectStats = uniqueProjects.map(project => {
+          const projectForms = typedData.filter(form => form.proyecto === project);
+          return {
+            name: project,
+            value: projectForms.length,
+            positivos: projectForms.filter(f => f.status === 'Todo positivo').length,
+            negativos: projectForms.filter(f => f.status === 'Contiene item negativo').length
+          };
+        });
+        
+        setFormStatsData(projectStats);
         
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -98,6 +130,24 @@ const Dashboard = () => {
     negativos: filteredData.filter(f => f.status === 'Contiene item negativo').length
   };
 
+  // Preparar datos para la sección de proyectos
+  const projectsWithFormTypes = projects
+    .filter(p => p !== 'Todos')
+    .map(proyecto => {
+      const projectForms = formResponses.filter(form => form.proyecto === proyecto);
+      const formTypesForProject = Array.from(new Set(projectForms.map(form => form.form_type)));
+      
+      return {
+        proyecto,
+        formTypes: formTypesForProject.map(type => ({
+          id: type,
+          name: type,
+          description: `Formulario de ${type}`
+        })),
+        formCount: projectForms.length
+      };
+    });
+
   // Obtener tipos de formulario relevantes según el proyecto seleccionado
   const getRelevantFormTypes = () => {
     if (selectedProject && selectedProject !== 'Todos') {
@@ -116,6 +166,12 @@ const Dashboard = () => {
   // Lista de tipos de formulario relevantes
   const relevantFormTypes = getRelevantFormTypes();
 
+  // Datos para el gráfico de pastel
+  const pieChartData = [
+    { name: 'Positivos', value: stats.positivos },
+    { name: 'Negativos', value: stats.negativos }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between flex-wrap gap-4">
@@ -132,64 +188,100 @@ const Dashboard = () => {
         </div>
       </div>
       
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-xl font-bold mb-4">Formularios por proyecto</h2>
-          
-          {/* Projects as Tabs with softer yellow styling */}
-          <Tabs defaultValue={projects[0] || 'Todos'} value={selectedProject || 'Todos'} onValueChange={setSelectedProject}>
-            <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
-              {projects.map((project) => (
-                <TabsTrigger 
-                  key={project} 
-                  value={project} 
-                  className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-800 data-[state=active]:shadow-md transition-all duration-200"
-                >
-                  {project}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
-        
-        <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>
-          <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
-            {relevantFormTypes.map((type) => (
-              <TabsTrigger key={type} value={type} className="whitespace-nowrap">
-                {type}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsContent value={selectedFormType} className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <StatCard
-                title="Total Formularios"
-                value={stats.total}
-                description="Último período"
-                icon={<FileText />}
-              />
-              <StatCard
-                title="Todo positivo"
-                value={stats.positivos}
-                description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`}
-                icon={<CheckSquare className="text-green-500" />}
-              />
-              <StatCard
-                title="Con items negativos"
-                value={stats.negativos}
-                description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`}
-                icon={<AlertTriangle className="text-danger-500" />}
-              />
+      ) : (
+        <div className="space-y-8">
+          {/* Sección de Proyectos */}
+          <ProjectsSection 
+            projects={projectsWithFormTypes}
+            isLoading={loading}
+          />
+          
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold mb-4">Formularios por proyecto</h2>
+              
+              {/* Projects as Tabs with softer yellow styling */}
+              <Tabs defaultValue={projects[0] || 'Todos'} value={selectedProject} onValueChange={setSelectedProject}>
+                <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
+                  {projects.map((project) => (
+                    <TabsTrigger 
+                      key={project} 
+                      value={project} 
+                      className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-800 data-[state=active]:shadow-md transition-all duration-200"
+                    >
+                      {project}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
             
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Lista de formularios</h2>
-              <FormsTable forms={filteredData} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+            <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>
+              <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
+                {relevantFormTypes.map((type) => (
+                  <TabsTrigger key={type} value={type} className="whitespace-nowrap">
+                    {type}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              <TabsContent value={selectedFormType} className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <StatCard
+                    title="Total Formularios"
+                    value={stats.total}
+                    description="Último período"
+                    icon={<FileText />}
+                  />
+                  <StatCard
+                    title="Todo positivo"
+                    value={stats.positivos}
+                    description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`}
+                    icon={<CheckSquare className="text-green-500" />}
+                  />
+                  <StatCard
+                    title="Con items negativos"
+                    value={stats.negativos}
+                    description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`}
+                    icon={<AlertTriangle className="text-red-500" />}
+                  />
+                </div>
+                
+                {stats.total > 0 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <PieChart
+                      title="Distribución de estados"
+                      data={pieChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      colors={['#10b981', '#ef4444']}
+                    />
+                  </div>
+                )}
+                
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold">Lista de formularios {filteredData.length > 0 ? `(${filteredData.length})` : ''}</h2>
+                  {filteredData.length > 0 ? (
+                    <FormsTable forms={filteredData} />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                      <FileText className="h-12 w-12 text-muted-foreground mb-2" />
+                      <h3 className="text-xl font-medium mb-1">No se encontraron formularios</h3>
+                      <p className="text-muted-foreground">
+                        No hay formularios que coincidan con los filtros seleccionados.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
