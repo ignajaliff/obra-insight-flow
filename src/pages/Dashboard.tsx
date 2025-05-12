@@ -142,13 +142,16 @@ const Dashboard = () => {
               onFormTypeChange={setSelectedFormType}
             />
 
-            <TabsContent value={selectedFormType} className="space-y-6">
-              {/* Statistics Cards */}
-              <FormStatsSection stats={stats} />
-              
-              {/* Forms List Table */}
-              <FormsListSection filteredData={filteredData} />
-            </TabsContent>
+            {/* Wrap TabsContent within a Tabs component */}
+            <Tabs value={selectedFormType}>
+              <TabsContent value={selectedFormType} className="space-y-6">
+                {/* Statistics Cards */}
+                <FormStatsSection stats={stats} />
+                
+                {/* Forms List Table */}
+                <FormsListSection filteredData={filteredData} />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       )}
