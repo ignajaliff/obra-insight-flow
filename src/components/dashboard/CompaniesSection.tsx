@@ -1,8 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Building, FileText } from 'lucide-react';
 
 interface ProjectWithFormTypes {
@@ -32,7 +30,7 @@ export function ProjectsSection({
     );
   }
 
-  if (projects.length === 0) {
+  if (!projects || projects.length === 0) {
     return (
       <div className="text-center py-4">
         <p className="text-muted-foreground">No hay proyectos disponibles</p>

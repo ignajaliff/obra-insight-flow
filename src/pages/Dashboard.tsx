@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { FormResponse } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
-import { BarChart } from '@/components/dashboard/BarChart';
 import { ProjectsSection } from '@/components/dashboard/CompaniesSection';
 
 const Dashboard = () => {
@@ -22,100 +21,114 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [formStatsData, setFormStatsData] = useState<any[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  // Cargar formularios
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        console.log("Intentando cargar datos de formularios...");
+  // Función para cargar los datos
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      console.log("Intentando cargar datos de formularios...");
 
-        // Obtener respuestas de formulario - sin filtrar por fechas para asegurarnos de obtener todos los registros
-        const { data: responsesData, error: responsesError } = await supabase
-          .from('form_responses')
-          .select('*');
+      // Obtener respuestas de formulario - sin filtrar por fechas para asegurarnos de obtener todos los registros
+      const { data: responsesData, error: responsesError } = await supabase
+        .from('form_responses')
+        .select('*');
 
-        if (responsesError) {
-          console.error('Error al cargar respuestas:', responsesError);
-          throw responsesError;
-        }
-
-        console.log("Datos cargados:", responsesData?.length || 0, "registros");
-        console.log("Registros cargados:", responsesData);
-
-        if (!responsesData || responsesData.length === 0) {
-          console.log("No se encontraron registros en form_responses");
-          setFormResponses([]);
-          setLoading(false);
-          return;
-        }
-
-        // Asegurar que los datos cumplen con el tipo FormResponse
-        const typedData: FormResponse[] = responsesData.map(item => ({
-          ...item,
-          status: item.status as 'Todo positivo' | 'Contiene item negativo'
-        }));
-        setFormResponses(typedData);
-
-        // Extraer todos los tipos de formularios únicos
-        const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
-        console.log("Tipos de formularios encontrados:", uniqueFormTypes);
-        setFormTypes(['Todos', ...uniqueFormTypes]);
-
-        // Extraer todos los proyectos únicos
-        const uniqueProjects = Array.from(
-          new Set(
-            typedData
-              .filter(form => form.proyecto) // Filter out undefined proyectos
-              .map(form => form.proyecto)
-              .filter(Boolean) as string[]
-          )
-        );
-        
-        console.log("Proyectos encontrados:", uniqueProjects);
-        setProjects(['Todos', ...uniqueProjects]);
-        
-        // Si el proyecto seleccionado no está en la lista, resetear a 'Todos'
-        if (selectedProject !== 'Todos' && !uniqueProjects.includes(selectedProject)) {
-          setSelectedProject('Todos');
-        }
-
-        // Crear datos para gráficos
-        const projectStats = uniqueProjects.map(project => {
-          const projectForms = typedData.filter(form => form.proyecto === project);
-          return {
-            name: project,
-            value: projectForms.length,
-            positivos: projectForms.filter(f => f.status === 'Todo positivo').length,
-            negativos: projectForms.filter(f => f.status === 'Contiene item negativo').length
-          };
-        });
-        setFormStatsData(projectStats);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudieron cargar los datos"
-        });
-      } finally {
-        setLoading(false);
+      if (responsesError) {
+        console.error('Error al cargar respuestas:', responsesError);
+        throw responsesError;
       }
-    };
-    
+
+      console.log("Datos cargados:", responsesData?.length || 0, "registros");
+      console.log("Registros cargados:", responsesData);
+
+      if (!responsesData || responsesData.length === 0) {
+        console.log("No se encontraron registros en form_responses");
+        setFormResponses([]);
+        setLoading(false);
+        return;
+      }
+
+      // Asegurar que los datos cumplen con el tipo FormResponse
+      const typedData: FormResponse[] = responsesData.map(item => ({
+        ...item,
+        status: item.status as 'Todo positivo' | 'Contiene item negativo'
+      }));
+      setFormResponses(typedData);
+
+      // Extraer todos los tipos de formularios únicos
+      const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
+      console.log("Tipos de formularios encontrados:", uniqueFormTypes);
+      setFormTypes(['Todos', ...uniqueFormTypes]);
+
+      // Extraer todos los proyectos únicos
+      const uniqueProjects = Array.from(
+        new Set(
+          typedData
+            .filter(form => form.proyecto) // Filter out undefined proyectos
+            .map(form => form.proyecto)
+            .filter(Boolean) as string[]
+        )
+      );
+      
+      console.log("Proyectos encontrados:", uniqueProjects);
+      setProjects(['Todos', ...uniqueProjects]);
+      
+      // Si el proyecto seleccionado no está en la lista, resetear a 'Todos'
+      if (selectedProject !== 'Todos' && !uniqueProjects.includes(selectedProject)) {
+        setSelectedProject('Todos');
+      }
+
+      // Crear datos para gráficos
+      const projectStats = uniqueProjects.map(project => {
+        const projectForms = typedData.filter(form => form.proyecto === project);
+        return {
+          name: project,
+          value: projectForms.length,
+          positivos: projectForms.filter(f => f.status === 'Todo positivo').length,
+          negativos: projectForms.filter(f => f.status === 'Contiene item negativo').length
+        };
+      });
+      setFormStatsData(projectStats);
+      
+      // Actualizar timestamp de última actualización
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los datos"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedProject, toast]);
+  
+  // Cargar datos al montar el componente
+  useEffect(() => {
     fetchData();
     
-    // Establecer un intervalo para actualizar los datos cada cierto tiempo (opcional)
+    // Establecer un intervalo para actualizar los datos cada cierto tiempo
     const refreshInterval = setInterval(fetchData, 60000); // Actualizar cada minuto
     
     return () => {
       clearInterval(refreshInterval);
     };
-  }, [toast, selectedProject]);
+  }, [fetchData]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     if (start) setStartDate(start);
     if (end) setEndDate(end);
+  };
+
+  // Función para refrescar datos manualmente
+  const handleRefresh = () => {
+    fetchData();
+    toast({
+      title: "Actualizando datos",
+      description: "Los datos están siendo actualizados"
+    });
   };
 
   // Filtrar datos por proyecto, tipo de formulario y rango de fecha
@@ -183,8 +196,15 @@ const Dashboard = () => {
       <div className="flex justify-between flex-wrap gap-4">
         <div>
           <p className="text-muted-foreground">Resumen de los formularios recibidos</p>
+          <p className="text-xs text-muted-foreground">Última actualización: {lastUpdated.toLocaleTimeString()}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={handleRefresh}
+            className="px-3 py-1 text-sm bg-secondary/50 hover:bg-secondary rounded-md transition-colors"
+          >
+            Actualizar datos
+          </button>
           <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={handleDateChange} />
         </div>
       </div>
