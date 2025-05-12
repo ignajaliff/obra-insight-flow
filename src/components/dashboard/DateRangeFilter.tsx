@@ -85,7 +85,8 @@ export function DateRangeFilter({
         )}
       </Button>
       
-      <Popover onOpenChange={handleOpenChange} disabled={showAllDates}>
+      {/* Remove the disabled prop from Popover and handle it in the PopoverTrigger instead */}
+      <Popover onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button variant="outline" className="justify-start" disabled={showAllDates}>
             <CalendarIcon className="mr-2 h-4 w-4" />
