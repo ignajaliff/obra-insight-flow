@@ -4,6 +4,23 @@
 
 **URL**: https://lovable.dev/projects/ac1a7a4f-752a-4dfc-9fa1-64da04236630
 
+## Docker Deployment
+
+This application includes Docker support for easy deployment. To run it using Docker:
+
+```sh
+# Build and start the Docker container
+docker-compose up -d
+
+# The application will be available at http://localhost:8080
+```
+
+For deployment on EasyPanel:
+1. Make sure Docker and Docker Compose are installed on your server
+2. Clone this repository
+3. Run `docker-compose up -d` to start the application
+4. Configure EasyPanel to point to the container
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
@@ -62,7 +79,13 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/ac1a7a4f-752a-4dfc-9fa1-64da04236630) and click on Share -> Publish.
+You can deploy this project in several ways:
+
+1. **Using Docker (recommended for EasyPanel)**:
+   - Follow the Docker deployment instructions above
+
+2. **Using Lovable**:
+   - Simply open [Lovable](https://lovable.dev/projects/ac1a7a4f-752a-4dfc-9fa1-64da04236630) and click on Share -> Publish.
 
 ## Can I connect a custom domain to my Lovable project?
 
