@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
+import { FileText, CheckSquare, AlertTriangle, RefreshCw } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
 import { FormsTable } from '@/components/forms/FormsTable';
@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FormResponse } from '@/types/forms';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectsSection } from '@/components/dashboard/CompaniesSection';
+import { Button } from '@/components/ui/button';
 
 const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
@@ -22,6 +23,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [formStatsData, setFormStatsData] = useState<any[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   // Función para cargar los datos
   const fetchData = useCallback(async () => {
@@ -29,10 +31,10 @@ const Dashboard = () => {
       setLoading(true);
       console.log("Intentando cargar datos de formularios...");
 
-      // Obtener respuestas de formulario - sin filtrar por fechas para asegurarnos de obtener todos los registros
+      // Obtener respuestas de formulario directamente sin usar .select('*')
       const { data: responsesData, error: responsesError } = await supabase
         .from('form_responses')
-        .select('*');
+        .select();
 
       if (responsesError) {
         console.error('Error al cargar respuestas:', responsesError);
@@ -54,6 +56,8 @@ const Dashboard = () => {
         ...item,
         status: item.status as 'Todo positivo' | 'Contiene item negativo'
       }));
+      
+      // Guardar los datos en el estado
       setFormResponses(typedData);
 
       // Extraer todos los tipos de formularios únicos
@@ -61,7 +65,7 @@ const Dashboard = () => {
       console.log("Tipos de formularios encontrados:", uniqueFormTypes);
       setFormTypes(['Todos', ...uniqueFormTypes]);
 
-      // Extraer todos los proyectos únicos
+      // Extraer todos los proyectos únicos con verificación
       const uniqueProjects = Array.from(
         new Set(
           typedData
@@ -79,7 +83,7 @@ const Dashboard = () => {
         setSelectedProject('Todos');
       }
 
-      // Crear datos para gráficos
+      // Crear datos para gráficos y estadísticas
       const projectStats = uniqueProjects.map(project => {
         const projectForms = typedData.filter(form => form.proyecto === project);
         return {
@@ -105,17 +109,13 @@ const Dashboard = () => {
     }
   }, [selectedProject, toast]);
   
-  // Cargar datos al montar el componente
+  // Cargar datos cuando cambie el refreshTrigger
   useEffect(() => {
     fetchData();
     
-    // Establecer un intervalo para actualizar los datos cada cierto tiempo
-    const refreshInterval = setInterval(fetchData, 60000); // Actualizar cada minuto
-    
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, [fetchData]);
+    // No usamos intervalo automático para evitar problemas de rendimiento
+    // Dejamos que el usuario refresque manualmente
+  }, [fetchData, refreshTrigger]);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     if (start) setStartDate(start);
@@ -124,7 +124,7 @@ const Dashboard = () => {
 
   // Función para refrescar datos manualmente
   const handleRefresh = () => {
-    fetchData();
+    setRefreshTrigger(prev => prev + 1);
     toast({
       title: "Actualizando datos",
       description: "Los datos están siendo actualizados"
@@ -199,12 +199,15 @@ const Dashboard = () => {
           <p className="text-xs text-muted-foreground">Última actualización: {lastUpdated.toLocaleTimeString()}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button 
+          <Button 
             onClick={handleRefresh}
-            className="px-3 py-1 text-sm bg-secondary/50 hover:bg-secondary rounded-md transition-colors"
+            variant="outline"
+            className="flex items-center gap-2"
+            disabled={loading}
           >
-            Actualizar datos
-          </button>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refrescar datos
+          </Button>
           <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={handleDateChange} />
         </div>
       </div>

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building, FileText } from 'lucide-react';
 
@@ -22,6 +22,11 @@ export function ProjectsSection({
   projects,
   isLoading
 }: ProjectsSectionProps) {
+  // Log data on mount and when projects change
+  useEffect(() => {
+    console.log("ProjectsSection received projects:", projects);
+  }, [projects]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -37,8 +42,6 @@ export function ProjectsSection({
       </div>
     );
   }
-
-  console.log("Rendering ProjectsSection with projects:", projects);
 
   return (
     <div>

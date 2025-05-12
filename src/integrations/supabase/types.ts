@@ -16,7 +16,6 @@ export type Database = {
           document_link: string | null
           form_type: string
           id: string
-          ID_documento: string | null
           proyecto: string | null
           status: string
           worker_name: string
@@ -27,7 +26,6 @@ export type Database = {
           document_link?: string | null
           form_type: string
           id?: string
-          ID_documento?: string | null
           proyecto?: string | null
           status: string
           worker_name: string
@@ -38,7 +36,6 @@ export type Database = {
           document_link?: string | null
           form_type?: string
           id?: string
-          ID_documento?: string | null
           proyecto?: string | null
           status?: string
           worker_name?: string
