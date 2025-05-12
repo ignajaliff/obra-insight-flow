@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -11,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { BarChart } from '@/components/dashboard/BarChart';
 import { PieChart } from '@/components/dashboard/PieChart';
 import { ProjectsSection } from '@/components/dashboard/CompaniesSection';
-
 const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -19,62 +17,54 @@ const Dashboard = () => {
   const [selectedProject, setSelectedProject] = useState<string>('Todos');
   const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
   const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
-  const [projects, setProjects] = useState<string[]>(['Todos']); 
+  const [projects, setProjects] = useState<string[]>(['Todos']);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  
+  const {
+    toast
+  } = useToast();
   const [formStatsData, setFormStatsData] = useState<any[]>([]);
-  
+
   // Cargar formularios
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
         console.log("Intentando cargar datos de formularios...");
-        
+
         // Obtener respuestas de formulario
-        const { data: responsesData, error: responsesError } = await supabase
-          .from('form_responses')
-          .select('*');
-        
+        const {
+          data: responsesData,
+          error: responsesError
+        } = await supabase.from('form_responses').select('*');
         if (responsesError) {
           console.error('Error al cargar respuestas:', responsesError);
           throw responsesError;
         }
-        
         console.log("Datos cargados:", responsesData?.length || 0, "registros");
-        
         if (!responsesData || responsesData.length === 0) {
           console.log("No se encontraron registros en form_responses");
           setFormResponses([]);
           setLoading(false);
           return;
         }
-        
+
         // Asegurar que los datos cumplen con el tipo FormResponse
         const typedData: FormResponse[] = responsesData.map(item => ({
           ...item,
           status: item.status as 'Todo positivo' | 'Contiene item negativo'
         }));
-        
         setFormResponses(typedData);
-        
+
         // Extraer todos los tipos de formularios únicos
         const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
         setFormTypes(['Todos', ...uniqueFormTypes]);
-        
+
         // Extraer todos los proyectos únicos
-        const uniqueProjects = Array.from(new Set(
-          typedData
-            .filter(form => form.proyecto) // Filter out undefined proyectos
-            .map(form => form.proyecto)
-            .filter(Boolean) as string[]
-        ));
-        
+        const uniqueProjects = Array.from(new Set(typedData.filter(form => form.proyecto) // Filter out undefined proyectos
+        .map(form => form.proyecto).filter(Boolean) as string[]));
         setProjects(['Todos', ...uniqueProjects]);
         setSelectedProject('Todos'); // Set default selection to "Todos"
-        
+
         // Crear datos para gráficos
         const projectStats = uniqueProjects.map(project => {
           const projectForms = typedData.filter(form => form.proyecto === project);
@@ -85,24 +75,20 @@ const Dashboard = () => {
             negativos: projectForms.filter(f => f.status === 'Contiene item negativo').length
           };
         });
-        
         setFormStatsData(projectStats);
-        
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "No se pudieron cargar los datos",
+          description: "No se pudieron cargar los datos"
         });
       } finally {
         setLoading(false);
       }
     };
-    
     fetchData();
   }, [toast]);
-
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     if (start) setStartDate(start);
     if (end) setEndDate(end);
@@ -115,14 +101,13 @@ const Dashboard = () => {
       const isInDateRange = formDate >= startDate && formDate <= endDate;
       const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
       const matchesProject = selectedProject === 'Todos' || form.proyecto === selectedProject;
-      
       return isInDateRange && matchesType && matchesProject;
     });
   };
-  
+
   // Obtener formularios filtrados
   const filteredData = getFilteredData();
-  
+
   // Calcular estadísticas para los formularios filtrados
   const stats = {
     total: filteredData.length,
@@ -131,31 +116,25 @@ const Dashboard = () => {
   };
 
   // Preparar datos para la sección de proyectos
-  const projectsWithFormTypes = projects
-    .filter(p => p !== 'Todos')
-    .map(proyecto => {
-      const projectForms = formResponses.filter(form => form.proyecto === proyecto);
-      const formTypesForProject = Array.from(new Set(projectForms.map(form => form.form_type)));
-      
-      return {
-        proyecto,
-        formTypes: formTypesForProject.map(type => ({
-          id: type,
-          name: type,
-          description: `Formulario de ${type}`
-        })),
-        formCount: projectForms.length
-      };
-    });
+  const projectsWithFormTypes = projects.filter(p => p !== 'Todos').map(proyecto => {
+    const projectForms = formResponses.filter(form => form.proyecto === proyecto);
+    const formTypesForProject = Array.from(new Set(projectForms.map(form => form.form_type)));
+    return {
+      proyecto,
+      formTypes: formTypesForProject.map(type => ({
+        id: type,
+        name: type,
+        description: `Formulario de ${type}`
+      })),
+      formCount: projectForms.length
+    };
+  });
 
   // Obtener tipos de formulario relevantes según el proyecto seleccionado
   const getRelevantFormTypes = () => {
     if (selectedProject && selectedProject !== 'Todos') {
       // Si hay un proyecto seleccionado, mostrar solo sus tipos de formulario
-      const projectFormTypes = formResponses
-        .filter(form => form.proyecto === selectedProject)
-        .map(form => form.form_type);
-      
+      const projectFormTypes = formResponses.filter(form => form.proyecto === selectedProject).map(form => form.form_type);
       const uniqueTypes = Array.from(new Set(projectFormTypes));
       return ['Todos', ...uniqueTypes];
     }
@@ -167,38 +146,29 @@ const Dashboard = () => {
   const relevantFormTypes = getRelevantFormTypes();
 
   // Datos para el gráfico de pastel
-  const pieChartData = [
-    { name: 'Positivos', value: stats.positivos },
-    { name: 'Negativos', value: stats.negativos }
-  ];
-
-  return (
-    <div className="space-y-6">
+  const pieChartData = [{
+    name: 'Positivos',
+    value: stats.positivos
+  }, {
+    name: 'Negativos',
+    value: stats.negativos
+  }];
+  return <div className="space-y-6">
       <div className="flex justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          
           <p className="text-muted-foreground">Resumen de los formularios recibidos</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <DateRangeFilter 
-            startDate={startDate}
-            endDate={endDate}
-            onDateChange={handleDateChange}
-          />
+          <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={handleDateChange} />
         </div>
       </div>
       
-      {loading ? (
-        <div className="flex justify-center py-8">
+      {loading ? <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        <div className="space-y-8">
+        </div> : <div className="space-y-8">
           {/* Sección de Proyectos */}
-          <ProjectsSection 
-            projects={projectsWithFormTypes}
-            isLoading={loading}
-          />
+          <ProjectsSection projects={projectsWithFormTypes} isLoading={loading} />
           
           <div className="space-y-4">
             <div>
@@ -207,83 +177,45 @@ const Dashboard = () => {
               {/* Projects as Tabs with softer yellow styling */}
               <Tabs defaultValue={projects[0] || 'Todos'} value={selectedProject} onValueChange={setSelectedProject}>
                 <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
-                  {projects.map((project) => (
-                    <TabsTrigger 
-                      key={project} 
-                      value={project} 
-                      className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-800 data-[state=active]:shadow-md transition-all duration-200"
-                    >
+                  {projects.map(project => <TabsTrigger key={project} value={project} className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-800 data-[state=active]:shadow-md transition-all duration-200">
                       {project}
-                    </TabsTrigger>
-                  ))}
+                    </TabsTrigger>)}
                 </TabsList>
               </Tabs>
             </div>
             
             <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>
               <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
-                {relevantFormTypes.map((type) => (
-                  <TabsTrigger key={type} value={type} className="whitespace-nowrap">
+                {relevantFormTypes.map(type => <TabsTrigger key={type} value={type} className="whitespace-nowrap">
                     {type}
-                  </TabsTrigger>
-                ))}
+                  </TabsTrigger>)}
               </TabsList>
 
               <TabsContent value={selectedFormType} className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <StatCard
-                    title="Total Formularios"
-                    value={stats.total}
-                    description="Último período"
-                    icon={<FileText />}
-                  />
-                  <StatCard
-                    title="Todo positivo"
-                    value={stats.positivos}
-                    description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`}
-                    icon={<CheckSquare className="text-green-500" />}
-                  />
-                  <StatCard
-                    title="Con items negativos"
-                    value={stats.negativos}
-                    description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`}
-                    icon={<AlertTriangle className="text-red-500" />}
-                  />
+                  <StatCard title="Total Formularios" value={stats.total} description="Último período" icon={<FileText />} />
+                  <StatCard title="Todo positivo" value={stats.positivos} description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`} icon={<CheckSquare className="text-green-500" />} />
+                  <StatCard title="Con items negativos" value={stats.negativos} description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`} icon={<AlertTriangle className="text-red-500" />} />
                 </div>
                 
-                {stats.total > 0 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <PieChart
-                      title="Distribución de estados"
-                      data={pieChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      colors={['#10b981', '#ef4444']}
-                    />
-                  </div>
-                )}
+                {stats.total > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <PieChart title="Distribución de estados" data={pieChartData} dataKey="value" nameKey="name" colors={['#10b981', '#ef4444']} />
+                  </div>}
                 
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold">Lista de formularios {filteredData.length > 0 ? `(${filteredData.length})` : ''}</h2>
-                  {filteredData.length > 0 ? (
-                    <FormsTable forms={filteredData} />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
+                  {filteredData.length > 0 ? <FormsTable forms={filteredData} /> : <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
                       <FileText className="h-12 w-12 text-muted-foreground mb-2" />
                       <h3 className="text-xl font-medium mb-1">No se encontraron formularios</h3>
                       <p className="text-muted-foreground">
                         No hay formularios que coincidan con los filtros seleccionados.
                       </p>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </TabsContent>
             </Tabs>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 };
-
 export default Dashboard;
