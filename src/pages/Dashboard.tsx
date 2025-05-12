@@ -200,10 +200,6 @@ const Dashboard = () => {
                   <StatCard title="Con items negativos" value={stats.negativos} description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`} icon={<AlertTriangle className="text-red-500" />} />
                 </div>
                 
-                {stats.total > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <PieChart title="Distribución de estados" data={pieChartData} dataKey="value" nameKey="name" colors={['#10b981', '#ef4444']} />
-                  </div>}
-                
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold">Lista de formularios {filteredData.length > 0 ? `(${filteredData.length})` : ''}</h2>
                   {filteredData.length > 0 ? <FormsTable forms={filteredData} /> : <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
