@@ -1,121 +1,32 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, CheckSquare, AlertTriangle, RefreshCw } from 'lucide-react';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { DateRangeFilter } from '@/components/dashboard/DateRangeFilter';
-import { FormsTable } from '@/components/forms/FormsTable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
-import { FormResponse } from '@/types/forms';
+import React, { useState, useCallback } from 'react';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useToast } from '@/hooks/use-toast';
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { ProjectsSection } from '@/components/dashboard/CompaniesSection';
-import { Button } from '@/components/ui/button';
+import { FormStatsSection } from '@/components/dashboard/FormStatsSection';
+import { FormTypesSelector } from '@/components/dashboard/FormTypesSelector';
+import { FormsListSection } from '@/components/dashboard/FormsListSection';
+import { ProjectSelector } from '@/components/dashboard/ProjectSelector';
 
 const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
   const [selectedProject, setSelectedProject] = useState<string>('Todos');
-  const [formResponses, setFormResponses] = useState<FormResponse[]>([]);
-  const [formTypes, setFormTypes] = useState<string[]>(['Todos']);
-  const [projects, setProjects] = useState<string[]>(['Todos']);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const [formStatsData, setFormStatsData] = useState<any[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
-
-  // Función para cargar los datos con mejor manejo de errores
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      console.log("Intentando cargar datos de formularios...");
-
-      // Obtener respuestas de formulario directamente sin filtrar por fecha
-      // Esto asegura que obtengamos todos los registros primero
-      const { data: responsesData, error: responsesError } = await supabase
-        .from('form_responses')
-        .select('*');
-
-      if (responsesError) {
-        console.error('Error al cargar respuestas:', responsesError);
-        throw responsesError;
-      }
-
-      console.log("Datos cargados:", responsesData?.length || 0, "registros");
-      console.log("Registros individuales:", responsesData);
-
-      if (!responsesData || responsesData.length === 0) {
-        console.log("No se encontraron registros en form_responses");
-        setFormResponses([]);
-        setFormTypes(['Todos']);
-        setProjects(['Todos']);
-        setLoading(false);
-        return;
-      }
-
-      // Asignar los datos sin aplicar ningún filtro inicialmente
-      setFormResponses(responsesData);
-
-      // Extraer todos los tipos de formularios únicos
-      const uniqueFormTypes = Array.from(new Set(responsesData.map(form => form.form_type)));
-      console.log("Tipos de formularios encontrados:", uniqueFormTypes);
-      setFormTypes(['Todos', ...uniqueFormTypes]);
-
-      // Extraer todos los proyectos únicos con verificación
-      const uniqueProjects = Array.from(
-        new Set(
-          responsesData
-            .filter(form => form.proyecto) // Filter out undefined proyectos
-            .map(form => form.proyecto)
-            .filter(Boolean) as string[]
-        )
-      );
-      
-      console.log("Proyectos encontrados:", uniqueProjects);
-      setProjects(['Todos', ...uniqueProjects]);
-      
-      // Si el proyecto seleccionado no está en la lista, resetear a 'Todos'
-      if (selectedProject !== 'Todos' && !uniqueProjects.includes(selectedProject)) {
-        setSelectedProject('Todos');
-      }
-
-      // Crear datos para gráficos y estadísticas
-      const projectStats = uniqueProjects.map(project => {
-        const projectForms = responsesData.filter(form => form.proyecto === project);
-        return {
-          name: project,
-          value: projectForms.length,
-          positivos: projectForms.filter(f => f.status === 'Todo positivo').length,
-          negativos: projectForms.filter(f => f.status === 'Contiene item negativo').length
-        };
-      });
-      setFormStatsData(projectStats);
-      
-      // Actualizar timestamp de última actualización
-      setLastUpdated(new Date());
-
-      toast({
-        title: "Datos actualizados",
-        description: `Se han cargado ${responsesData.length} registros correctamente`
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudieron cargar los datos. Intente refrescar nuevamente."
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedProject, toast]);
+  const { toast } = useToast();
   
-  // Cargar datos cuando cambie el refreshTrigger
-  useEffect(() => {
-    console.log("Ejecutando fetchData...");
-    fetchData();
-  }, [fetchData, refreshTrigger]);
+  // Use custom hook to fetch and manage data
+  const { 
+    formResponses, 
+    formTypes, 
+    projects, 
+    loading, 
+    formStatsData, 
+    lastUpdated 
+  } = useDashboardData(refreshTrigger);
 
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     if (start) setStartDate(start);
@@ -133,8 +44,7 @@ const Dashboard = () => {
   };
 
   // Filtrar datos por proyecto, tipo de formulario y rango de fecha
-  // Esta función ahora solo filtra los datos ya cargados pero no afecta la carga inicial
-  const getFilteredData = () => {
+  const getFilteredData = useCallback(() => {
     return formResponses.filter(form => {
       const formDate = new Date(form.date);
       const isInDateRange = formDate >= startDate && formDate <= endDate;
@@ -143,7 +53,7 @@ const Dashboard = () => {
       
       return isInDateRange && matchesType && matchesProject;
     });
-  };
+  }, [formResponses, startDate, endDate, selectedFormType, selectedProject]);
 
   // Obtener formularios filtrados solo para visualización
   const filteredData = getFilteredData();
@@ -175,7 +85,7 @@ const Dashboard = () => {
     });
 
   // Obtener tipos de formulario relevantes según el proyecto seleccionado
-  const getRelevantFormTypes = () => {
+  const getRelevantFormTypes = useCallback(() => {
     if (selectedProject && selectedProject !== 'Todos') {
       // Si hay un proyecto seleccionado, mostrar solo sus tipos de formulario
       const projectFormTypes = formResponses.filter(form => form.proyecto === selectedProject).map(form => form.form_type);
@@ -184,32 +94,23 @@ const Dashboard = () => {
     }
     // Si no hay proyecto seleccionado o es "Todos", mostrar todos los tipos de formulario
     return formTypes;
-  };
+  }, [formResponses, selectedProject, formTypes]);
 
   // Lista de tipos de formulario relevantes
   const relevantFormTypes = getRelevantFormTypes();
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between flex-wrap gap-4">
-        <div>
-          <p className="text-muted-foreground">Resumen de los formularios recibidos</p>
-          <p className="text-xs text-muted-foreground">Última actualización: {lastUpdated.toLocaleTimeString()}</p>
-          <p className="text-xs text-muted-foreground">Total registros disponibles: {formResponses.length}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            onClick={handleRefresh}
-            variant="outline"
-            className="flex items-center gap-2"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refrescar datos
-          </Button>
-          <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={handleDateChange} />
-        </div>
-      </div>
+      {/* Header with date filters and refresh button */}
+      <DashboardHeader 
+        startDate={startDate}
+        endDate={endDate}
+        onDateChange={handleDateChange}
+        onRefresh={handleRefresh}
+        loading={loading}
+        lastUpdated={lastUpdated}
+        totalRecords={formResponses.length}
+      />
       
       {loading ? (
         <div className="flex justify-center py-8">
@@ -224,81 +125,30 @@ const Dashboard = () => {
             <div>
               <h2 className="text-xl font-bold mb-4">Proyectos</h2>
               
-              {/* Projects as Tabs with deeper blue styling */}
-              <Tabs 
-                defaultValue={projects[0] || 'Todos'} 
-                value={selectedProject} 
-                onValueChange={setSelectedProject}
-              >
-                <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
-                  {projects.map(project => (
-                    <TabsTrigger 
-                      key={project} 
-                      value={project} 
-                      className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#1A4B7C] data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200"
-                    >
-                      {project}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+              {/* Projects Selector */}
+              <ProjectSelector
+                projects={projects}
+                selectedProject={selectedProject}
+                onProjectChange={setSelectedProject}
+              />
               
               <h3 className="text-lg font-medium mb-4">Formularios por proyecto</h3>
             </div>
             
-            <Tabs 
-              defaultValue={relevantFormTypes[0]} 
-              value={selectedFormType} 
-              onValueChange={setSelectedFormType}
-            >
-              <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
-                {relevantFormTypes.map(type => (
-                  <TabsTrigger key={type} value={type} className="whitespace-nowrap">
-                    {type}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            {/* Form Types Selector */}
+            <FormTypesSelector
+              formTypes={relevantFormTypes}
+              selectedFormType={selectedFormType}
+              onFormTypeChange={setSelectedFormType}
+            />
 
-              <TabsContent value={selectedFormType} className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <StatCard 
-                    title="Total Formularios" 
-                    value={stats.total} 
-                    description="Último período" 
-                    icon={<FileText />} 
-                  />
-                  <StatCard 
-                    title="Todo positivo" 
-                    value={stats.positivos} 
-                    description={`${Math.round(stats.total > 0 ? stats.positivos / stats.total * 100 : 0)}% del total`} 
-                    icon={<CheckSquare className="text-green-500" />} 
-                  />
-                  <StatCard 
-                    title="Con items negativos" 
-                    value={stats.negativos} 
-                    description={`${Math.round(stats.total > 0 ? stats.negativos / stats.total * 100 : 0)}% del total`} 
-                    icon={<AlertTriangle className="text-red-500" />} 
-                  />
-                </div>
-                
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">
-                    Lista de formularios {filteredData.length > 0 ? `(${filteredData.length})` : ''}
-                  </h2>
-                  {filteredData.length > 0 ? (
-                    <FormsTable forms={filteredData} />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg">
-                      <FileText className="h-12 w-12 text-muted-foreground mb-2" />
-                      <h3 className="text-xl font-medium mb-1">No se encontraron formularios</h3>
-                      <p className="text-muted-foreground">
-                        No hay formularios que coincidan con los filtros seleccionados.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
+            <TabsContent value={selectedFormType} className="space-y-6">
+              {/* Statistics Cards */}
+              <FormStatsSection stats={stats} />
+              
+              {/* Forms List Table */}
+              <FormsListSection filteredData={filteredData} />
+            </TabsContent>
           </div>
         </div>
       )}
