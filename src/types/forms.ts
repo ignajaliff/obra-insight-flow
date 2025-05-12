@@ -47,9 +47,9 @@ export interface FormResponse {
   form_type: string;
   worker_name: string;
   date: string;
-  proyecto: string;
+  proyecto: string | null;
   status: string;
-  document_link: string;
-  ID_documento: string;
-  created_at: string;
+  document_link: string | null;
+  created_at: string | null;
+  // Removed ID_documento as it doesn't exist in the actual data
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, CheckSquare, AlertTriangle, RefreshCw } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -51,11 +50,8 @@ const Dashboard = () => {
         return;
       }
 
-      // Asegurar que los datos cumplen con el tipo FormResponse
-      const typedData: FormResponse[] = responsesData.map(item => ({
-        ...item,
-        status: item.status as 'Todo positivo' | 'Contiene item negativo'
-      }));
+      // Asegurar que los datos cumplen con el tipo FormResponse actualizado
+      const typedData: FormResponse[] = responsesData;
       
       // Guardar los datos en el estado
       setFormResponses(typedData);
