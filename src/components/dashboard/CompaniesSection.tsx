@@ -40,6 +40,8 @@ export function ProjectsSection({
     );
   }
 
+  console.log("Rendering ProjectsSection with projects:", projects);
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Resumen de Proyectos</h2>

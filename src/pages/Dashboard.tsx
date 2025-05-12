@@ -140,19 +140,28 @@ const Dashboard = () => {
   };
 
   // Preparar datos para la sección de proyectos
-  const projectsWithFormTypes = projects.filter(p => p !== 'Todos').map(proyecto => {
-    const projectForms = formResponses.filter(form => form.proyecto === proyecto);
-    const formTypesForProject = Array.from(new Set(projectForms.map(form => form.form_type)));
-    return {
-      proyecto,
-      formTypes: formTypesForProject.map(type => ({
-        id: type,
-        name: type,
-        description: `Formulario de ${type}`
-      })),
-      formCount: projectForms.length
-    };
-  });
+  const projectsWithFormTypes = projects
+    .filter(p => p !== 'Todos')
+    .map(proyecto => {
+      console.log(`Procesando proyecto: ${proyecto}`);
+      const projectForms = formResponses.filter(form => form.proyecto === proyecto);
+      console.log(`Formularios encontrados para ${proyecto}: ${projectForms.length}`);
+      
+      const formTypesForProject = Array.from(new Set(projectForms.map(form => form.form_type)));
+      console.log(`Tipos de formulario para ${proyecto}: ${formTypesForProject.join(', ')}`);
+      
+      return {
+        proyecto,
+        formTypes: formTypesForProject.map(type => ({
+          id: type,
+          name: type,
+          description: `Formulario de ${type}`
+        })),
+        formCount: projectForms.length
+      };
+    });
+
+  console.log("Todos los proyectos con sus tipos de formulario:", projectsWithFormTypes);
 
   // Obtener tipos de formulario relevantes según el proyecto seleccionado
   const getRelevantFormTypes = () => {
@@ -168,15 +177,6 @@ const Dashboard = () => {
 
   // Lista de tipos de formulario relevantes
   const relevantFormTypes = getRelevantFormTypes();
-
-  // Datos para el gráfico de pastel (ya no se usa pero mantenemos la variable por si se necesita en el futuro)
-  const pieChartData = [{
-    name: 'Positivos',
-    value: stats.positivos
-  }, {
-    name: 'Negativos',
-    value: stats.negativos
-  }];
 
   return (
     <div className="space-y-6">
