@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import MyForms from "./pages/MyForms";
@@ -13,7 +13,6 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import UsersManagement from "./pages/UsersManagement";
 import Index from "./pages/Index";
-import ImportData from "./pages/ImportData";
 import { supabase } from "./integrations/supabase/client";
 
 const App = () => {
@@ -77,11 +76,10 @@ const App = () => {
             <Route element={<AppLayout />}>
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/formularios" element={<Navigate to="/formularios/mis-formularios" replace />} />
               <Route path="/formularios/mis-formularios" element={<MyForms />} />
               <Route path="/formularios/crear" element={<CreateForm />} />
-              <Route path="/importar" element={<ImportData />} />
               <Route path="/usuarios" element={<UsersManagement />} />
-              <Route path="/configuracion" element={<Dashboard />} /> {/* Placeholder */}
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

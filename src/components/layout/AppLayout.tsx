@@ -13,14 +13,12 @@ export function AppLayout() {
     switch(path) {
       case '/':
         return 'Dashboard';
-      case '/formularios':
-        return 'Formularios';
-      case '/importar':
-        return 'Importar datos';
+      case '/formularios/mis-formularios':
+        return 'Mis Formularios';
+      case '/formularios/crear':
+        return 'Crear Formulario';
       case '/usuarios':
         return 'Usuarios';
-      case '/configuracion':
-        return 'Configuración';
       default:
         return 'Dashboard';
     }

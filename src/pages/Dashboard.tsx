@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BarChart } from '@/components/dashboard/BarChart';
 import { PieChart } from '@/components/dashboard/PieChart';
 import { ProjectsSection } from '@/components/dashboard/CompaniesSection';
+
 const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -156,7 +157,6 @@ const Dashboard = () => {
   return <div className="space-y-6">
       <div className="flex justify-between flex-wrap gap-4">
         <div>
-          
           <p className="text-muted-foreground">Resumen de los formularios recibidos</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -172,16 +172,18 @@ const Dashboard = () => {
           
           <div className="space-y-4">
             <div>
-              <h2 className="text-xl font-bold mb-4">Formularios por proyecto</h2>
+              <h2 className="text-xl font-bold mb-4">Proyectos</h2>
               
-              {/* Projects as Tabs with softer yellow styling */}
+              {/* Projects as Tabs with deeper blue styling */}
               <Tabs defaultValue={projects[0] || 'Todos'} value={selectedProject} onValueChange={setSelectedProject}>
                 <TabsList className="w-full flex justify-start mb-6 overflow-x-auto bg-secondary/30 p-2 rounded-lg">
-                  {projects.map(project => <TabsTrigger key={project} value={project} className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#FEF7CD] data-[state=active]:text-gray-800 data-[state=active]:shadow-md transition-all duration-200">
+                  {projects.map(project => <TabsTrigger key={project} value={project} className="whitespace-nowrap text-base py-3 px-6 font-medium data-[state=active]:bg-[#1A4B7C] data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200">
                       {project}
                     </TabsTrigger>)}
                 </TabsList>
               </Tabs>
+              
+              <h3 className="text-lg font-medium mb-4">Formularios por proyecto</h3>
             </div>
             
             <Tabs defaultValue={relevantFormTypes[0]} value={selectedFormType} onValueChange={setSelectedFormType}>

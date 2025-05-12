@@ -1,12 +1,10 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   BarChart2, 
   FileText, 
-  Upload, 
-  Users, 
-  Settings,
-  List,
+  Users,
   PlusSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,14 +30,9 @@ const navItems = [
   },
   {
     title: "Formularios",
-    path: "/formularios",
+    path: "/formularios/mis-formularios",
     icon: FileText,
     children: [
-      {
-        title: "Lista de formularios",
-        path: "/formularios",
-        icon: List
-      },
       {
         title: "Mis formularios",
         path: "/formularios/mis-formularios",
@@ -53,19 +46,9 @@ const navItems = [
     ]
   },
   {
-    title: "Importar datos",
-    path: "/importar",
-    icon: Upload
-  },
-  {
     title: "Usuarios",
     path: "/usuarios",
     icon: Users
-  },
-  {
-    title: "Configuración",
-    path: "/configuracion",
-    icon: Settings
   }
 ];
 
@@ -118,7 +101,7 @@ export function AppSidebar() {
                                 className={cn(
                                   "w-full flex items-center gap-3",
                                   (currentPath === child.path ||
-                                    (currentPath.startsWith(child.path) && child.path !== '/formularios')) && 
+                                    (currentPath.startsWith(child.path) && child.path !== '/formularios/mis-formularios')) && 
                                     "bg-sidebar-accent text-primary"
                                 )}
                               >

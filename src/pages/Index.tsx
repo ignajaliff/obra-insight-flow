@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText, BarChart2, Upload, Users } from 'lucide-react';
+import { FileText, BarChart2, Users } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -39,12 +39,12 @@ const Index = () => {
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <FileText className="text-blue-700" size={24} />
               </div>
-              <h3 className="text-lg font-medium mb-2">Formularios</h3>
+              <h3 className="text-lg font-medium mb-2">Mis Formularios</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Accede al listado completo de formularios
+                Accede a tus formularios
               </p>
               <Button asChild variant="outline" className="w-full border-blue-200 hover:bg-blue-100">
-                <Link to="/formularios">Ver formularios</Link>
+                <Link to="/formularios/mis-formularios">Ver formularios</Link>
               </Button>
             </div>
           </CardContent>
@@ -54,14 +54,14 @@ const Index = () => {
           <CardContent className="p-6">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <FileText className="text-green-700" size={24} />
+                <Users className="text-green-700" size={24} />
               </div>
-              <h3 className="text-lg font-medium mb-2">Completar Formulario</h3>
+              <h3 className="text-lg font-medium mb-2">Usuarios</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Rellena un nuevo formulario de inspección
+                Administra los usuarios del sistema
               </p>
               <Button asChild variant="outline" className="w-full border-green-200 hover:bg-green-100">
-                <Link to="/formularios/disponibles">Completar nuevo</Link>
+                <Link to="/usuarios">Ver usuarios</Link>
               </Button>
             </div>
           </CardContent>
@@ -73,8 +73,8 @@ const Index = () => {
           <h2 className="text-xl font-semibold mb-4">Información del sistema</h2>
           <p className="mb-4">
             Este sistema permite gestionar formularios de inspecciones de seguridad y calidad por empresa. 
-            Puedes visualizar estadísticas en el dashboard, ver el listado de formularios, 
-            completar nuevos formularios o importar datos desde fuentes externas.
+            Puedes visualizar estadísticas en el dashboard, administrar tus formularios
+            o gestionar los usuarios del sistema.
           </p>
           <div className="flex flex-wrap gap-4">
             <Button asChild variant="default">
@@ -84,9 +84,9 @@ const Index = () => {
               </Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/formularios/disponibles">
+              <Link to="/formularios/mis-formularios">
                 <FileText className="mr-2 h-4 w-4" />
-                Completar formulario
+                Mis formularios
               </Link>
             </Button>
           </div>
