@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -125,7 +125,6 @@ const Dashboard = () => {
             <div>
               <h2 className="text-xl font-bold mb-4">Proyectos</h2>
               
-              {/* Projects Selector */}
               <ProjectSelector
                 projects={projects}
                 selectedProject={selectedProject}
@@ -135,16 +134,15 @@ const Dashboard = () => {
               <h3 className="text-lg font-medium mb-4">Formularios por proyecto</h3>
             </div>
             
-            {/* Form Types Selector */}
-            <FormTypesSelector
-              formTypes={relevantFormTypes}
-              selectedFormType={selectedFormType}
-              onFormTypeChange={setSelectedFormType}
-            />
-
-            {/* Wrap TabsContent within a Tabs component */}
-            <Tabs value={selectedFormType}>
-              <TabsContent value={selectedFormType} className="space-y-6">
+            {/* Main Form Types and Content Section */}
+            <Tabs value={selectedFormType} onValueChange={setSelectedFormType}>
+              <FormTypesSelector
+                formTypes={relevantFormTypes}
+                selectedFormType={selectedFormType}
+                onFormTypeChange={setSelectedFormType}
+              />
+              
+              <TabsContent value={selectedFormType} className="space-y-6 mt-4">
                 {/* Statistics Cards */}
                 <FormStatsSection stats={stats} />
                 

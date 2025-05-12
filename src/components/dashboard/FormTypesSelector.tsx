@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface FormTypesSelectorProps {
   formTypes: string[];
@@ -14,18 +14,12 @@ export function FormTypesSelector({
   onFormTypeChange 
 }: FormTypesSelectorProps) {
   return (
-    <Tabs 
-      defaultValue={formTypes[0]} 
-      value={selectedFormType} 
-      onValueChange={onFormTypeChange}
-    >
-      <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
-        {formTypes.map(type => (
-          <TabsTrigger key={type} value={type} className="whitespace-nowrap">
-            {type}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <TabsList className="w-full flex justify-start mb-4 overflow-x-auto">
+      {formTypes.map(type => (
+        <TabsTrigger key={type} value={type} className="whitespace-nowrap">
+          {type}
+        </TabsTrigger>
+      ))}
+    </TabsList>
   );
 }
