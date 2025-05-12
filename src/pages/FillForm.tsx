@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormField, FormTemplate } from '@/types/forms';
@@ -75,9 +76,9 @@ export default function FillForm() {
             console.error('Template not found in localStorage:', templateId);
           }
         } else if (supabaseTemplates) {
-          console.log("Template found in Supabase:", supababTemplates);
+          console.log("Template found in Supabase:", supabaseTemplates);
           
-          // Convert Supabase response to FormTemplate format
+          // Convert Supabase response to FormTemplate format - Fix: projectmetadata to projectMetadata
           const convertedTemplate: FormTemplate = {
             id: supabaseTemplates.id,
             name: supabaseTemplates.name,
@@ -85,7 +86,7 @@ export default function FillForm() {
             created_at: supabaseTemplates.created_at,
             updated_at: supabaseTemplates.updated_at,
             public_url: supabaseTemplates.public_url || undefined,
-            projectMetadata: supabaseTemplates.projectMetadata as unknown as FormTemplate['projectMetadata']
+            projectMetadata: supabaseTemplates.projectmetadata as unknown as FormTemplate['projectMetadata']
           };
           
           setTemplate(convertedTemplate);
