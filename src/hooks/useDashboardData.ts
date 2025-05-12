@@ -42,18 +42,25 @@ export const useDashboardData = (refreshTrigger: number) => {
         return;
       }
 
+      // Asegurarse de que las fechas estén en formato correcto para todos los registros
+      const formattedResponses = responsesData.map(form => ({
+        ...form,
+        // Asegurarse de que la fecha sea una string válida para comparación
+        date: typeof form.date === 'string' ? form.date : new Date(form.date).toISOString().split('T')[0]
+      }));
+      
       // Asignar los datos sin aplicar ningún filtro inicialmente
-      setFormResponses(responsesData);
+      setFormResponses(formattedResponses);
 
       // Extraer todos los tipos de formularios únicos
-      const uniqueFormTypes = Array.from(new Set(responsesData.map(form => form.form_type)));
+      const uniqueFormTypes = Array.from(new Set(formattedResponses.map(form => form.form_type)));
       console.log("Tipos de formularios encontrados:", uniqueFormTypes);
       setFormTypes(['Todos', ...uniqueFormTypes]);
 
       // Extraer todos los proyectos únicos con verificación
       const uniqueProjects = Array.from(
         new Set(
-          responsesData
+          formattedResponses
             .filter(form => form.proyecto) // Filter out undefined proyectos
             .map(form => form.proyecto)
             .filter(Boolean) as string[]
@@ -65,7 +72,7 @@ export const useDashboardData = (refreshTrigger: number) => {
 
       // Crear datos para gráficos y estadísticas
       const projectStats = uniqueProjects.map(project => {
-        const projectForms = responsesData.filter(form => form.proyecto === project);
+        const projectForms = formattedResponses.filter(form => form.proyecto === project);
         return {
           name: project,
           value: projectForms.length,
@@ -80,7 +87,7 @@ export const useDashboardData = (refreshTrigger: number) => {
 
       toast({
         title: "Datos actualizados",
-        description: `Se han cargado ${responsesData.length} registros correctamente`
+        description: `Se han cargado ${formattedResponses.length} registros correctamente`
       });
     } catch (error) {
       console.error('Error fetching data:', error);

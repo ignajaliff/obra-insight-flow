@@ -11,8 +11,10 @@ import { FormsListSection } from '@/components/dashboard/FormsListSection';
 import { ProjectSelector } from '@/components/dashboard/ProjectSelector';
 
 const Dashboard = () => {
-  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  // Set start date to one year ago by default to include more records
+  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setFullYear(new Date().getFullYear() - 1)));
+  // Set end date to one year in future to include future-dated records
+  const [endDate, setEndDate] = useState<Date>(new Date(new Date().setFullYear(new Date().getFullYear() + 1)));
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
   const [selectedProject, setSelectedProject] = useState<string>('Todos');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
@@ -45,6 +47,8 @@ const Dashboard = () => {
 
   // Filtrar datos por proyecto, tipo de formulario y rango de fecha
   const getFilteredData = useCallback(() => {
+    console.log("Filtrando datos con rango de fechas:", startDate, "a", endDate);
+    console.log("Total registros antes de filtrar:", formResponses.length);
     return formResponses.filter(form => {
       const formDate = new Date(form.date);
       const isInDateRange = formDate >= startDate && formDate <= endDate;
@@ -57,6 +61,7 @@ const Dashboard = () => {
 
   // Obtener formularios filtrados solo para visualización
   const filteredData = getFilteredData();
+  console.log("Total registros después de filtrar:", filteredData.length);
 
   // Calcular estadísticas para los formularios filtrados
   const stats = {
