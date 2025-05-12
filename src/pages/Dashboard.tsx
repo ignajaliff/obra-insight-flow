@@ -31,15 +31,8 @@ const Dashboard = () => {
       setLoading(true);
       console.log("Intentando cargar datos de formularios...");
 
-      // Configuración de fetch para evitar caché
-      const fetchOptions = {
-        cache: 'no-store' as RequestCache,
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      };
-
-      // Obtener respuestas de formulario con .select() explícito para garantizar todos los campos
+      // Obtener respuestas de formulario directamente sin filtrar por fecha
+      // Esto asegura que obtengamos todos los registros primero
       const { data: responsesData, error: responsesError } = await supabase
         .from('form_responses')
         .select('*');
@@ -50,7 +43,7 @@ const Dashboard = () => {
       }
 
       console.log("Datos cargados:", responsesData?.length || 0, "registros");
-      console.log("Registros cargados:", responsesData);
+      console.log("Registros individuales:", responsesData);
 
       if (!responsesData || responsesData.length === 0) {
         console.log("No se encontraron registros en form_responses");
@@ -61,21 +54,18 @@ const Dashboard = () => {
         return;
       }
 
-      // Asegurar que los datos cumplen con el tipo FormResponse
-      const typedData: FormResponse[] = responsesData;
-      
-      // Guardar los datos en el estado
-      setFormResponses(typedData);
+      // Asignar los datos sin aplicar ningún filtro inicialmente
+      setFormResponses(responsesData);
 
       // Extraer todos los tipos de formularios únicos
-      const uniqueFormTypes = Array.from(new Set(typedData.map(form => form.form_type)));
+      const uniqueFormTypes = Array.from(new Set(responsesData.map(form => form.form_type)));
       console.log("Tipos de formularios encontrados:", uniqueFormTypes);
       setFormTypes(['Todos', ...uniqueFormTypes]);
 
       // Extraer todos los proyectos únicos con verificación
       const uniqueProjects = Array.from(
         new Set(
-          typedData
+          responsesData
             .filter(form => form.proyecto) // Filter out undefined proyectos
             .map(form => form.proyecto)
             .filter(Boolean) as string[]
@@ -92,7 +82,7 @@ const Dashboard = () => {
 
       // Crear datos para gráficos y estadísticas
       const projectStats = uniqueProjects.map(project => {
-        const projectForms = typedData.filter(form => form.proyecto === project);
+        const projectForms = responsesData.filter(form => form.proyecto === project);
         return {
           name: project,
           value: projectForms.length,
@@ -143,17 +133,19 @@ const Dashboard = () => {
   };
 
   // Filtrar datos por proyecto, tipo de formulario y rango de fecha
+  // Esta función ahora solo filtra los datos ya cargados pero no afecta la carga inicial
   const getFilteredData = () => {
     return formResponses.filter(form => {
       const formDate = new Date(form.date);
       const isInDateRange = formDate >= startDate && formDate <= endDate;
       const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
       const matchesProject = selectedProject === 'Todos' || form.proyecto === selectedProject;
+      
       return isInDateRange && matchesType && matchesProject;
     });
   };
 
-  // Obtener formularios filtrados
+  // Obtener formularios filtrados solo para visualización
   const filteredData = getFilteredData();
 
   // Calcular estadísticas para los formularios filtrados
@@ -167,12 +159,9 @@ const Dashboard = () => {
   const projectsWithFormTypes = projects
     .filter(p => p !== 'Todos')
     .map(proyecto => {
-      console.log(`Procesando proyecto: ${proyecto}`);
       const projectForms = formResponses.filter(form => form.proyecto === proyecto);
-      console.log(`Formularios encontrados para ${proyecto}: ${projectForms.length}`);
       
       const formTypesForProject = Array.from(new Set(projectForms.map(form => form.form_type)));
-      console.log(`Tipos de formulario para ${proyecto}: ${formTypesForProject.join(', ')}`);
       
       return {
         proyecto,
@@ -184,8 +173,6 @@ const Dashboard = () => {
         formCount: projectForms.length
       };
     });
-
-  console.log("Todos los proyectos con sus tipos de formulario:", projectsWithFormTypes);
 
   // Obtener tipos de formulario relevantes según el proyecto seleccionado
   const getRelevantFormTypes = () => {
