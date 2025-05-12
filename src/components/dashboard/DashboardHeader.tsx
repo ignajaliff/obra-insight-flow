@@ -12,6 +12,8 @@ interface DashboardHeaderProps {
   loading: boolean;
   lastUpdated: Date;
   totalRecords: number;
+  showAllDates: boolean;
+  onToggleShowAllDates: () => void;
 }
 
 export function DashboardHeader({
@@ -21,7 +23,9 @@ export function DashboardHeader({
   onRefresh,
   loading,
   lastUpdated,
-  totalRecords
+  totalRecords,
+  showAllDates,
+  onToggleShowAllDates
 }: DashboardHeaderProps) {
   return (
     <div className="flex justify-between flex-wrap gap-4">
@@ -40,7 +44,13 @@ export function DashboardHeader({
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Refrescar datos
         </Button>
-        <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={onDateChange} />
+        <DateRangeFilter 
+          startDate={startDate} 
+          endDate={endDate} 
+          onDateChange={onDateChange}
+          showAllDates={showAllDates}
+          onToggleShowAllDates={onToggleShowAllDates}
+        />
       </div>
     </div>
   );

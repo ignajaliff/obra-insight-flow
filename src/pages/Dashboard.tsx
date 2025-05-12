@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState<Date>(new Date(new Date().setFullYear(new Date().getFullYear() - 1)));
   // Set end date to one year in future to include future-dated records
   const [endDate, setEndDate] = useState<Date>(new Date(new Date().setFullYear(new Date().getFullYear() + 1)));
+  const [showAllDates, setShowAllDates] = useState<boolean>(false);
   const [selectedFormType, setSelectedFormType] = useState<string>('Todos');
   const [selectedProject, setSelectedProject] = useState<string>('Todos');
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
@@ -33,6 +34,11 @@ const Dashboard = () => {
   const handleDateChange = (start: Date | undefined, end: Date | undefined) => {
     if (start) setStartDate(start);
     if (end) setEndDate(end);
+    setShowAllDates(false);
+  };
+
+  const handleToggleShowAllDates = () => {
+    setShowAllDates(!showAllDates);
   };
 
   // Función para refrescar datos manualmente
@@ -49,15 +55,18 @@ const Dashboard = () => {
   const getFilteredData = useCallback(() => {
     console.log("Filtrando datos con rango de fechas:", startDate, "a", endDate);
     console.log("Total registros antes de filtrar:", formResponses.length);
+    console.log("Mostrar todas las fechas:", showAllDates);
+    
     return formResponses.filter(form => {
+      // Si showAllDates está activado, no filtrar por fecha
       const formDate = new Date(form.date);
-      const isInDateRange = formDate >= startDate && formDate <= endDate;
+      const isInDateRange = showAllDates || (formDate >= startDate && formDate <= endDate);
       const matchesType = selectedFormType === 'Todos' || form.form_type === selectedFormType;
       const matchesProject = selectedProject === 'Todos' || form.proyecto === selectedProject;
       
       return isInDateRange && matchesType && matchesProject;
     });
-  }, [formResponses, startDate, endDate, selectedFormType, selectedProject]);
+  }, [formResponses, startDate, endDate, selectedFormType, selectedProject, showAllDates]);
 
   // Obtener formularios filtrados solo para visualización
   const filteredData = getFilteredData();
@@ -115,6 +124,8 @@ const Dashboard = () => {
         loading={loading}
         lastUpdated={lastUpdated}
         totalRecords={formResponses.length}
+        showAllDates={showAllDates}
+        onToggleShowAllDates={handleToggleShowAllDates}
       />
       
       {loading ? (
@@ -140,7 +151,7 @@ const Dashboard = () => {
             </div>
             
             {/* Main Form Types and Content Section */}
-            <Tabs value={selectedFormType} onValueChange={setSelectedFormType}>
+            <Tabs defaultValue={selectedFormType} value={selectedFormType} onValueChange={setSelectedFormType}>
               <FormTypesSelector
                 formTypes={relevantFormTypes}
                 selectedFormType={selectedFormType}

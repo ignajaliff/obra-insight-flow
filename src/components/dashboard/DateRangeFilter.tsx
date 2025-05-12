@@ -4,15 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, XCircle } from 'lucide-react';
 
 interface DateRangeFilterProps {
   startDate: Date | undefined;
   endDate: Date | undefined;
   onDateChange: (start: Date | undefined, end: Date | undefined) => void;
+  showAllDates: boolean;
+  onToggleShowAllDates: () => void;
 }
 
-export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeFilterProps) {
+export function DateRangeFilter({ 
+  startDate, 
+  endDate, 
+  onDateChange, 
+  showAllDates, 
+  onToggleShowAllDates 
+}: DateRangeFilterProps) {
   const [date, setDate] = React.useState<Date>();
   const [isStartDate, setIsStartDate] = React.useState(true);
 
@@ -62,9 +70,24 @@ export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeF
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Popover onOpenChange={handleOpenChange}>
+      <Button 
+        variant={showAllDates ? "default" : "outline"} 
+        onClick={onToggleShowAllDates}
+        className="flex items-center gap-1"
+      >
+        {showAllDates ? (
+          <>
+            <XCircle className="h-4 w-4 mr-1" />
+            Todas las fechas
+          </>
+        ) : (
+          "Todas las fechas"
+        )}
+      </Button>
+      
+      <Popover onOpenChange={handleOpenChange} disabled={showAllDates}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="justify-start">
+          <Button variant="outline" className="justify-start" disabled={showAllDates}>
             <CalendarIcon className="mr-2 h-4 w-4" />
             {startDate && endDate ? (
               <>
@@ -81,6 +104,7 @@ export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeF
             selected={date}
             onSelect={handleSelect}
             initialFocus
+            className="pointer-events-auto"
           />
           <div className="flex justify-between px-4 py-2 border-t">
             <div className="text-sm font-medium">
@@ -89,9 +113,9 @@ export function DateRangeFilter({ startDate, endDate, onDateChange }: DateRangeF
           </div>
         </PopoverContent>
       </Popover>
-      <Button variant="outline" onClick={handleToday} size="sm">Hoy</Button>
-      <Button variant="outline" onClick={handleLastWeek} size="sm">Últimos 7 días</Button>
-      <Button variant="outline" onClick={handleLastMonth} size="sm">Últimos 30 días</Button>
+      <Button variant="outline" onClick={handleToday} size="sm" disabled={showAllDates}>Hoy</Button>
+      <Button variant="outline" onClick={handleLastWeek} size="sm" disabled={showAllDates}>Últimos 7 días</Button>
+      <Button variant="outline" onClick={handleLastMonth} size="sm" disabled={showAllDates}>Últimos 30 días</Button>
     </div>
   );
 }
