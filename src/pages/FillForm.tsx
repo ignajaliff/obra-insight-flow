@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormField, FormTemplate } from '@/types/forms';
@@ -76,7 +75,7 @@ export default function FillForm() {
             console.error('Template not found in localStorage:', templateId);
           }
         } else if (supabaseTemplates) {
-          console.log("Template found in Supabase:", supabaseTemplates);
+          console.log("Template found in Supabase:", supababTemplates);
           
           // Convert Supabase response to FormTemplate format
           const convertedTemplate: FormTemplate = {
@@ -86,7 +85,7 @@ export default function FillForm() {
             created_at: supabaseTemplates.created_at,
             updated_at: supabaseTemplates.updated_at,
             public_url: supabaseTemplates.public_url || undefined,
-            projectMetadata: supabaseTemplates.projectmetadata as unknown as FormTemplate['projectMetadata']
+            projectMetadata: supabaseTemplates.projectMetadata as unknown as FormTemplate['projectMetadata']
           };
           
           setTemplate(convertedTemplate);
@@ -200,6 +199,9 @@ export default function FillForm() {
           // Add project metadata if available
           if (template?.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
             webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
+            
+            // Add form name to the project metadata section
+            webhookContent += `NombreFormulario: ${template.name}\n`;
             
             Object.entries(template.projectMetadata).forEach(([key, value]) => {
               if (value) {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -108,20 +107,12 @@ export function FormSubmissionForm({
           // Prepare data with numbered questions and answers
           let webhookContent = ``;
           
-          // Agregar el nombre del formulario
-          webhookContent += `Nombre del formulario: ${template.name}\n\n`;
-          
-          // Add submitter name as "pregunta 0"
-          webhookContent += `pregunta 0: Nombre del remitente\n`;
-          webhookContent += `Respuesta 0: ${submitterName}\n\n`;
-          
-          // Add submission date
-          webhookContent += `pregunta extra: Fecha de envío\n`;
-          webhookContent += `Respuesta extra: ${format(submissionDate, 'dd/MM/yyyy', { locale: es })}\n\n`;
-          
           // Add project metadata if available
           if (template.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
             webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
+            
+            // Add form name to the project metadata section
+            webhookContent += `NombreFormulario: ${template.name}\n`;
             
             Object.entries(template.projectMetadata).forEach(([key, value]) => {
               if (value) {
@@ -132,6 +123,14 @@ export function FormSubmissionForm({
             
             webhookContent += `\n`;
           }
+          
+          // Add submitter name as "pregunta 0"
+          webhookContent += `pregunta 0: Nombre del remitente\n`;
+          webhookContent += `Respuesta 0: ${submitterName}\n\n`;
+          
+          // Add submission date
+          webhookContent += `pregunta extra: Fecha de envío\n`;
+          webhookContent += `Respuesta extra: ${format(submissionDate, 'dd/MM/yyyy', { locale: es })}\n\n`;
           
           // Add each field with its number
           template.fields.forEach((field, index) => {

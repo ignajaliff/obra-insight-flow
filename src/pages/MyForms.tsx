@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FormTemplate } from '@/types/forms';
@@ -18,8 +17,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Copy, MoreVertical, Trash2, Eye } from 'lucide-react';
+import { Plus, Copy, MoreVertical, Trash2, Eye, Info } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -148,6 +154,19 @@ export default function MyForms() {
     }
   };
   
+  const formatProjectInfo = (template: FormTemplate) => {
+    if (!template.projectMetadata) return "No hay información";
+    
+    const { projectName, companyName, location } = template.projectMetadata;
+    const parts = [];
+    
+    if (projectName) parts.push(`Proyecto: ${projectName}`);
+    if (companyName) parts.push(`Empresa: ${companyName}`);
+    if (location) parts.push(`Ubicación: ${location}`);
+    
+    return parts.length > 0 ? parts.join('\n') : "No hay información";
+  };
+  
   const filteredTemplates = templates.filter(template => 
     template.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -202,6 +221,7 @@ export default function MyForms() {
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Campos</TableHead>
+                <TableHead>Información del proyecto</TableHead>
                 <TableHead>Fecha de creación</TableHead>
                 <TableHead>Última actualización</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -212,6 +232,20 @@ export default function MyForms() {
                 <TableRow key={template.id}>
                   <TableCell className="font-medium">{template.name}</TableCell>
                   <TableCell>{template.fields.length}</TableCell>
+                  <TableCell>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent className="whitespace-pre-wrap max-w-xs">
+                          {formatProjectInfo(template)}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
                   <TableCell>
                     {format(new Date(template.created_at), 'PPP', { locale: es })}
                   </TableCell>
@@ -238,6 +272,7 @@ export default function MyForms() {
                           <DropdownMenuItem onClick={() => navigate(`/formularios/rellenar/${template.id}`)}>
                             <Eye className="h-4 w-4 mr-2" /> Vista previa
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onClick={() => deleteTemplate(template.id)}
                             className="text-destructive"
