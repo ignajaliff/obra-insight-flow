@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormField, FormTemplate } from '@/types/forms';
@@ -13,11 +12,12 @@ import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { CalendarIcon, Loader2, CheckCircle, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SignatureCanvas from 'react-signature-canvas';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { getDeploymentEnvironment, shouldUseOfflineMode, getSupabaseConnectionStatus } from '@/utils/deploymentUtils';
+import { getOfflineFormTemplate, saveFormSubmissionOffline } from '@/utils/offlineFormStorage';
 
 export default function FillForm() {
   const { templateId } = useParams();
@@ -47,33 +47,27 @@ export default function FillForm() {
   // Production webhook URL
   const webhookUrl = "https://n8n-n8n.qqtfab.easypanel.host/webhook/041274fe-3d47-4cdf-b4c2-114b661ef850";
   
-  // Check Supabase connection status
+  // Check deployment environment and connection status
   useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        console.log("🔍 Verificando conexión a Supabase...");
-        
-        // Test basic connectivity
-        const { data, error } = await supabase
-          .from('form_templates')
-          .select('count')
-          .limit(1)
-          .single();
-        
-        if (error) {
-          console.warn("⚠️ Conexión a Supabase limitada:", error.message);
-          setConnectionStatus('offline');
-        } else {
-          console.log("✅ Conexión a Supabase establecida");
-          setConnectionStatus('connected');
-        }
-      } catch (err) {
-        console.error("❌ Error de conexión a Supabase:", err);
+    const checkEnvironment = async () => {
+      console.log("🔍 Verificando entorno de despliegue...");
+      
+      const deploymentEnv = getDeploymentEnvironment();
+      console.log("🌐 Entorno detectado:", deploymentEnv);
+      
+      // For custom domains (like EasyPanel), use offline mode by default
+      if (shouldUseOfflineMode()) {
+        console.log("🏢 Modo offline activado para dominio personalizado");
         setConnectionStatus('offline');
+        return;
       }
+      
+      // For other environments, check Supabase connection
+      const status = await getSupabaseConnectionStatus();
+      setConnectionStatus(status);
     };
     
-    checkConnection();
+    checkEnvironment();
   }, []);
   
   useEffect(() => {
@@ -90,23 +84,33 @@ export default function FillForm() {
       try {
         let templateFound = false;
         
-        // Try Supabase first if connection is available
-        if (connectionStatus === 'connected') {
+        // Always try localStorage first for faster loading
+        console.log("💾 Cargando desde localStorage...");
+        const offlineTemplate = getOfflineFormTemplate(templateId);
+        
+        if (offlineTemplate) {
+          console.log("✅ Plantilla encontrada en localStorage:", offlineTemplate.name);
+          setTemplate(offlineTemplate);
+          templateFound = true;
+        }
+        
+        // Try Supabase only if connected and no offline template found
+        if (!templateFound && connectionStatus === 'connected') {
           console.log("📡 Intentando cargar desde Supabase...");
           
           try {
+            const { supabase } = await import('@/integrations/supabase/client');
             const { data: supabaseTemplate, error } = await supabase
               .from('form_templates')
               .select('*')
               .eq('id', templateId)
-              .maybeSingle(); // Use maybeSingle to avoid errors when no data
+              .maybeSingle();
             
             if (error) {
               console.warn("⚠️ Error al consultar Supabase:", error.message);
             } else if (supabaseTemplate) {
               console.log("✅ Plantilla encontrada en Supabase:", supabaseTemplate.name);
               
-              // Convert Supabase response to FormTemplate format
               const convertedTemplate: FormTemplate = {
                 id: supabaseTemplate.id,
                 name: supabaseTemplate.name,
@@ -119,31 +123,9 @@ export default function FillForm() {
               
               setTemplate(convertedTemplate);
               templateFound = true;
-            } else {
-              console.log("📭 Plantilla no encontrada en Supabase");
             }
           } catch (supabaseError) {
             console.error("❌ Error crítico en Supabase:", supabaseError);
-          }
-        }
-        
-        // Fallback to localStorage if not found in Supabase or connection is offline
-        if (!templateFound) {
-          console.log("💾 Intentando cargar desde localStorage...");
-          
-          try {
-            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-            const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-            
-            if (foundTemplate) {
-              console.log("✅ Plantilla encontrada en localStorage:", foundTemplate.name);
-              setTemplate(foundTemplate);
-              templateFound = true;
-            } else {
-              console.log("📭 Plantilla no encontrada en localStorage");
-            }
-          } catch (localStorageError) {
-            console.error("❌ Error al acceder a localStorage:", localStorageError);
           }
         }
         
@@ -154,7 +136,7 @@ export default function FillForm() {
         
       } catch (err) {
         console.error('❌ Error general al cargar plantilla:', err);
-        setError('Error técnico al cargar el formulario. Verifica tu conexión a internet.');
+        setError('Error técnico al cargar el formulario. El formulario puede estar configurado incorrectamente.');
       } finally {
         setLoading(false);
       }
@@ -245,8 +227,13 @@ export default function FillForm() {
       console.log("📋 Datos del formulario preparados:", {
         templateName: template?.name,
         submitterName,
-        fieldsCount: Object.keys(formValues).length
+        fieldsCount: Object.keys(formValues).length,
+        connectionStatus
       });
+      
+      // Always save locally first
+      saveFormSubmissionOffline(submissionData);
+      console.log("💾 Formulario guardado localmente");
       
       // Send data to webhook if provided
       if (webhookUrl) {
@@ -256,15 +243,12 @@ export default function FillForm() {
           // Prepare data with numbered questions and answers
           let webhookContent = ``;
           
-          // Add submitter name as "pregunta 0"
           webhookContent += `pregunta 0: Nombre del remitente\n`;
           webhookContent += `Respuesta 0: ${submitterName}\n\n`;
           
-          // Add submission date
           webhookContent += `pregunta extra: Fecha de envío\n`;
           webhookContent += `Respuesta extra: ${format(new Date(), 'dd/MM/yyyy', { locale: es })}\n\n`;
           
-          // Add project metadata if available
           if (template?.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
             webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
             webhookContent += `NombreFormulario: ${template.name}\n`;
@@ -278,7 +262,6 @@ export default function FillForm() {
             webhookContent += `\n`;
           }
           
-          // Add each field with its number
           template?.fields.forEach((field, index) => {
             const questionNumber = index + 1;
             webhookContent += `pregunta ${questionNumber}: ${field.label}\n`;
@@ -298,7 +281,6 @@ export default function FillForm() {
             webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
           });
           
-          // Add additional information section
           webhookContent += `== INFORMACIÓN ADICIONAL ==\n`;
           webhookContent += `Elaborado por: ${elaboradoPor || ""}\n`;
           webhookContent += `Supervisor/Capataz: ${supervisor || ""}\n`;
@@ -307,43 +289,52 @@ export default function FillForm() {
           webhookContent += `Cargo: ${cargo || ""}\n`;
           webhookContent += `Firma: ${signatureImg ? "[Firma adjunta]" : "[Sin firma]"}\n`;
           
+          // Set timeout for webhook
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+          
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
             },
-            body: webhookContent + `\n\nfirmaimg: ${signatureImg || ""}`
+            body: webhookContent + `\n\nfirmaimg: ${signatureImg || ""}`,
+            signal: controller.signal
           });
+          
+          clearTimeout(timeoutId);
           
           if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
           }
           
           console.log("✅ Webhook enviado exitosamente");
+          
+          toast({
+            title: "Formulario enviado",
+            description: "Tu respuesta ha sido registrada y enviada correctamente.",
+          });
+          
         } catch (webhookError) {
           console.error('❌ Error enviando webhook:', webhookError);
+          
+          let errorMessage = "Error de conexión con el servidor externo";
+          if (webhookError instanceof Error && webhookError.name === 'AbortError') {
+            errorMessage = "Tiempo de conexión agotado";
+          }
+          
           toast({
-            title: "Error de conexión",
-            description: "No se pudo enviar la información al servidor. El formulario se guardó localmente.",
-            variant: "destructive"
+            title: "Formulario guardado localmente",
+            description: `Tu respuesta se ha guardado correctamente. ${connectionStatus === 'offline' ? 'Trabajando en modo offline.' : 'No se pudo enviar al servidor externo.'}`,
+            variant: "default"
           });
-          // Continue with local storage but don't return
         }
+      } else {
+        toast({
+          title: "Formulario guardado",
+          description: "Tu respuesta ha sido registrada correctamente.",
+        });
       }
-      
-      // Store in localStorage
-      try {
-        const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-        localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submissionData]));
-        console.log("💾 Formulario guardado localmente");
-      } catch (storageError) {
-        console.error("❌ Error guardando en localStorage:", storageError);
-      }
-      
-      toast({
-        title: "Formulario enviado",
-        description: "Tu respuesta ha sido registrada correctamente.",
-      });
       
       setSubmitted(true);
       
@@ -351,7 +342,7 @@ export default function FillForm() {
       console.error("❌ Error enviando formulario:", error);
       toast({
         title: "Error",
-        description: "No se pudo enviar el formulario completamente. Verifica tu conexión.",
+        description: "No se pudo procesar el formulario completamente. Tu respuesta se guardó localmente.",
         variant: "destructive"
       });
     } finally {
@@ -365,13 +356,8 @@ export default function FillForm() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 text-[#2980b9] animate-spin" />
           <p className="text-lg font-medium text-[#2980b9]">
-            {connectionStatus === 'checking' ? 'Verificando conexión...' : 'Cargando formulario...'}
+            {connectionStatus === 'checking' ? 'Verificando configuración...' : 'Cargando formulario...'}
           </p>
-          {connectionStatus === 'offline' && (
-            <p className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded">
-              Modo sin conexión - Usando datos locales
-            </p>
-          )}
         </div>
       </div>
     );
@@ -392,12 +378,22 @@ export default function FillForm() {
           <ul className="text-amber-700 text-sm mt-2 list-disc list-inside">
             <li>Verifica que el enlace esté completo y correcto</li>
             <li>Contacta a quien te compartió el formulario</li>
-            <li>Verifica tu conexión a internet</li>
+            <li>El formulario puede no estar configurado para acceso público</li>
           </ul>
         </div>
-        <p className="text-[#7f8c8d] text-center text-sm">
-          Estado de conexión: <span className="font-mono">{connectionStatus}</span>
-        </p>
+        <div className="flex items-center gap-2 text-sm text-[#7f8c8d]">
+          {connectionStatus === 'offline' ? (
+            <>
+              <WifiOff className="h-4 w-4" />
+              <span>Trabajando sin conexión</span>
+            </>
+          ) : (
+            <>
+              <Wifi className="h-4 w-4" />
+              <span>Conectado</span>
+            </>
+          )}
+        </div>
       </div>
     );
   }
@@ -430,7 +426,7 @@ export default function FillForm() {
                 Gracias por completar el formulario "{template?.name}".
               </p>
               <p className="text-gray-600">
-                Tu respuesta ha sido registrada y enviada exitosamente.
+                Tu respuesta ha sido registrada y guardada exitosamente.
               </p>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
                 <p className="text-green-800 font-medium">
@@ -439,11 +435,19 @@ export default function FillForm() {
                 <p className="text-green-700 text-sm">
                   Fecha de envío: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}
                 </p>
-                {connectionStatus === 'offline' && (
-                  <p className="text-amber-700 text-sm mt-1">
-                    📱 Guardado localmente (conexión limitada)
-                  </p>
-                )}
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  {connectionStatus === 'offline' ? (
+                    <>
+                      <WifiOff className="h-4 w-4 text-amber-600" />
+                      <span className="text-amber-700 text-sm">Guardado localmente (modo offline)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wifi className="h-4 w-4 text-green-600" />
+                      <span className="text-green-700 text-sm">Enviado al servidor</span>
+                    </>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -464,18 +468,33 @@ export default function FillForm() {
         </div>
         
         {/* Connection status indicator */}
-        {connectionStatus === 'offline' && (
-          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
-            <p className="text-amber-800 text-sm">
-              📡 Trabajando en modo sin conexión - Los datos se guardarán localmente
-            </p>
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+          <div className="flex items-center justify-center gap-2">
+            {connectionStatus === 'offline' ? (
+              <>
+                <WifiOff className="h-4 w-4 text-amber-600" />
+                <p className="text-amber-800 text-sm">
+                  Trabajando en modo offline - Los datos se guardan localmente
+                </p>
+              </>
+            ) : (
+              <>
+                <Wifi className="h-4 w-4 text-green-600" />
+                <p className="text-green-800 text-sm">
+                  Conectado - Los datos se envían al servidor
+                </p>
+              </>
+            )}
           </div>
-        )}
+        </div>
         
         {template && (
           <Card>
             <CardHeader>
               <CardTitle className="text-center text-2xl">{template.name}</CardTitle>
+              {template.description && (
+                <p className="text-center text-gray-600">{template.description}</p>
+              )}
             </CardHeader>
             
             <form onSubmit={handleSubmit}>
@@ -499,7 +518,6 @@ export default function FillForm() {
                         {field.required && <span className="text-destructive ml-1">*</span>}
                       </Label>
                       
-                      {/* Field rendering based on type */}
                       {field.type === 'text' && (
                         <Input
                           id={field.id}
@@ -571,7 +589,6 @@ export default function FillForm() {
                   ))}
                 </div>
                 
-                {/* Standard Information Section */}
                 <div className="mt-8 border-t pt-4">
                   <h3 className="text-lg font-medium mb-4">Información adicional</h3>
                   
