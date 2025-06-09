@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormField, FormTemplate } from '@/types/forms';
@@ -13,7 +12,7 @@ import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Loader2, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Loader2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SignatureCanvas from 'react-signature-canvas';
 import { Link } from 'react-router-dom';
@@ -25,6 +24,7 @@ export default function FillForm() {
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitterName, setSubmitterName] = useState('');
   
@@ -282,14 +282,9 @@ export default function FillForm() {
         description: "Tu respuesta ha sido registrada correctamente.",
       });
       
-      // Show success screen
-      setTemplate(null);
-      setFormValues({});
+      // Show success screen instead of redirecting
+      setSubmitted(true);
       
-      // Navigate back after submission
-      setTimeout(() => {
-        navigate('/formularios/mis-formularios');
-      }, 2000);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -320,9 +315,54 @@ export default function FillForm() {
         <p className="text-[#34495e] text-center mb-6">
           El formulario que estás buscando no existe o ha sido eliminado.
         </p>
-        <Button asChild className="px-8">
-          <Link to="/formularios/mis-formularios">Volver a mis formularios</Link>
-        </Button>
+        <p className="text-[#7f8c8d] text-center">
+          Si crees que esto es un error, contacta con el administrador.
+        </p>
+      </div>
+    );
+  }
+
+  // Success screen - shown after successful submission
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex justify-center mb-8">
+            <img 
+              src="/lovable-uploads/34d0fb06-7794-4226-9339-3c5fb741836d.png" 
+              alt="Logo" 
+              className="h-16"
+            />
+          </div>
+          
+          <Card className="text-center">
+            <CardHeader>
+              <div className="flex justify-center mb-4">
+                <CheckCircle className="h-16 w-16 text-green-500" />
+              </div>
+              <CardTitle className="text-2xl text-green-600">
+                ¡Formulario enviado correctamente!
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              <p className="text-lg text-gray-700">
+                Gracias por completar el formulario "{template?.name}".
+              </p>
+              <p className="text-gray-600">
+                Tu respuesta ha sido registrada y enviada exitosamente.
+              </p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
+                <p className="text-green-800 font-medium">
+                  ✓ Formulario procesado
+                </p>
+                <p className="text-green-700 text-sm">
+                  Fecha de envío: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
