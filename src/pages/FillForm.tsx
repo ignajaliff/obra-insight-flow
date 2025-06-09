@@ -205,13 +205,15 @@ export default function FillForm() {
     console.log("📤 Iniciando envío de formulario...");
     
     try {
-      // Create submission data
+      // Create submission data with created_at field
+      const currentTimestamp = new Date().toISOString();
       const submissionData = {
         id: crypto.randomUUID(),
-        templateId: template?.id,
-        submissionDate: new Date().toISOString(),
+        templateId: template?.id || '',
+        submissionDate: currentTimestamp,
         submitter_name: submitterName,
-        template_name: template?.name,
+        template_name: template?.name || '',
+        created_at: currentTimestamp, // Added missing created_at field
         values: {
           ...formValues,
           elaboradoPor,
