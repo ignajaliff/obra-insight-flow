@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FormField, FormTemplate } from '@/types/forms';
@@ -12,7 +13,7 @@ import { es } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Loader2, CheckCircle } from 'lucide-react';
+import { CalendarIcon, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SignatureCanvas from 'react-signature-canvas';
 import { Link } from 'react-router-dom';
@@ -27,6 +28,7 @@ export default function FillForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitterName, setSubmitterName] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'offline'>('checking');
   
   // States for standard section fields - Información adicional
   const [elaboradoPor, setElaboradoPor] = useState('');
@@ -45,6 +47,35 @@ export default function FillForm() {
   // Production webhook URL
   const webhookUrl = "https://n8n-n8n.qqtfab.easypanel.host/webhook/041274fe-3d47-4cdf-b4c2-114b661ef850";
   
+  // Check Supabase connection status
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        console.log("🔍 Verificando conexión a Supabase...");
+        
+        // Test basic connectivity
+        const { data, error } = await supabase
+          .from('form_templates')
+          .select('count')
+          .limit(1)
+          .single();
+        
+        if (error) {
+          console.warn("⚠️ Conexión a Supabase limitada:", error.message);
+          setConnectionStatus('offline');
+        } else {
+          console.log("✅ Conexión a Supabase establecida");
+          setConnectionStatus('connected');
+        }
+      } catch (err) {
+        console.error("❌ Error de conexión a Supabase:", err);
+        setConnectionStatus('offline');
+      }
+    };
+    
+    checkConnection();
+  }, []);
+  
   useEffect(() => {
     const loadTemplate = async () => {
       if (!templateId) {
@@ -53,57 +84,87 @@ export default function FillForm() {
         return;
       }
 
+      console.log(`🔄 Cargando plantilla con ID: ${templateId}`);
+      console.log(`🌐 Estado de conexión: ${connectionStatus}`);
+
       try {
-        // First try to load from Supabase
-        const { data: supabaseTemplates, error } = await supabase
-          .from('form_templates')
-          .select('*')
-          .eq('id', templateId)
-          .single();
+        let templateFound = false;
         
-        if (error) {
-          console.error("Error fetching template from Supabase:", error);
+        // Try Supabase first if connection is available
+        if (connectionStatus === 'connected') {
+          console.log("📡 Intentando cargar desde Supabase...");
           
-          // If Supabase fails, try localStorage as fallback
-          const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
-          const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
-          
-          if (foundTemplate) {
-            console.log("Template found in localStorage:", foundTemplate);
-            setTemplate(foundTemplate);
-          } else {
-            setError('Formulario no encontrado');
-            console.error('Template not found in localStorage:', templateId);
+          try {
+            const { data: supabaseTemplate, error } = await supabase
+              .from('form_templates')
+              .select('*')
+              .eq('id', templateId)
+              .maybeSingle(); // Use maybeSingle to avoid errors when no data
+            
+            if (error) {
+              console.warn("⚠️ Error al consultar Supabase:", error.message);
+            } else if (supabaseTemplate) {
+              console.log("✅ Plantilla encontrada en Supabase:", supabaseTemplate.name);
+              
+              // Convert Supabase response to FormTemplate format
+              const convertedTemplate: FormTemplate = {
+                id: supabaseTemplate.id,
+                name: supabaseTemplate.name,
+                fields: supabaseTemplate.fields as unknown as FormTemplate['fields'],
+                created_at: supabaseTemplate.created_at,
+                updated_at: supabaseTemplate.updated_at,
+                public_url: supabaseTemplate.public_url || undefined,
+                projectMetadata: supabaseTemplate.projectmetadata as unknown as FormTemplate['projectMetadata']
+              };
+              
+              setTemplate(convertedTemplate);
+              templateFound = true;
+            } else {
+              console.log("📭 Plantilla no encontrada en Supabase");
+            }
+          } catch (supabaseError) {
+            console.error("❌ Error crítico en Supabase:", supabaseError);
           }
-        } else if (supabaseTemplates) {
-          console.log("Template found in Supabase:", supabaseTemplates);
-          
-          // Convert Supabase response to FormTemplate format - Fix: projectmetadata to projectMetadata
-          const convertedTemplate: FormTemplate = {
-            id: supabaseTemplates.id,
-            name: supabaseTemplates.name,
-            fields: supabaseTemplates.fields as unknown as FormTemplate['fields'],
-            created_at: supabaseTemplates.created_at,
-            updated_at: supabaseTemplates.updated_at,
-            public_url: supabaseTemplates.public_url || undefined,
-            projectMetadata: supabaseTemplates.projectmetadata as unknown as FormTemplate['projectMetadata']
-          };
-          
-          setTemplate(convertedTemplate);
-        } else {
-          setError('Formulario no encontrado');
-          console.error('Template not found in Supabase:', templateId);
         }
+        
+        // Fallback to localStorage if not found in Supabase or connection is offline
+        if (!templateFound) {
+          console.log("💾 Intentando cargar desde localStorage...");
+          
+          try {
+            const storedTemplates = JSON.parse(localStorage.getItem('formTemplates') || '[]');
+            const foundTemplate = storedTemplates.find((t: FormTemplate) => t.id === templateId);
+            
+            if (foundTemplate) {
+              console.log("✅ Plantilla encontrada en localStorage:", foundTemplate.name);
+              setTemplate(foundTemplate);
+              templateFound = true;
+            } else {
+              console.log("📭 Plantilla no encontrada en localStorage");
+            }
+          } catch (localStorageError) {
+            console.error("❌ Error al acceder a localStorage:", localStorageError);
+          }
+        }
+        
+        if (!templateFound) {
+          console.error("🚫 Plantilla no encontrada en ninguna fuente");
+          setError('Formulario no encontrado. El enlace puede ser incorrecto o el formulario ya no está disponible.');
+        }
+        
       } catch (err) {
-        console.error('Error loading template:', err);
-        setError('Error al cargar el formulario');
+        console.error('❌ Error general al cargar plantilla:', err);
+        setError('Error técnico al cargar el formulario. Verifica tu conexión a internet.');
       } finally {
         setLoading(false);
       }
     };
     
-    loadTemplate();
-  }, [templateId]);
+    // Only load template when connection status is determined
+    if (connectionStatus !== 'checking') {
+      loadTemplate();
+    }
+  }, [templateId, connectionStatus]);
   
   const handleFieldChange = (field: FormField, value: any) => {
     setFormValues(prev => ({
@@ -159,9 +220,10 @@ export default function FillForm() {
     }
     
     setSubmitting(true);
+    console.log("📤 Iniciando envío de formulario...");
     
     try {
-      // Create submission data - include the standard fields
+      // Create submission data
       const submissionData = {
         id: crypto.randomUUID(),
         templateId: template?.id,
@@ -170,7 +232,6 @@ export default function FillForm() {
         template_name: template?.name,
         values: {
           ...formValues,
-          // Include the standard fields
           elaboradoPor,
           supervisor,
           supervisorSSMA,
@@ -181,11 +242,17 @@ export default function FillForm() {
         projectMetadata: template?.projectMetadata
       };
       
-      console.log("Submitting form data:", submissionData);
+      console.log("📋 Datos del formulario preparados:", {
+        templateName: template?.name,
+        submitterName,
+        fieldsCount: Object.keys(formValues).length
+      });
       
       // Send data to webhook if provided
       if (webhookUrl) {
         try {
+          console.log("🌐 Enviando datos al webhook...");
+          
           // Prepare data with numbered questions and answers
           let webhookContent = ``;
           
@@ -200,8 +267,6 @@ export default function FillForm() {
           // Add project metadata if available
           if (template?.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
             webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
-            
-            // Add form name to the project metadata section
             webhookContent += `NombreFormulario: ${template.name}\n`;
             
             Object.entries(template.projectMetadata).forEach(([key, value]) => {
@@ -210,7 +275,6 @@ export default function FillForm() {
                 webhookContent += `${readableKey}: ${value}\n`;
               }
             });
-            
             webhookContent += `\n`;
           }
           
@@ -221,12 +285,11 @@ export default function FillForm() {
             
             let responseValue = formValues[field.name];
             
-            // Format the response value based on the field type
             if (field.type === 'date' && responseValue) {
               try {
                 responseValue = new Date(responseValue).toLocaleDateString();
               } catch (e) {
-                // If date parsing fails, use the original value
+                console.warn("⚠️ Error al formatear fecha:", e);
               }
             } else if (responseValue === undefined || responseValue === null) {
               responseValue = "";
@@ -235,7 +298,7 @@ export default function FillForm() {
             webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
           });
           
-          // Add additional information section as a separate block
+          // Add additional information section
           webhookContent += `== INFORMACIÓN ADICIONAL ==\n`;
           webhookContent += `Elaborado por: ${elaboradoPor || ""}\n`;
           webhookContent += `Supervisor/Capataz: ${supervisor || ""}\n`;
@@ -244,10 +307,6 @@ export default function FillForm() {
           webhookContent += `Cargo: ${cargo || ""}\n`;
           webhookContent += `Firma: ${signatureImg ? "[Firma adjunta]" : "[Sin firma]"}\n`;
           
-          // Log the data being sent
-          console.log('Sending data to webhook:', webhookContent);
-          
-          // Send webhook content as text/plain and signature as PNG in base64
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
@@ -257,39 +316,42 @@ export default function FillForm() {
           });
           
           if (!response.ok) {
-            throw new Error(`Error en la respuesta: ${response.status}`);
+            throw new Error(`Error HTTP: ${response.status} - ${response.statusText}`);
           }
           
-          console.log('Webhook called successfully');
+          console.log("✅ Webhook enviado exitosamente");
         } catch (webhookError) {
-          console.error('Error sending data to webhook:', webhookError);
+          console.error('❌ Error enviando webhook:', webhookError);
           toast({
-            title: "Error",
-            description: "No se pudo enviar la información al servidor. Por favor intenta nuevamente.",
+            title: "Error de conexión",
+            description: "No se pudo enviar la información al servidor. El formulario se guardó localmente.",
             variant: "destructive"
           });
-          setSubmitting(false);
-          return;
+          // Continue with local storage but don't return
         }
       }
       
-      // Store in localStorage (for demonstration)
-      const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
-      localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submissionData]));
+      // Store in localStorage
+      try {
+        const existingSubmissions = JSON.parse(localStorage.getItem('formSubmissions') || '[]');
+        localStorage.setItem('formSubmissions', JSON.stringify([...existingSubmissions, submissionData]));
+        console.log("💾 Formulario guardado localmente");
+      } catch (storageError) {
+        console.error("❌ Error guardando en localStorage:", storageError);
+      }
       
       toast({
         title: "Formulario enviado",
         description: "Tu respuesta ha sido registrada correctamente.",
       });
       
-      // Show success screen instead of redirecting
       setSubmitted(true);
       
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("❌ Error enviando formulario:", error);
       toast({
         title: "Error",
-        description: "No se pudo enviar el formulario. Inténtalo de nuevo.",
+        description: "No se pudo enviar el formulario completamente. Verifica tu conexión.",
         variant: "destructive"
       });
     } finally {
@@ -297,12 +359,19 @@ export default function FillForm() {
     }
   };
   
-  if (loading) {
+  if (loading || connectionStatus === 'checking') {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 text-[#2980b9] animate-spin" />
-          <p className="text-lg font-medium text-[#2980b9]">Cargando formulario...</p>
+          <p className="text-lg font-medium text-[#2980b9]">
+            {connectionStatus === 'checking' ? 'Verificando conexión...' : 'Cargando formulario...'}
+          </p>
+          {connectionStatus === 'offline' && (
+            <p className="text-sm text-amber-600 bg-amber-50 px-3 py-1 rounded">
+              Modo sin conexión - Usando datos locales
+            </p>
+          )}
         </div>
       </div>
     );
@@ -311,18 +380,29 @@ export default function FillForm() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] p-8 space-y-6">
-        <div className="text-[#e74c3c] text-3xl font-bold mb-2">Formulario no encontrado</div>
-        <p className="text-[#34495e] text-center mb-6">
-          El formulario que estás buscando no existe o ha sido eliminado.
+        <AlertCircle className="h-16 w-16 text-[#e74c3c]" />
+        <div className="text-[#e74c3c] text-3xl font-bold mb-2 text-center">Formulario no encontrado</div>
+        <p className="text-[#34495e] text-center max-w-md">
+          {error}
         </p>
-        <p className="text-[#7f8c8d] text-center">
-          Si crees que esto es un error, contacta con el administrador.
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 max-w-md">
+          <p className="text-amber-800 text-sm">
+            <strong>Posibles soluciones:</strong>
+          </p>
+          <ul className="text-amber-700 text-sm mt-2 list-disc list-inside">
+            <li>Verifica que el enlace esté completo y correcto</li>
+            <li>Contacta a quien te compartió el formulario</li>
+            <li>Verifica tu conexión a internet</li>
+          </ul>
+        </div>
+        <p className="text-[#7f8c8d] text-center text-sm">
+          Estado de conexión: <span className="font-mono">{connectionStatus}</span>
         </p>
       </div>
     );
   }
 
-  // Success screen - shown after successful submission
+  // Success screen
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#e7f5fa] to-[#d4f0fc] py-12 px-4">
@@ -359,6 +439,11 @@ export default function FillForm() {
                 <p className="text-green-700 text-sm">
                   Fecha de envío: {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}
                 </p>
+                {connectionStatus === 'offline' && (
+                  <p className="text-amber-700 text-sm mt-1">
+                    📱 Guardado localmente (conexión limitada)
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -377,6 +462,15 @@ export default function FillForm() {
             className="h-16"
           />
         </div>
+        
+        {/* Connection status indicator */}
+        {connectionStatus === 'offline' && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
+            <p className="text-amber-800 text-sm">
+              📡 Trabajando en modo sin conexión - Los datos se guardarán localmente
+            </p>
+          </div>
+        )}
         
         {template && (
           <Card>
@@ -477,12 +571,11 @@ export default function FillForm() {
                   ))}
                 </div>
                 
-                {/* Standard Information Section - Always present */}
+                {/* Standard Information Section */}
                 <div className="mt-8 border-t pt-4">
                   <h3 className="text-lg font-medium mb-4">Información adicional</h3>
                   
                   <div className="space-y-4">
-                    {/* Elaborado por */}
                     <div>
                       <Label htmlFor="elaborado-por">Elaborado por</Label>
                       <Input
@@ -493,7 +586,6 @@ export default function FillForm() {
                       />
                     </div>
                     
-                    {/* Supervisor/Capataz */}
                     <div>
                       <Label htmlFor="supervisor">Supervisor/Capataz</Label>
                       <Input
@@ -504,7 +596,6 @@ export default function FillForm() {
                       />
                     </div>
                     
-                    {/* Supervisor de SSMA */}
                     <div>
                       <Label htmlFor="supervisor-ssma">Supervisor de SSMA</Label>
                       <Input
@@ -515,7 +606,6 @@ export default function FillForm() {
                       />
                     </div>
                     
-                    {/* Observaciones */}
                     <div>
                       <Label htmlFor="observaciones">Observaciones</Label>
                       <Textarea
@@ -527,7 +617,6 @@ export default function FillForm() {
                       />
                     </div>
                     
-                    {/* Cargo */}
                     <div>
                       <Label htmlFor="cargo">Cargo</Label>
                       <Input
@@ -538,7 +627,6 @@ export default function FillForm() {
                       />
                     </div>
                     
-                    {/* Firma */}
                     <div>
                       <Label>Firma</Label>
                       <div className="border rounded-md p-2">

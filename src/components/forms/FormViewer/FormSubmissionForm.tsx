@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { FormTemplate, FormField, FormSubmission } from '@/types/forms';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { es } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, AlertTriangle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { SignatureField } from '../SignatureField';
 
@@ -36,6 +37,7 @@ export function FormSubmissionForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitterName, setSubmitterName] = useState('');
   const [submissionDate, setSubmissionDate] = useState<Date>(new Date());
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   
   // States for standard section fields
   const [elaboradoPor, setElaboradoPor] = useState('');
@@ -80,6 +82,8 @@ export function FormSubmissionForm({
     
     try {
       setIsSubmitting(true);
+      setConnectionError(null);
+      console.log("📤 Iniciando envío desde FormViewer...");
       
       // Prepare submission data
       const submission: FormSubmission = {
@@ -98,20 +102,26 @@ export function FormSubmissionForm({
         submissionDate: submissionDate.toISOString(),
         submitter_name: submitterName,
         template_name: template.name,
-        projectMetadata: template.projectMetadata // Incluir los metadatos del proyecto
+        projectMetadata: template.projectMetadata
       };
       
-      // Send to webhook with the new numbered format as plain text
+      console.log("📋 Datos preparados:", {
+        templateName: template.name,
+        submitterName,
+        fieldsCount: Object.keys(formValues).length
+      });
+      
+      // Send to webhook with improved error handling
       if (webhookUrl) {
         try {
+          console.log("🌐 Enviando al webhook:", webhookUrl);
+          
           // Prepare data with numbered questions and answers
           let webhookContent = ``;
           
           // Add project metadata if available
           if (template.projectMetadata && Object.keys(template.projectMetadata).length > 0) {
             webhookContent += `== INFORMACIÓN DEL PROYECTO (No visible para el usuario) ==\n`;
-            
-            // Add form name to the project metadata section
             webhookContent += `NombreFormulario: ${template.name}\n`;
             
             Object.entries(template.projectMetadata).forEach(([key, value]) => {
@@ -120,7 +130,6 @@ export function FormSubmissionForm({
                 webhookContent += `${readableKey}: ${value}\n`;
               }
             });
-            
             webhookContent += `\n`;
           }
           
@@ -144,7 +153,7 @@ export function FormSubmissionForm({
               try {
                 responseValue = new Date(responseValue).toLocaleDateString();
               } catch (e) {
-                // If date parsing fails, use the original value
+                console.warn("⚠️ Error formateando fecha:", e);
               }
             } else if (field.type === 'signature') {
               responseValue = responseValue ? "[Firma adjunta]" : "[Sin firma]";
@@ -155,7 +164,7 @@ export function FormSubmissionForm({
             webhookContent += `Respuesta ${questionNumber}: ${responseValue}\n\n`;
           });
           
-          // Add additional information section as a separate block, not as questions
+          // Add additional information section
           webhookContent += `== INFORMACIÓN ADICIONAL ==\n`;
           webhookContent += `Elaborado por: ${elaboradoPor || ""}\n`;
           webhookContent += `Supervisor/Capataz: ${supervisor || ""}\n`;
@@ -163,54 +172,70 @@ export function FormSubmissionForm({
           webhookContent += `Observaciones: ${observaciones || ""}\n`;
           webhookContent += `Cargo: ${cargo || ""}\n`;
           
-          // Log the data being sent
-          console.log('Sending data to webhook:', {
-            content: webhookContent,
-            firmaimg: firma || ""
-          });
+          // Attempt webhook submission with timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
           
-          // Send webhook content as text/plain and signature as PNG in base64
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'text/plain',
             },
-            body: webhookContent + `\n\nfirmaimg: ${firma || ""}`
+            body: webhookContent + `\n\nfirmaimg: ${firma || ""}`,
+            signal: controller.signal
           });
+          
+          clearTimeout(timeoutId);
           
           if (!response.ok) {
-            throw new Error(`Error en la respuesta: ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
           
-          console.log('Webhook called successfully');
+          console.log("✅ Webhook enviado exitosamente");
         } catch (webhookError) {
-          console.error('Error sending data to webhook:', webhookError);
+          console.error('❌ Error con webhook:', webhookError);
+          
+          let errorMessage = "Error de conexión con el servidor";
+          if (webhookError instanceof Error) {
+            if (webhookError.name === 'AbortError') {
+              errorMessage = "Tiempo de conexión agotado";
+            } else if (webhookError.message.includes('fetch')) {
+              errorMessage = "No se pudo conectar al servidor";
+            } else {
+              errorMessage = webhookError.message;
+            }
+          }
+          
+          setConnectionError(errorMessage);
+          
           toast({
-            title: "Error",
-            description: "No se pudo enviar la información al servidor. Por favor intenta nuevamente.",
+            title: "Advertencia",
+            description: "El formulario se guardó localmente pero no se pudo enviar al servidor.",
             variant: "destructive"
           });
-          setIsSubmitting(false);
-          return;
+          
+          // Continue with local submission
         }
       } else {
-        console.warn('No webhook URL provided, submission will only be shown locally');
+        console.warn('⚠️ No hay webhook URL configurada');
       }
       
-      // Store submission for display only (not persisted)
+      // Store submission for display
       setSubmissionData(submission);
       setSubmissionComplete(true);
       
-      toast({
-        title: "Enviado correctamente",
-        description: "Tu formulario ha sido enviado con éxito.",
-      });
+      if (!connectionError) {
+        toast({
+          title: "Enviado correctamente",
+          description: "Tu formulario ha sido enviado con éxito.",
+        });
+      }
       
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("❌ Error general en envío:", error);
       toast({
         title: "Error",
-        description: "No se pudo enviar el formulario. Inténtalo de nuevo.",
+        description: "No se pudo procesar el formulario. Inténtalo de nuevo.",
         variant: "destructive"
       });
     } finally {
@@ -224,6 +249,12 @@ export function FormSubmissionForm({
         <CardTitle>{template.name}</CardTitle>
         {template.description && (
           <CardDescription>{template.description}</CardDescription>
+        )}
+        {connectionError && (
+          <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <span className="text-yellow-800 text-sm">{connectionError}</span>
+          </div>
         )}
       </CardHeader>
       <CardContent>
@@ -282,12 +313,11 @@ export function FormSubmissionForm({
             readOnly={readOnly}
           />
           
-          {/* Standard form section with predefined fields */}
+          {/* Standard form section */}
           <div className="mt-8">
             <h3 className="text-lg font-medium mb-4">Información adicional</h3>
             
             <div className="space-y-4">
-              {/* Elaborado por */}
               <div>
                 <Label htmlFor="elaborado-por">Elaborado por</Label>
                 <Input
@@ -299,7 +329,6 @@ export function FormSubmissionForm({
                 />
               </div>
               
-              {/* Supervisor/Capataz */}
               <div>
                 <Label htmlFor="supervisor">Supervisor/Capataz</Label>
                 <Input
@@ -311,7 +340,6 @@ export function FormSubmissionForm({
                 />
               </div>
               
-              {/* Supervisor de SSMA */}
               <div>
                 <Label htmlFor="supervisor-ssma">Supervisor de SSMA</Label>
                 <Input
@@ -323,7 +351,6 @@ export function FormSubmissionForm({
                 />
               </div>
               
-              {/* Observaciones */}
               <div>
                 <Label htmlFor="observaciones">Observaciones</Label>
                 <Textarea
@@ -336,7 +363,6 @@ export function FormSubmissionForm({
                 />
               </div>
               
-              {/* Firma */}
               <div>
                 <Label htmlFor="firma">Firma</Label>
                 <SignatureField
@@ -347,7 +373,6 @@ export function FormSubmissionForm({
                 />
               </div>
               
-              {/* Cargo */}
               <div>
                 <Label htmlFor="cargo">Cargo</Label>
                 <Input
