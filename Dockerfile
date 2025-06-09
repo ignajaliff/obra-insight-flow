@@ -23,8 +23,8 @@ FROM nginx:1.21-alpine AS production
 # Copy built files from builder stage to nginx serve directory
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config if needed
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port
 EXPOSE 80
