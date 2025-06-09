@@ -42,8 +42,8 @@ export default function FillForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // This will be the webhook URL where form submissions are sent
-  const webhookUrl = "https://n8n-n8n.qqtfab.easypanel.host/webhook-test/041274fe-3d47-4cdf-b4c2-114b661ef850";
+  // Production webhook URL
+  const webhookUrl = "https://n8n-n8n.qqtfab.easypanel.host/webhook/041274fe-3d47-4cdf-b4c2-114b661ef850";
   
   useEffect(() => {
     const loadTemplate = async () => {
